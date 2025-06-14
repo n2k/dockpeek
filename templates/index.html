@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dockpeek</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <style>
+        /* Base styles for light mode (GitHub inspired) */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f6f8fa; /* GitHub Light background */
+            color: #24292e; /* GitHub Light text */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .container {
+            background-color: #ffffff; /* GitHub Light container */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+        }
+        .text-gray-800 { /* Main headings */
+            color: #949da7;
+        }
+        .text-gray-600 { /* Secondary text, info messages */
+            color: #586069;
+        }
+        .text-gray-700 { /* Table headers, other labels */
+            color: #24292e;
+        }
+        .text-gray-900 { /* Strong text, container names */
+            color: #24292e;
+        }
+        .bg-gray-100 { /* Table header background */
+            background-color: #f3f4f6;
+        }
+        .border-gray-200 { /* Borders */
+            border-color: #e1e4e8;
+        }
+        .hover\:bg-gray-50:hover { /* Table row hover */
+            background-color: #fafafa !important;
+        }
+        .text-muted, .text-secondary {
+            color: #6a737d;
+        }
+        .badge { /* Port badges */
+            /* background-color: #f3f4f6; /* GitHub blue for links/buttons */
+            color: #2188ff;
+            border-radius: 0.375rem; /* rounded */
+        }
+        .sortable-header {
+            cursor: pointer;
+            position: relative;
+            padding-right: 20px; /* Space for arrow */
+        }
+        .sortable-header::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #24292e; /* Arrow up for light mode */
+        }
+        .sortable-header.desc::after {
+            border-top: 5px solid #24292e; /* Arrow down for light mode */
+            border-bottom: none;
+        }
+        input[type="text"] {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8; /* border border-gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            color: #24292e;
+            padding: 0.75rem; /* p-3 */
+            width: 100%; /* w-full */
+        }
+        #search-input:focus {
+            outline: none; /* focus:outline-none */
+            box-shadow: 0 0 0 2px #2188ff; /* focus:ring-2 focus:ring-blue-500 */
+            border-color: transparent; /* focus:border-transparent */
+        }
+        #search-input::placeholder {
+            color: #6a737d;
+        }
+        #theme-switcher {
+            background-color: #e1e4e8;
+            color: #24292e;
+            padding: 0.5rem 1rem; /* px-4 py-2 */
+            border-radius: 0.5rem; /* rounded-lg */
+            transition: background-color 0.15s ease-in-out; /* hover:bg-gray-300 transition */
+        }
+        #theme-switcher:hover {
+            background-color: #d1d5da;
+        }
+        #theme-switcher:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75); /* focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 */
+        }
+        .text-red-500 { /* Error messages */
+            color: #cb2431;
+        }
+        .status-running {
+            color: #28a745; /* Green for running */
+            font-weight: 600;
+        }
+        .status-exited {
+            color: #dc3545; /* Red for exited */
+            font-weight: 600;
+        }
+        code { /* Code blocks in table */
+            background-color: #f3f4f6;
+            color: #24292e;
+            padding: 0.125rem 0.5rem; /* px-2 py-1 */
+            border-radius: 0.25rem; /* rounded */
+            font-size: 0.875rem; /* text-sm */
+        }
+
+        /* Dark Mode Styles - GitHub inspired */
+        body.dark-mode {
+            background-color: #0d1117; /* GitHub Dark background */
+            color: #c9d1d9; /* GitHub Dark text */
+        }
+        body.dark-mode .container {
+            background-color: #161b22; /* GitHub Darker container */
+        }
+        body.dark-mode .text-gray-800 {
+            color: #24292e;
+        }
+        body.dark-mode .text-gray-600 {
+            color: #8b949e;
+        }
+        body.dark-mode .text-gray-700 {
+            color: #c9d1d9;
+        }
+        body.dark-mode .text-gray-900 {
+            color: #c9d1d9;
+        }
+        body.dark-mode .bg-gray-100 { /* Table header background */
+            background-color: #21262d;
+        }
+        body.dark-mode .border-gray-200 { /* Borders */
+            border-color: #30363d;
+        }
+        /* Explicitly set table background in dark mode */
+        body.dark-mode table {
+            background-color: #161b22; /* Matching container background */
+            border-color: #30363d;
+        }
+        body.dark-mode .hover\:bg-gray-50:hover { /* Table row hover */
+            background-color: #21262d !important;
+        }
+        body.dark-mode .text-muted, body.dark-mode .text-secondary {
+            color: #8b949e;
+        }
+        body.dark-mode .badge.text-bg-dark {
+          /*   background-color: #21262d; /* Brighter GitHub blue for links/buttons */
+            color: #2188ff;
+        }
+        body.dark-mode .sortable-header::after {
+            border-bottom-color: #c9d1d9;
+            border-top-color: #c9d1d9;
+        }
+        body.dark-mode input[type="text"] {
+            background-color: #0d1117;
+            border-color: #30363d;
+            color: #c9d1d9;
+        }
+        body.dark-mode #search-input::placeholder {
+            color: #8b949e;
+        }
+        body.dark-mode #theme-switcher {
+            background-color: #21262d;
+            color: #c9d1d9;
+        }
+        body.dark-mode #theme-switcher:hover {
+            background-color: #30363d;
+        }
+        body.dark-mode .text-gray-500 {
+            color: #8b949e; /* Make error/loading text visible on dark background */
+        }
+        body.dark-mode .text-red-500 { /* Error messages */
+            color: #f85149;
+        }
+        body.dark-mode code { /* Code blocks in table */
+            background-color: #21262d;
+            color: #c9d1d9;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="container mx-auto bg-white rounded-lg shadow-xl p-8">
+        <div class="flex justify-between items-center mb-6">
+           <h1 class="text-3xl font-bold text-gray-800">dockpeek</h1>
+           <div class="flex space-x-4">
+               <button id="theme-switcher" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+                   Switch to Dark Mode
+               </button>
+               <a href="/logout" id="logout-button" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75">
+                   Logout
+        </a>
+    </div>
+</div>
+
+        <div class="mb-6">
+            <input type="text" id="search-input" placeholder="Search containers by name or image..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tl-lg sortable-header" data-sort-column="name">Container</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header" data-sort-column="image">Image</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header" data-sort-column="status">Status</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg">Ports</th>
+                    </tr>
+                </thead>
+                <tbody id="container-rows">
+                    <!-- Container data will be injected here by JavaScript -->
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">Loading container data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let allContainersData = []; // Store raw fetched data
+            let currentSortColumn = 'name'; // Default sort column
+            let currentSortDirection = 'asc'; // Default sort direction
+            const searchInput = document.getElementById('search-input');
+            const themeSwitcher = document.getElementById('theme-switcher');
+            const body = document.body;
+
+            /**
+             * Renders the container table based on the provided data, sort column, and sort direction.
+             * @param {Array<Object>} containers - The array of container objects.
+             * @param {string} sortColumn - The column to sort by (e.g., 'name', 'image', 'status').
+             * @param {string} sortDirection - The sort direction ('asc' or 'desc').
+             */
+            function displayContainers(containers, sortColumn, sortDirection) {
+                // Create a shallow copy to avoid modifying the original array
+                const sorted = [...containers];
+
+                // Apply sorting based on the chosen column and direction
+                sorted.sort((a, b) => {
+                    let valA = a[sortColumn];
+                    let valB = b[sortColumn];
+
+                    // Special handling for status to ensure 'running' is always before 'exited' in asc, or after in desc
+                    if (sortColumn === 'status') {
+                        const statusOrder = { 'running': 1, 'exited': 2 };
+                        valA = statusOrder[valA] || 0;
+                        valB = statusOrder[valB] || 0;
+                    } else if (typeof valA === 'string' && typeof valB === 'string') {
+                        // Case-insensitive string comparison
+                        valA = valA.toLowerCase();
+                        valB = valB.toLowerCase();
+                    }
+
+                    if (valA < valB) {
+                        return sortDirection === 'asc' ? -1 : 1;
+                    }
+                    if (valA > valB) {
+                        return sortDirection === 'asc' ? 1 : -1;
+                    }
+                    return 0;
+                });
+
+                let html = '';
+                if (sorted.length === 0) {
+                    html = `<tr><td colspan="4" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+                } else {
+                    for (const c of sorted) {
+                        const statusClass = c.status === "running" ? "status-running" : "status-exited";
+                        const ports = c.ports.length ? c.ports.map(p =>
+                            `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
+                        ).join("<br>") : `<span class="text-muted">none</span>`;
+
+                        html += `
+                            <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                                <td class="py-3 px-4 border-b border-gray-200">
+                                    <strong class="text-gray-900">${c.name}</strong><br>
+                                </td>
+                                <td class="py-3 px-4 border-b border-gray-200">
+                                    <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">${c.image}</code>
+                                </td>
+                                <td class="py-3 px-4 border-b border-gray-200 ${statusClass}">
+                                    ${c.status}
+                                </td>
+                                <td class="py-3 px-4 border-b border-gray-200">
+                                    ${ports}
+                                </td>
+                            </tr>`;
+                    }
+                }
+
+                document.getElementById('container-rows').innerHTML = html;
+
+                // Update header classes for sort indicators
+                document.querySelectorAll('.sortable-header').forEach(header => {
+                    header.classList.remove('asc', 'desc');
+                    if (header.dataset.sortColumn === sortColumn) {
+                        header.classList.add(sortDirection);
+                    }
+                });
+            }
+
+            /**
+             * Filters and displays containers based on search input and current sort settings.
+             */
+            function filterAndDisplayContainers() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const filteredContainers = allContainersData.filter(container => {
+                    return (
+                        container.name.toLowerCase().includes(searchTerm) ||
+                     //   container.id.toLowerCase().includes(searchTerm) ||
+                        container.image.toLowerCase().includes(searchTerm) 
+                     //   container.status.toLowerCase().includes(searchTerm)
+                    );
+                });
+                displayContainers(filteredContainers, currentSortColumn, currentSortDirection);
+            }
+
+            // Function to fetch data from the Flask backend
+            async function fetchContainerData() {
+                try {
+                    // Zmieniono URL na pełną ścieżkę, aby uniknąć problemów z Canvasem
+                    const response = await fetch('/data');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    allContainersData = await response.json();
+                    filterAndDisplayContainers(); // Użyj filterAndDisplayContainers zamiast displayContainers bezpośrednio
+                } catch (error) {
+                    console.error("Error fetching container data:", error);
+                    document.getElementById('container-rows').innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">Error loading data: ${error.message}. Is the Flask backend running and accessible at http://localhost:8000?</td></tr>`;
+                }
+            }
+
+            // --- Theme Switcher Logic ---
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    body.classList.add('dark-mode');
+                    themeSwitcher.textContent = 'Switch to Light Mode';
+                } else {
+                    body.classList.remove('dark-mode');
+                    themeSwitcher.textContent = 'Switch to Dark Mode';
+                }
+                localStorage.setItem('theme', theme); // Persist theme preference
+            }
+
+            // Load theme preference from localStorage on page load
+            const savedTheme = localStorage.getItem('theme') || 'light'; // Default to light
+            applyTheme(savedTheme);
+
+            // Toggle theme on button click
+            themeSwitcher.addEventListener('click', () => {
+                const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+            // --- End Theme Switcher Logic ---
+
+            // Initial fetch and display of containers when the page loads
+            fetchContainerData();
+
+            // Add event listeners for sorting
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.dataset.sortColumn;
+                    if (column === currentSortColumn) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortColumn = column;
+                        currentSortDirection = 'asc';
+                    }
+                    filterAndDisplayContainers(); // Re-filter and display after sort change
+                });
+            });
+
+            // Add event listener for search input
+            searchInput.addEventListener('input', filterAndDisplayContainers);
+
+            // Optional: Auto-refresh data every 5 seconds
+            // setInterval(fetchContainerData, 5000);
+        });
+    </script>
+</body>
+</html>

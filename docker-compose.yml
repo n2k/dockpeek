@@ -1,0 +1,13 @@
+services:
+  dockpeek:
+    container_name: dockpeek
+    build:
+      context: .
+    environment:
+      - SECRET_KEY=my_secret_key
+      - USERNAME=admin
+      - PASSWORD=admin
+    ports:
+      - "3420:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -324,13 +324,12 @@
                     <tr>
                         <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tl-lg sortable-header"
                             data-sort-column="name">Container</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200">
+                            Ports</th>
                         <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
                             data-sort-column="image">Image</th>
-                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg sortable-header"
                             data-sort-column="status">Status</th>
-                        <th
-                            class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg">
-                            Ports</th>
                     </tr>
                 </thead>
                 <tbody id="container-rows">
@@ -403,13 +402,13 @@
                                     <strong class="text-gray-900">${c.name}</strong><br>
                                 </td>
                                 <td class="py-3 px-4 border-b border-gray-200">
+                                    ${ports}
+                                </td>
+                                <td class="py-3 px-4 border-b border-gray-200">
                                     <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">${c.image}</code>
                                 </td>
                                 <td class="py-3 px-4 border-b border-gray-200 ${statusClass}">
                                     ${c.status}
-                                </td>
-                                <td class="py-3 px-4 border-b border-gray-200">
-                                    ${ports}
                                 </td>
                             </tr>`;
                     }

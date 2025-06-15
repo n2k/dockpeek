@@ -44,7 +44,8 @@ def load_user(user_id):
 
 # === Docker Client Init ===
 try:
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+    docker_host = os.environ.get("DOCKER_HOST", "unix://var/run/docker.sock")
+    client = docker.DockerClient(base_url=docker_host)
     client.ping()
     print("✅ Connected to Docker daemon.")
 except Exception as e:

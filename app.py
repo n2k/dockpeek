@@ -6,24 +6,30 @@ from flask_login import (
     LoginManager, UserMixin, login_user,
     logout_user, login_required, current_user
 )
+from werkzeug.security import generate_password_hash, check_password_hash
 
-# Initialize Flask app
+# === Flask Init ===
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "defaultsecretkey")
-
 CORS(app)
 
-# Setup Flask-Login
+# === Flask-Login Init ===
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Dummy user storage using environment variables
-ADMIN_USERNAME = os.environ.get("USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("PASSWORD", "password")
+# === User credentials from environment ===
+ADMIN_USERNAME = os.environ.get("USERNAME")
+ADMIN_PASSWORD = os.environ.get("PASSWORD")
 
+if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+    raise RuntimeError("USERNAME and PASSWORD environment variables must be set.")
+
+# Hashed user storage
 users = {
-    ADMIN_USERNAME: {"password": ADMIN_PASSWORD}
+    ADMIN_USERNAME: {
+        "password": generate_password_hash(ADMIN_PASSWORD)
+    }
 }
 
 class User(UserMixin):
@@ -32,24 +38,31 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    if user_id in users:
+        return User(user_id)
+    return None
 
-# Initialize Docker client
+# === Docker Client Init ===
 try:
     client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     client.ping()
-    print("Successfully connected to Docker daemon!")
+    print("✅ Connected to Docker daemon.")
 except Exception as e:
-    print(f"Error connecting to Docker daemon: {e}")
+    print(f"❌ Error connecting to Docker daemon: {e}")
     client = None
 
+# === Helpers ===
 def get_container_data():
     if client is None:
         return []
 
-    containers = client.containers.list(all=True)
-    data = []
+    try:
+        containers = client.containers.list(all=True)
+    except Exception as e:
+        print(f"Error retrieving container list: {e}")
+        return []
 
+    data = []
     for container in containers:
         ports = container.attrs['NetworkSettings']['Ports']
         port_map = []
@@ -78,6 +91,8 @@ def get_container_data():
 
     return data
 
+# === Routes ===
+
 @app.route("/")
 def index():
     if current_user.is_authenticated:
@@ -91,17 +106,17 @@ def data():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    error = None  # Initialize error variable
+    error = None
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        if username in users and users[username]["password"] == password:
-            user = User(username)
-            login_user(user)
+        user_record = users.get(username)
+        if user_record and check_password_hash(user_record["password"], password):
+            login_user(User(username))
             return redirect(url_for("index"))
         else:
-            error = "Invalid credentials. Please try again." # Set error message in English
-    return render_template("login.html", error=error) # Pass error variable to the template
+            error = "Invalid credentials. Please try again."
+    return render_template("login.html", error=error)
 
 @app.route("/logout")
 @login_required
@@ -109,8 +124,10 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
+# === Entry Point ===
 if __name__ == "__main__":
     if not os.path.exists('templates'):
         os.makedirs('templates')
         print("Created 'templates' directory.")
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=8000, debug=debug)

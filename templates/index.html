@@ -127,7 +127,7 @@
             color: #6a737d;
         }
 
-        #theme-switcher {
+        #theme-switcher, #export-csv-button {
             background-color: #e1e4e8;
             color: #24292e;
             padding: 0.5rem 1rem;
@@ -138,11 +138,11 @@
             /* hover:bg-gray-300 transition */
         }
 
-        #theme-switcher:hover {
+        #theme-switcher:hover, #export-csv-button:hover {
             background-color: #d1d5da;
         }
 
-        #theme-switcher:focus {
+        #theme-switcher:focus, #export-csv-button:focus {
             outline: none;
             box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
             /* focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 */
@@ -253,12 +253,12 @@
             color: #8b949e;
         }
 
-        body.dark-mode #theme-switcher {
+        body.dark-mode #theme-switcher, body.dark-mode #export-csv-button {
             background-color: #21262d;
             color: #c9d1d9;
         }
 
-        body.dark-mode #theme-switcher:hover {
+        body.dark-mode #theme-switcher:hover, body.dark-mode #export-csv-button:hover {
             background-color: #30363d;
         }
 
@@ -302,6 +302,10 @@
                     class="text-gray-400 hover:text-gray-500 no-underline mr-4">
                     GitHub
                 </a>
+                <button id="export-csv-button"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+                    Export to CSV
+                </button>
                 <button id="theme-switcher"
                     class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
                     Switch to Dark Mode
@@ -345,10 +349,12 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let allContainersData = []; // Store raw fetched data
+            let displayedContainers = []; // Store the currently filtered and sorted containers
             let currentSortColumn = 'name'; // Default sort column
             let currentSortDirection = 'asc'; // Default sort direction
             const searchInput = document.getElementById('search-input');
             const themeSwitcher = document.getElementById('theme-switcher');
+            const exportCsvButton = document.getElementById('export-csv-button');
             const body = document.body;
 
             /**
@@ -385,6 +391,8 @@
                     }
                     return 0;
                 });
+
+                displayedContainers = sorted; // Update the displayedContainers array
 
                 let html = '';
                 if (sorted.length === 0) {
@@ -433,9 +441,7 @@
                 const filteredContainers = allContainersData.filter(container => {
                     return (
                         container.name.toLowerCase().includes(searchTerm) ||
-                        //   container.id.toLowerCase().includes(searchTerm) ||
                         container.image.toLowerCase().includes(searchTerm)
-                        //   container.status.toLowerCase().includes(searchTerm)
                     );
                 });
                 displayContainers(filteredContainers, currentSortColumn, currentSortDirection);
@@ -444,13 +450,12 @@
             // Function to fetch data from the Flask backend
             async function fetchContainerData() {
                 try {
-                    // Zmieniono URL na pełną ścieżkę, aby uniknąć problemów z Canvasem
                     const response = await fetch('/data');
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     allContainersData = await response.json();
-                    filterAndDisplayContainers(); // Użyj filterAndDisplayContainers zamiast displayContainers bezpośrednio
+                    filterAndDisplayContainers();
                 } catch (error) {
                     console.error("Error fetching container data:", error);
                     document.getElementById('container-rows').innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">Error loading data: ${error.message}. Is the Flask backend running and accessible at http://localhost:8000?</td></tr>`;
@@ -480,6 +485,46 @@
             });
             // --- End Theme Switcher Logic ---
 
+            // --- Export to CSV Logic ---
+            exportCsvButton.addEventListener('click', () => {
+                if (displayedContainers.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+
+                // Updated CSV Header
+                let csvContent = "Container,ID,Host Port(s),Container Port(s),Image,Status\n";
+
+                displayedContainers.forEach(container => {
+                    const name = `"${container.name.replace(/"/g, '""')}"`;
+                    const id = `"${container.id.replace(/"/g, '""')}"`;
+                    const image = `"${container.image.replace(/"/g, '""')}"`;
+                    const status = container.status;
+
+                    // Extract and format host ports
+                    const hostPorts = container.ports.map(p => p.host_port).join('; ');
+                    const csvHostPorts = `"${hostPorts.replace(/"/g, '""')}"`;
+
+                    // Extract and format container ports
+                    const containerPorts = container.ports.map(p => p.container_port).join('; ');
+                    const csvContainerPorts = `"${containerPorts.replace(/"/g, '""')}"`;
+
+                    // Construct the CSV row with new port columns
+                    csvContent += `${name},${id},${csvHostPorts},${csvContainerPorts},${image},${status}\n`;
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "dockpeek_containers.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            // --- End Export to CSV Logic ---
+
             // Initial fetch and display of containers when the page loads
             fetchContainerData();
 
@@ -493,7 +538,7 @@
                         currentSortColumn = column;
                         currentSortDirection = 'asc';
                     }
-                    filterAndDisplayContainers(); // Re-filter and display after sort change
+                    filterAndDisplayContainers();
                 });
             });
 

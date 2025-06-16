@@ -113,7 +113,7 @@
     }
 
     #theme-switcher,
-    #export-csv-button {
+    #export-json-button {
       background-color: #e1e4e8;
       color: #24292e;
       padding: 0.5rem 1rem;
@@ -122,12 +122,12 @@
     }
 
     #theme-switcher:hover,
-    #export-csv-button:hover {
+    #export-json-button:hover {
       background-color: #d1d5da;
     }
 
     #theme-switcher:focus,
-    #export-csv-button:focus {
+    #export-json-button:focus {
       outline: none;
       box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
     }
@@ -221,13 +221,13 @@
     }
 
     body.dark-mode #theme-switcher,
-    body.dark-mode #export-csv-button {
+    body.dark-mode #export-json-button {
       background-color: #21262d;
       color: #c9d1d9;
     }
 
     body.dark-mode #theme-switcher:hover,
-    body.dark-mode #export-csv-button:hover {
+    body.dark-mode #export-json-button:hover {
       background-color: #30363d;
     }
 
@@ -319,9 +319,9 @@
           class="text-gray-400 hover:text-gray-500 no-underline mr-4">
           GitHub
         </a>
-        <button id="export-csv-button"
+        <button id="export-json-button"
           class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
-          Export to CSV
+          Export to JSON
         </button>
         <button id="theme-switcher"
           class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
@@ -382,7 +382,6 @@
       let currentSortDirection = "asc"; // Default sort direction
       const searchInput = document.getElementById("search-input");
       const themeSwitcher = document.getElementById("theme-switcher");
-      const exportCsvButton = document.getElementById("export-csv-button");
       const body = document.body;
 
       /**
@@ -539,56 +538,30 @@
       });
       // --- End Theme Switcher Logic ---
 
-      // --- Export to CSV Logic ---
-      exportCsvButton.addEventListener("click", () => {
+      // --- Export to JSON Logic ---
+      const exportJsonButton = document.getElementById("export-json-button");
+
+      exportJsonButton.addEventListener("click", () => {
         if (displayedContainers.length === 0) {
           alert("No data to export.");
           return;
         }
 
-        // Added confirmation before exporting
-        const proceed = confirm(
-          "Are you sure you want to download the CSV file?"
-        );
-        if (!proceed) {
-          return; // user cancelled, do nothing
-        }
+        const proceed = confirm("Are you sure you want to download the JSON file?");
+        if (!proceed) return;
 
-        // CSV header with selected columns only
-        let csvContent = "Container,Host Port(s),Container Port(s),Image\n";
-
-        displayedContainers.forEach((container) => {
-          const name = `"${container.name.replace(/"/g, '""')}"`;
-          const image = `"${container.image.replace(/"/g, '""')}"`;
-
-          // Join host ports with semicolon
-          const hostPorts = container.ports
-            .map((p) => p.host_port)
-            .join("; ");
-          const csvHostPorts = `"${hostPorts.replace(/"/g, '""')}"`;
-
-          // Join container ports with semicolon
-          const containerPorts = container.ports
-            .map((p) => p.container_port)
-            .join("; ");
-          const csvContainerPorts = `"${containerPorts.replace(/"/g, '""')}"`;
-
-          csvContent += `${name},${csvHostPorts},${csvContainerPorts},${image}\n`;
-        });
-
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
+        const jsonContent = JSON.stringify(displayedContainers, null, 2);
+        const blob = new Blob([jsonContent], { type: "application/json" });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", "dockpeek_containers.csv");
+        link.setAttribute("download", "dockpeek_containers.json");
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       });
-      // --- End Export to CSV Logic ---
+      // --- End Export to JSON Logic ---
 
       // Initial fetch and display of containers when the page loads
       fetchContainerData();

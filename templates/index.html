@@ -1,458 +1,448 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dockpeek</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="icon" type="image/svg+xml" href="/static/logo.svg" />
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f6f8fa;
-        color: #24292e;
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dockpeek</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg" />
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #f6f8fa;
+      color: #24292e;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .container {
+      background-color: #ffffff;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .text-gray-800 {
+      color: #949da7;
+    }
+
+    .text-gray-600 {
+      color: #586069;
+    }
+
+    .text-gray-700 {
+      color: #24292e;
+    }
+
+    .text-gray-900 {
+      color: #24292e;
+    }
+
+    .bg-gray-100 {
+      background-color: #f3f4f6;
+    }
+
+    .border-gray-200 {
+      border-color: #e1e4e8;
+    }
+
+    .hover\:bg-gray-50:hover {
+      background-color: #fafafa !important;
+    }
+
+    .text-muted,
+    .text-secondary {
+      color: #6a737d;
+    }
+
+    .badge {
+      background-color: #e1e4e8;
+      color: #2188ff;
+      border-radius: 0.375rem;
+      padding: 0.15rem 0.5rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    body.dark-mode .badge {
+      background-color: #21262d;
+      color: #2188ff;
+    }
+
+    .sortable-header {
+      cursor: pointer;
+      position: relative;
+      padding-right: 20px;
+    }
+
+    .sortable-header::after {
+      content: "";
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid #24292e;
+    }
+
+    .sortable-header.desc::after {
+      border-top: 5px solid #24292e;
+      border-bottom: none;
+    }
+
+    input[type="text"] {
+      background-color: #f6f8fa;
+      border: 1px solid #e1e4e8;
+      border-radius: 0.5rem;
+      color: #24292e;
+      padding: 0.75rem;
+      width: 100%;
+    }
+
+    #search-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #2188ff;
+      border-color: transparent;
+    }
+
+    #search-input::placeholder {
+      color: #6a737d;
+    }
+
+    #theme-switcher,
+    #export-csv-button {
+      background-color: #e1e4e8;
+      color: #24292e;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    #theme-switcher:hover,
+    #export-csv-button:hover {
+      background-color: #d1d5da;
+    }
+
+    #theme-switcher:focus,
+    #export-csv-button:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
+    }
+
+    .text-red-500 {
+      color: #cb2431;
+    }
+
+    .status-running {
+      color: #28a745;
+      font-weight: 600;
+    }
+
+    .status-exited {
+      color: #dc3545;
+      font-weight: 600;
+    }
+
+    code {
+      background-color: #f3f4f6;
+      color: #24292e;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    body.dark-mode {
+      background-color: #0d1117;
+      color: #c9d1d9;
+    }
+
+    body.dark-mode .container {
+      background-color: #161b22;
+    }
+
+    body.dark-mode .text-gray-800 {
+      color: #24292e;
+    }
+
+    body.dark-mode .text-gray-600 {
+      color: #8b949e;
+    }
+
+    body.dark-mode .text-gray-700 {
+      color: #c9d1d9;
+    }
+
+    body.dark-mode .text-gray-900 {
+      color: #c9d1d9;
+    }
+
+    body.dark-mode .bg-gray-100 {
+      background-color: #21262d;
+    }
+
+    body.dark-mode .border-gray-200 {
+      border-color: #30363d;
+    }
+
+    body.dark-mode table {
+      background-color: #161b22;
+      border-color: #30363d;
+    }
+
+    body.dark-mode .hover\:bg-gray-50:hover {
+      background-color: #21262d !important;
+    }
+
+    body.dark-mode .text-muted,
+    body.dark-mode .text-secondary {
+      color: #8b949e;
+    }
+
+    body.dark-mode .badge.text-bg-dark {
+      color: #2188ff;
+    }
+
+    body.dark-mode .sortable-header::after {
+      border-bottom-color: #c9d1d9;
+      border-top-color: #c9d1d9;
+    }
+
+    body.dark-mode input[type="text"] {
+      background-color: #0d1117;
+      border-color: #30363d;
+      color: #c9d1d9;
+    }
+
+    body.dark-mode #search-input::placeholder {
+      color: #8b949e;
+    }
+
+    body.dark-mode #theme-switcher,
+    body.dark-mode #export-csv-button {
+      background-color: #21262d;
+      color: #c9d1d9;
+    }
+
+    body.dark-mode #theme-switcher:hover,
+    body.dark-mode #export-csv-button:hover {
+      background-color: #30363d;
+    }
+
+    body.dark-mode .text-gray-500 {
+      color: #8b949e;
+    }
+
+    body.dark-mode .text-red-500 {
+      color: #f85149;
+    }
+
+    body.dark-mode code {
+      background-color: #21262d;
+      color: #c9d1d9;
+    }
+
+    body.dark-mode .text-gray-400 {
+      color: #31363b;
+    }
+
+    body.dark-mode .hover\:text-gray-500:hover {
+      color: #3c434b;
+    }
+
+    @media (max-width: 768px) {
       .container {
-        background-color: #ffffff;
-        border-radius: 0.5rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        padding: 1rem;
+        /* Adjust padding for smaller screens */
       }
 
-      .text-gray-800 {
-        color: #949da7;
+      .flex.justify-between.items-center.mb-6 {
+        flex-direction: column;
+        /* Stack elements vertically */
+        align-items: flex-start;
+        margin-bottom: 1rem;
       }
 
-      .text-gray-600 {
-        color: #586069;
-      }
-
-      .text-gray-700 {
-        color: #24292e;
-      }
-
-      .text-gray-900 {
-        color: #24292e;
-      }
-
-      .bg-gray-100 {
-        background-color: #f3f4f6;
-      }
-
-      .border-gray-200 {
-        border-color: #e1e4e8;
-      }
-
-      .hover\:bg-gray-50:hover {
-        background-color: #fafafa !important;
-      }
-
-      .text-muted,
-      .text-secondary {
-        color: #6a737d;
-      }
-
-      .badge {
-        background-color: #e1e4e8;
-        color: #2188ff;
-        border-radius: 0.375rem;
-        padding: 0.15rem 0.5rem;
-        font-weight: 600;
-        display: inline-block;
-      }
-
-      body.dark-mode .badge {
-        background-color: #21262d;
-        color: #2188ff;
-      }
-
-      .sortable-header {
-        cursor: pointer;
-        position: relative;
-        padding-right: 20px;
-      }
-
-      .sortable-header::after {
-        content: "";
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-bottom: 5px solid #24292e;
-      }
-
-      .sortable-header.desc::after {
-        border-top: 5px solid #24292e;
-        border-bottom: none;
-      }
-
-      input[type="text"] {
-        background-color: #f6f8fa;
-        border: 1px solid #e1e4e8;
-        border-radius: 0.5rem;
-        color: #24292e;
-        padding: 0.75rem;
+      .flex.space-x-2.items-center.text-sm {
+        flex-direction: column;
+        align-items: flex-start;
         width: 100%;
+        margin-top: 1rem;
+        /* Add space above buttons */
+        space-x: 0;
+        /* Remove horizontal spacing */
       }
 
-      #search-input:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px #2188ff;
-        border-color: transparent;
+      .flex.space-x-2.items-center.text-sm>* {
+        margin-bottom: 0.5rem;
+        /* Add vertical spacing between buttons */
+        width: 100%;
+        /* Make buttons full width */
       }
 
-      #search-input::placeholder {
-        color: #6a737d;
+      /* Hide Image and Status columns */
+      th[data-sort-column="image"],
+      th[data-sort-column="status"],
+      td:nth-child(3),
+      /* Image column data */
+      td:nth-child(4) {
+        /* Status column data */
+        display: none;
       }
 
-      #theme-switcher,
-      #export-csv-button {
-        background-color: #e1e4e8;
-        color: #24292e;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: background-color 0.15s ease-in-out;
+      /* Adjust padding for remaining columns */
+      .py-3.px-4 {
+        padding: 0.5rem 0.75rem;
       }
 
-      #theme-switcher:hover,
-      #export-csv-button:hover {
-        background-color: #d1d5da;
+      .min-w-full {
+        min-width: unset;
+        /* Allow table to shrink */
       }
 
-      #theme-switcher:focus,
-      #export-csv-button:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
+      .overflow-x-auto {
+        overflow-x: hidden;
+        /* Prevent horizontal scrolling if not needed */
       }
+    }
+  </style>
+</head>
 
-      .text-red-500 {
-        color: #cb2431;
-      }
-
-      .status-running {
-        color: #28a745;
-        font-weight: 600;
-      }
-
-      .status-exited {
-        color: #dc3545;
-        font-weight: 600;
-      }
-
-      code {
-        background-color: #f3f4f6;
-        color: #24292e;
-        padding: 0.125rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.875rem;
-      }
-
-      body.dark-mode {
-        background-color: #0d1117;
-        color: #c9d1d9;
-      }
-
-      body.dark-mode .container {
-        background-color: #161b22;
-      }
-
-      body.dark-mode .text-gray-800 {
-        color: #24292e;
-      }
-
-      body.dark-mode .text-gray-600 {
-        color: #8b949e;
-      }
-
-      body.dark-mode .text-gray-700 {
-        color: #c9d1d9;
-      }
-
-      body.dark-mode .text-gray-900 {
-        color: #c9d1d9;
-      }
-
-      body.dark-mode .bg-gray-100 {
-        background-color: #21262d;
-      }
-
-      body.dark-mode .border-gray-200 {
-        border-color: #30363d;
-      }
-
-      body.dark-mode table {
-        background-color: #161b22;
-        border-color: #30363d;
-      }
-
-      body.dark-mode .hover\:bg-gray-50:hover {
-        background-color: #21262d !important;
-      }
-
-      body.dark-mode .text-muted,
-      body.dark-mode .text-secondary {
-        color: #8b949e;
-      }
-
-      body.dark-mode .badge.text-bg-dark {
-        color: #2188ff;
-      }
-
-      body.dark-mode .sortable-header::after {
-        border-bottom-color: #c9d1d9;
-        border-top-color: #c9d1d9;
-      }
-
-      body.dark-mode input[type="text"] {
-        background-color: #0d1117;
-        border-color: #30363d;
-        color: #c9d1d9;
-      }
-
-      body.dark-mode #search-input::placeholder {
-        color: #8b949e;
-      }
-
-      body.dark-mode #theme-switcher,
-      body.dark-mode #export-csv-button {
-        background-color: #21262d;
-        color: #c9d1d9;
-      }
-
-      body.dark-mode #theme-switcher:hover,
-      body.dark-mode #export-csv-button:hover {
-        background-color: #30363d;
-      }
-
-      body.dark-mode .text-gray-500 {
-        color: #8b949e;
-      }
-
-      body.dark-mode .text-red-500 {
-        color: #f85149;
-      }
-
-      body.dark-mode code {
-        background-color: #21262d;
-        color: #c9d1d9;
-      }
-
-      body.dark-mode .text-gray-400 {
-        color: #31363b;
-      }
-
-      body.dark-mode .hover\:text-gray-500:hover {
-        color: #3c434b;
-      }
-
-      @media (max-width: 768px) {
-        .container {
-          padding: 1rem; /* Adjust padding for smaller screens */
-        }
-
-        .flex.justify-between.items-center.mb-6 {
-          flex-direction: column; /* Stack elements vertically */
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .flex.space-x-2.items-center.text-sm {
-          flex-direction: column;
-          align-items: flex-start;
-          width: 100%;
-          margin-top: 1rem; /* Add space above buttons */
-          space-x: 0; /* Remove horizontal spacing */
-        }
-
-        .flex.space-x-2.items-center.text-sm > * {
-          margin-bottom: 0.5rem; /* Add vertical spacing between buttons */
-          width: 100%; /* Make buttons full width */
-        }
-
-        /* Hide Image and Status columns */
-        th[data-sort-column="image"],
-    th[data-sort-column="status"],
-    td:nth-child(3), /* Image column data */
-    td:nth-child(4) {
-          /* Status column data */
-          display: none;
-        }
-
-        /* Adjust padding for remaining columns */
-        .py-3.px-4 {
-          padding: 0.5rem 0.75rem;
-        }
-
-        .min-w-full {
-          min-width: unset; /* Allow table to shrink */
-        }
-
-        .overflow-x-auto {
-          overflow-x: hidden; /* Prevent horizontal scrolling if not needed */
-        }
-      }
-    </style>
-  </head>
-
-  <body class="p-6">
-    <div class="container mx-auto bg-white rounded-lg shadow-xl p-8">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">dockpeek</h1>
-        <div class="flex space-x-2 items-center text-sm">
-          <a
-            href="https://github.com/dockpeek/dockpeek"
-            target="_blank"
-            class="text-gray-400 hover:text-gray-500 no-underline mr-4"
-          >
-            GitHub
-          </a>
-          <button
-            id="export-csv-button"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75"
-          >
-            Export to CSV
-          </button>
-          <button
-            id="theme-switcher"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75"
-          >
-            Switch to Dark Mode
-          </button>
-          <a
-            href="/logout"
-            id="logout-button"
-            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75"
-          >
-            Logout
-          </a>
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Search by name, image, or port..."
-          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
-
-      <div
-        id="container-table-wrapper"
-        class="overflow-x-auto rounded-lg overflow-hidden"
-      >
-        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-          <thead class="bg-gray-100">
-            <tr>
-              <th
-                class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tl-lg sortable-header"
-                data-sort-column="name"
-              >
-                Container
-              </th>
-              <th
-                class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200"
-              >
-                Ports
-              </th>
-              <th
-                class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
-                data-sort-column="image"
-              >
-                Image
-              </th>
-              <th
-                class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg sortable-header"
-                data-sort-column="status"
-              >
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody id="container-rows">
-            <tr>
-              <td colspan="4" class="text-center py-8 text-gray-500">
-                Loading container data...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+<body class="p-6">
+  <div class="container mx-auto bg-white rounded-lg shadow-xl p-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">dockpeek</h1>
+      <div class="flex space-x-2 items-center text-sm">
+        <a href="https://github.com/dockpeek/dockpeek" target="_blank"
+          class="text-gray-400 hover:text-gray-500 no-underline mr-4">
+          GitHub
+        </a>
+        <button id="export-csv-button"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+          Export to CSV
+        </button>
+        <button id="theme-switcher"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+          Switch to Dark Mode
+        </button>
+        <a href="/logout" id="logout-button"
+          class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75">
+          Logout
+        </a>
       </div>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        let allContainersData = []; // Store raw fetched data
-        let displayedContainers = []; // Store the currently filtered and sorted containers
-        let currentSortColumn = "name"; // Default sort column
-        let currentSortDirection = "asc"; // Default sort direction
-        const searchInput = document.getElementById("search-input");
-        const themeSwitcher = document.getElementById("theme-switcher");
-        const exportCsvButton = document.getElementById("export-csv-button");
-        const body = document.body;
+    <div class="mb-6">
+      <input type="text" id="search-input" placeholder="Search by name, image, or port..."
+        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+    </div>
 
-        /**
-         * Renders the container table based on the provided data, sort column, and sort direction.
-         * @param {Array<Object>} containers - The array of container objects.
-         * @param {string} sortColumn - The column to sort by (e.g., 'name', 'image', 'status').
-         * @param {string} sortDirection - The sort direction ('asc' or 'desc').
-         */
-        function displayContainers(containers, sortColumn, sortDirection) {
-          // Create a shallow copy to avoid modifying the original array
-          const sorted = [...containers];
+    <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">
+      <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+        <thead class="bg-gray-100">
+          <tr>
+            <th
+              class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tl-lg sortable-header"
+              data-sort-column="name">
+              Container
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
+              data-sort-column="ports">
+              Ports
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
+              data-sort-column="image">
+              Image
+            </th>
+            <th
+              class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg sortable-header"
+              data-sort-column="status">
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody id="container-rows">
+          <tr>
+            <td colspan="4" class="text-center py-8 text-gray-500">
+              Loading container data...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-          // Apply sorting based on the chosen column and direction
-          sorted.sort((a, b) => {
-            let valA = a[sortColumn];
-            let valB = b[sortColumn];
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      let allContainersData = []; // Store raw fetched data
+      let displayedContainers = []; // Store the currently filtered and sorted containers
+      let currentSortColumn = "name"; // Default sort column
+      let currentSortDirection = "asc"; // Default sort direction
+      const searchInput = document.getElementById("search-input");
+      const themeSwitcher = document.getElementById("theme-switcher");
+      const exportCsvButton = document.getElementById("export-csv-button");
+      const body = document.body;
 
-            // Special handling for status to ensure 'running' is always before 'exited' in asc, or after in desc
-            if (sortColumn === "status") {
-              const statusOrder = { running: 1, exited: 2 };
-              valA = statusOrder[valA] || 0;
-              valB = statusOrder[valB] || 0;
-            } else if (typeof valA === "string" && typeof valB === "string") {
-              // Case-insensitive string comparison
-              valA = valA.toLowerCase();
-              valB = valB.toLowerCase();
-            }
+      /**
+       * Renders the container table based on the provided data, sort column, and sort direction.
+       * @param {Array<Object>} containers - The array of container objects.
+       * @param {string} sortColumn - The column to sort by (e.g., 'name', 'image', 'status').
+       * @param {string} sortDirection - The sort direction ('asc' or 'desc').
+       */
+      function displayContainers(containers, sortColumn, sortDirection) {
+        // Create a shallow copy to avoid modifying the original array
+        const sorted = [...containers];
 
-            if (valA < valB) {
-              return sortDirection === "asc" ? -1 : 1;
-            }
-            if (valA > valB) {
-              return sortDirection === "asc" ? 1 : -1;
-            }
-            return 0;
-          });
+        // Apply sorting based on the chosen column and direction
+        sorted.sort((a, b) => {
+          let valA = a[sortColumn];
+          let valB = b[sortColumn];
 
-          displayedContainers = sorted; // Update the displayedContainers array
+          // Special handling for status to ensure 'running' is always before 'exited' in asc, or after in desc
+          if (sortColumn === "status") {
+            const statusOrder = { running: 1, exited: 2 };
+            valA = statusOrder[valA] || 0;
+            valB = statusOrder[valB] || 0;
+          } else if (sortColumn === "ports") {
+            // Sort by first host port number (numeric), or 0 if not available
+            const getFirstPort = (container) =>
+              container.ports.length > 0 ? parseInt(container.ports[0].host_port, 10) : 0;
+            valA = getFirstPort(a);
+            valB = getFirstPort(b);
+          } else if (typeof valA === "string" && typeof valB === "string") {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+          }
 
-          let html = "";
-          if (sorted.length === 0) {
-            html = `<tr><td colspan="4" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
-          } else {
-            for (const c of sorted) {
-              const statusClass =
-                c.status === "running" ? "status-running" : "status-exited";
-              const ports = c.ports.length
-                ? c.ports
-                    .map(
-                      (p) =>
-                        `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
-                    )
-                    .join("<br>")
-                : `<span class="text-muted">none</span>`;
+          if (valA < valB) {
+            return sortDirection === "asc" ? -1 : 1;
+          }
+          if (valA > valB) {
+            return sortDirection === "asc" ? 1 : -1;
+          }
+          return 0;
+        });
 
-              html += `
+        displayedContainers = sorted; // Update the displayedContainers array
+
+        let html = "";
+        if (sorted.length === 0) {
+          html = `<tr><td colspan="4" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+        } else {
+          for (const c of sorted) {
+            const statusClass =
+              c.status === "running" ? "status-running" : "status-exited";
+            const ports = c.ports.length
+              ? c.ports
+                .map(
+                  (p) =>
+                    `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
+                )
+                .join("<br>")
+              : `<span class="text-muted">none</span>`;
+
+            html += `
                             <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                                 <td class="py-3 px-4 border-b border-gray-200">
                                     <strong class="text-gray-900">${c.name}</strong><br>
@@ -467,162 +457,163 @@
                                     ${c.status}
                                 </td>
                             </tr>`;
-            }
-          }
-
-          document.getElementById("container-rows").innerHTML = html;
-
-          // Update header classes for sort indicators
-          document.querySelectorAll(".sortable-header").forEach((header) => {
-            header.classList.remove("asc", "desc");
-            if (header.dataset.sortColumn === sortColumn) {
-              header.classList.add(sortDirection);
-            }
-          });
-        }
-
-        /**
-         * Filters and displays containers based on search input and current sort settings.
-         */
-        function filterAndDisplayContainers() {
-          const searchTerm = searchInput.value.toLowerCase().trim();
-          const filteredContainers = allContainersData.filter((container) => {
-            const nameMatch = container.name.toLowerCase().includes(searchTerm);
-            const imageMatch = container.image
-              .toLowerCase()
-              .includes(searchTerm);
-            const portsMatch = container.ports.some(
-              (p) =>
-                p.host_port.toLowerCase().includes(searchTerm) ||
-                p.container_port.toLowerCase().includes(searchTerm)
-            );
-
-            return nameMatch || imageMatch || portsMatch;
-          });
-          displayContainers(
-            filteredContainers,
-            currentSortColumn,
-            currentSortDirection
-          );
-        }
-
-        // Function to fetch data from the Flask backend
-        async function fetchContainerData() {
-          try {
-            const response = await fetch("/data");
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            allContainersData = await response.json();
-            filterAndDisplayContainers();
-          } catch (error) {
-            console.error("Error fetching container data:", error);
-            document.getElementById(
-              "container-rows"
-            ).innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">Error loading data: ${error.message}. Is the Flask backend running and accessible at http://localhost:8000?</td></tr>`;
           }
         }
 
-        // --- Theme Switcher Logic ---
-        function applyTheme(theme) {
-          if (theme === "dark") {
-            body.classList.add("dark-mode");
-            themeSwitcher.textContent = "Switch to Light Mode";
-          } else {
-            body.classList.remove("dark-mode");
-            themeSwitcher.textContent = "Switch to Dark Mode";
-          }
-          localStorage.setItem("theme", theme); // Persist theme preference
-        }
+        document.getElementById("container-rows").innerHTML = html;
 
-        // Load theme preference from localStorage on page load
-        const savedTheme = localStorage.getItem("theme") || "light"; // Default to light
-        applyTheme(savedTheme);
-
-        // Toggle theme on button click
-        themeSwitcher.addEventListener("click", () => {
-          const newTheme = body.classList.contains("dark-mode")
-            ? "light"
-            : "dark";
-          applyTheme(newTheme);
-        });
-        // --- End Theme Switcher Logic ---
-
-        // --- Export to CSV Logic ---
-        exportCsvButton.addEventListener("click", () => {
-          if (displayedContainers.length === 0) {
-            alert("No data to export.");
-            return;
-          }
-
-          // Added confirmation before exporting
-          const proceed = confirm(
-            "Are you sure you want to download the CSV file?"
-          );
-          if (!proceed) {
-            return; // user cancelled, do nothing
-          }
-
-          // CSV header with selected columns only
-          let csvContent = "Container,Host Port(s),Container Port(s),Image\n";
-
-          displayedContainers.forEach((container) => {
-            const name = `"${container.name.replace(/"/g, '""')}"`;
-            const image = `"${container.image.replace(/"/g, '""')}"`;
-
-            // Join host ports with semicolon
-            const hostPorts = container.ports
-              .map((p) => p.host_port)
-              .join("; ");
-            const csvHostPorts = `"${hostPorts.replace(/"/g, '""')}"`;
-
-            // Join container ports with semicolon
-            const containerPorts = container.ports
-              .map((p) => p.container_port)
-              .join("; ");
-            const csvContainerPorts = `"${containerPorts.replace(/"/g, '""')}"`;
-
-            csvContent += `${name},${csvHostPorts},${csvContainerPorts},${image}\n`;
-          });
-
-          const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-          });
-          const link = document.createElement("a");
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", "dockpeek_containers.csv");
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-        // --- End Export to CSV Logic ---
-
-        // Initial fetch and display of containers when the page loads
-        fetchContainerData();
-
-        // Add event listeners for sorting
+        // Update header classes for sort indicators
         document.querySelectorAll(".sortable-header").forEach((header) => {
-          header.addEventListener("click", () => {
-            const column = header.dataset.sortColumn;
-            if (column === currentSortColumn) {
-              currentSortDirection =
-                currentSortDirection === "asc" ? "desc" : "asc";
-            } else {
-              currentSortColumn = column;
-              currentSortDirection = "asc";
-            }
-            filterAndDisplayContainers();
-          });
+          header.classList.remove("asc", "desc");
+          if (header.dataset.sortColumn === sortColumn) {
+            header.classList.add(sortDirection);
+          }
+        });
+      }
+
+      /**
+       * Filters and displays containers based on search input and current sort settings.
+       */
+      function filterAndDisplayContainers() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const filteredContainers = allContainersData.filter((container) => {
+          const nameMatch = container.name.toLowerCase().includes(searchTerm);
+          const imageMatch = container.image
+            .toLowerCase()
+            .includes(searchTerm);
+          const portsMatch = container.ports.some(
+            (p) =>
+              p.host_port.toLowerCase().includes(searchTerm) ||
+              p.container_port.toLowerCase().includes(searchTerm)
+          );
+
+          return nameMatch || imageMatch || portsMatch;
+        });
+        displayContainers(
+          filteredContainers,
+          currentSortColumn,
+          currentSortDirection
+        );
+      }
+
+      // Function to fetch data from the Flask backend
+      async function fetchContainerData() {
+        try {
+          const response = await fetch("/data");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          allContainersData = await response.json();
+          filterAndDisplayContainers();
+        } catch (error) {
+          console.error("Error fetching container data:", error);
+          document.getElementById(
+            "container-rows"
+          ).innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">Error loading data: ${error.message}. Is the Flask backend running and accessible at http://localhost:8000?</td></tr>`;
+        }
+      }
+
+      // --- Theme Switcher Logic ---
+      function applyTheme(theme) {
+        if (theme === "dark") {
+          body.classList.add("dark-mode");
+          themeSwitcher.textContent = "Switch to Light Mode";
+        } else {
+          body.classList.remove("dark-mode");
+          themeSwitcher.textContent = "Switch to Dark Mode";
+        }
+        localStorage.setItem("theme", theme); // Persist theme preference
+      }
+
+      // Load theme preference from localStorage on page load
+      const savedTheme = localStorage.getItem("theme") || "light"; // Default to light
+      applyTheme(savedTheme);
+
+      // Toggle theme on button click
+      themeSwitcher.addEventListener("click", () => {
+        const newTheme = body.classList.contains("dark-mode")
+          ? "light"
+          : "dark";
+        applyTheme(newTheme);
+      });
+      // --- End Theme Switcher Logic ---
+
+      // --- Export to CSV Logic ---
+      exportCsvButton.addEventListener("click", () => {
+        if (displayedContainers.length === 0) {
+          alert("No data to export.");
+          return;
+        }
+
+        // Added confirmation before exporting
+        const proceed = confirm(
+          "Are you sure you want to download the CSV file?"
+        );
+        if (!proceed) {
+          return; // user cancelled, do nothing
+        }
+
+        // CSV header with selected columns only
+        let csvContent = "Container,Host Port(s),Container Port(s),Image\n";
+
+        displayedContainers.forEach((container) => {
+          const name = `"${container.name.replace(/"/g, '""')}"`;
+          const image = `"${container.image.replace(/"/g, '""')}"`;
+
+          // Join host ports with semicolon
+          const hostPorts = container.ports
+            .map((p) => p.host_port)
+            .join("; ");
+          const csvHostPorts = `"${hostPorts.replace(/"/g, '""')}"`;
+
+          // Join container ports with semicolon
+          const containerPorts = container.ports
+            .map((p) => p.container_port)
+            .join("; ");
+          const csvContainerPorts = `"${containerPorts.replace(/"/g, '""')}"`;
+
+          csvContent += `${name},${csvHostPorts},${csvContainerPorts},${image}\n`;
         });
 
-        // Add event listener for search input
-        searchInput.addEventListener("input", filterAndDisplayContainers);
-
-        // Optional: Auto-refresh data every 5 seconds
-        // setInterval(fetchContainerData, 5000);
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "dockpeek_containers.csv");
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
-    </script>
-  </body>
+      // --- End Export to CSV Logic ---
+
+      // Initial fetch and display of containers when the page loads
+      fetchContainerData();
+
+      // Add event listeners for sorting
+      document.querySelectorAll(".sortable-header").forEach((header) => {
+        header.addEventListener("click", () => {
+          const column = header.dataset.sortColumn;
+          if (column === currentSortColumn) {
+            currentSortDirection =
+              currentSortDirection === "asc" ? "desc" : "asc";
+          } else {
+            currentSortColumn = column;
+            currentSortDirection = "asc";
+          }
+          filterAndDisplayContainers();
+        });
+      });
+
+      // Add event listener for search input
+      searchInput.addEventListener("input", filterAndDisplayContainers);
+
+      // Optional: Auto-refresh data every 5 seconds
+      // setInterval(fetchContainerData, 5000);
+    });
+  </script>
+</body>
+
 </html>

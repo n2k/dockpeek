@@ -42,9 +42,13 @@ def load_user(user_id):
         return User(user_id)
     return None
 
+@login_manager.unauthorized_handler
+def unauthorized_callback():
+    return redirect(url_for('login'))
+
 # === Docker Client Init ===
 try:
-    docker_host = os.environ.get("DOCKER_HOST", "unix://var/run/docker.sock")
+    docker_host = os.environ.get("DOCKER_HOST", "unix:///var/run/docker.sock")
     client = docker.DockerClient(base_url=docker_host)
     client.ping()
     print("✅ Connected to Docker daemon.")

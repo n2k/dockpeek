@@ -1,23 +1,23 @@
-# Wybieramy lekką wersję obrazu z Pythonem
+# Use a lightweight Python base image
 FROM python:3.11-slim
 
-# Ustawiamy zmienną środowiskową aby nie buforować logów (Flask lepiej loguje)
+# Set environment variable to disable output buffering (improves Flask logging)
 ENV PYTHONUNBUFFERED=1
 
-# Tworzymy katalog dla aplikacji i ustawiamy go jako roboczy
+# Create app directory and set it as the working directory
 WORKDIR /app
 
-# Kopiujemy pliki zależności
+# Copy dependency files
 COPY requirements.txt .
 
-# Instalujemy zależności
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiujemy cały kod aplikacji do kontenera
+# Copy the entire application code into the container
 COPY . .
 
-# Opcjonalnie: port na którym działa Flask (można go też zadeklarować w docker-compose)
+# Optional: expose the port Flask runs on (can also be declared in docker-compose)
 EXPOSE 8000
 
-# Domyślnie uruchamiamy aplikację Flask
+# Default command to run the Flask app
 CMD ["python", "app.py"]

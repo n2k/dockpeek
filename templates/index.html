@@ -319,13 +319,17 @@
           class="text-gray-400 hover:text-gray-500 no-underline mr-4">
           GitHub
         </a>
-        <button id="export-json-button"
-          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
-          Export to JSON
+        <button id="theme-switcher" title="Switch Theme"
+          class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+          <span id="theme-icon"> </span>
         </button>
-        <button id="theme-switcher"
-          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
-          Switch to Dark Mode
+        <button id="export-json-button"
+          class="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v6m0 0l-3-3m3 3l3-3m-6-9h6" />
+          </svg>
+          <span>Export to JSON</span>
         </button>
         <a href="/logout" id="logout-button"
           class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75">
@@ -339,12 +343,12 @@
         class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
     </div>
 
-    <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">
-      <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+    <div id="container-table-wrapper"
+      class="overflow-x-auto rounded-lg overflow-hidden border-t border-x border-gray-200">
+      <table class="min-w-full bg-white">
         <thead class="bg-gray-100">
           <tr>
-            <th
-              class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tl-lg sortable-header"
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
               data-sort-column="name">
               Container
             </th>
@@ -356,8 +360,7 @@
               data-sort-column="image">
               Image
             </th>
-            <th
-              class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 rounded-tr-lg sortable-header"
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
               data-sort-column="status">
               Status
             </th>
@@ -376,41 +379,43 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      let allContainersData = []; // Store raw fetched data
-      let displayedContainers = []; // Store the currently filtered and sorted containers
-      let currentSortColumn = "name"; // Default sort column
-      let currentSortDirection = "asc"; // Default sort direction
+      let allContainersData = []; // Stores the raw fetched container data.
+      let displayedContainers = []; // Stores the currently filtered and sorted containers for display.
+      let currentSortColumn = "name"; // Default column for sorting.
+      let currentSortDirection = "asc"; // Default sorting direction.
       const searchInput = document.getElementById("search-input");
-      const themeSwitcher = document.getElementById("theme-switcher");
       const body = document.body;
 
       /**
        * Renders the container table based on the provided data, sort column, and sort direction.
-       * @param {Array<Object>} containers - The array of container objects.
+       * @param {Array<Object>} containers - The array of container objects to display.
        * @param {string} sortColumn - The column to sort by (e.g., 'name', 'image', 'status').
        * @param {string} sortDirection - The sort direction ('asc' or 'desc').
        */
       function displayContainers(containers, sortColumn, sortDirection) {
-        // Create a shallow copy to avoid modifying the original array
+        // Create a shallow copy to avoid modifying the original array during sorting.
         const sorted = [...containers];
 
-        // Apply sorting based on the chosen column and direction
+        // Apply sorting based on the chosen column and direction.
         sorted.sort((a, b) => {
           let valA = a[sortColumn];
           let valB = b[sortColumn];
 
-          // Special handling for status to ensure 'running' is always before 'exited' in asc, or after in desc
+          // Special handling for status to ensure 'running' is always before 'exited' (or vice-versa).
           if (sortColumn === "status") {
             const statusOrder = { running: 1, exited: 2 };
             valA = statusOrder[valA] || 0;
             valB = statusOrder[valB] || 0;
           } else if (sortColumn === "ports") {
-            // Sort by first host port number (numeric), or 0 if not available
+            // Sort by the first host port number (numeric), or 0 if not available.
             const getFirstPort = (container) =>
-              container.ports.length > 0 ? parseInt(container.ports[0].host_port, 10) : 0;
+              container.ports.length > 0
+                ? parseInt(container.ports[0].host_port, 10)
+                : 0;
             valA = getFirstPort(a);
             valB = getFirstPort(b);
           } else if (typeof valA === "string" && typeof valB === "string") {
+            // Perform case-insensitive string comparison for other columns.
             valA = valA.toLowerCase();
             valB = valB.toLowerCase();
           }
@@ -424,7 +429,7 @@
           return 0;
         });
 
-        displayedContainers = sorted; // Update the displayedContainers array
+        displayedContainers = sorted; // Update the array holding currently displayed containers.
 
         let html = "";
         if (sorted.length === 0) {
@@ -440,7 +445,7 @@
                     `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
                 )
                 .join("<br>")
-              : `<span class="text-muted">none</span>`;
+              : `<span class="text-muted" style="padding-left: 15px;">none</span>`;
 
             html += `
                             <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
@@ -462,7 +467,7 @@
 
         document.getElementById("container-rows").innerHTML = html;
 
-        // Update header classes for sort indicators
+        // Update header classes to show sort indicators (arrow up/down).
         document.querySelectorAll(".sortable-header").forEach((header) => {
           header.classList.remove("asc", "desc");
           if (header.dataset.sortColumn === sortColumn) {
@@ -472,7 +477,8 @@
       }
 
       /**
-       * Filters and displays containers based on search input and current sort settings.
+       * Filters containers based on the search input value and then displays them
+       * according to the current sort settings.
        */
       function filterAndDisplayContainers() {
         const searchTerm = searchInput.value.toLowerCase().trim();
@@ -496,7 +502,9 @@
         );
       }
 
-      // Function to fetch data from the Flask backend
+      /**
+       * Fetches container data from the Flask backend.
+       */
       async function fetchContainerData() {
         try {
           const response = await fetch("/data");
@@ -504,7 +512,7 @@
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           allContainersData = await response.json();
-          filterAndDisplayContainers();
+          filterAndDisplayContainers(); // Filter and display data after fetching.
         } catch (error) {
           console.error("Error fetching container data:", error);
           document.getElementById(
@@ -514,29 +522,56 @@
       }
 
       // --- Theme Switcher Logic ---
+      const themeSwitcher = document.getElementById("theme-switcher");
+      const themeIcon = document.getElementById("theme-icon");
+
+      /**
+       * Applies the selected theme to the body and updates the theme icon.
+       * @param {string} theme - The theme to apply ('dark' or 'light').
+       */
       function applyTheme(theme) {
         if (theme === "dark") {
           body.classList.add("dark-mode");
-          themeSwitcher.textContent = "Switch to Light Mode";
+          themeIcon.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 0111.21 3
+                         7 7 0 0012 21c4.97 0 9-4.03
+                         9-9 0-.07 0-.14-.01-.21z" />
+              </svg>
+            `; // Moon icon
         } else {
           body.classList.remove("dark-mode");
-          themeSwitcher.textContent = "Switch to Dark Mode";
+          themeIcon.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="4" />
+                <line x1="12" y1="2" x2="12" y2="4" />
+                <line x1="12" y1="20" x2="12" y2="22" />
+                <line x1="5" y1="5" x2="6.5" y2="6.5" />
+                <line x1="17.5" y1="17.5" x2="19" y2="19" />
+                <line x1="2" y1="12" x2="4" y2="12" />
+                <line x1="20" y1="12" x2="22" y2="12" />
+                <line x1="5" y1="19" x2="6.5" y2="17.5" />
+                <line x1="17.5" y1="6.5" x2="19" y2="5" />
+              </svg>
+            `; // Sun icon
         }
-        localStorage.setItem("theme", theme); // Persist theme preference
-      }
 
-      // Load theme preference from localStorage on page load
-      const savedTheme = localStorage.getItem("theme") || "light"; // Default to light
+        localStorage.setItem("theme", theme); // Save theme preference to local storage.
+      }
+      // --- End Theme Switcher Logic ---
+
+      // Load saved theme preference or default to 'dark'.
+      const savedTheme = localStorage.getItem("theme") || "dark";
       applyTheme(savedTheme);
 
-      // Toggle theme on button click
+      // Toggle theme on button click.
       themeSwitcher.addEventListener("click", () => {
         const newTheme = body.classList.contains("dark-mode")
           ? "light"
           : "dark";
         applyTheme(newTheme);
       });
-      // --- End Theme Switcher Logic ---
 
       // --- Export to JSON Logic ---
       const exportJsonButton = document.getElementById("export-json-button");
@@ -547,44 +582,49 @@
           return;
         }
 
-        const proceed = confirm("Are you sure you want to download the JSON file?");
+        const proceed = confirm(
+          "Are you sure you want to download the JSON file?"
+        );
         if (!proceed) return;
 
+        // Convert displayed container data to a JSON string with pretty printing.
         const jsonContent = JSON.stringify(displayedContainers, null, 2);
         const blob = new Blob([jsonContent], { type: "application/json" });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", "dockpeek_containers.json");
-        link.style.visibility = "hidden";
+        link.setAttribute("download", "dockpeek_containers.json"); // Set the download file name.
+        link.style.visibility = "hidden"; // Hide the link.
         document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        link.click(); // Programmatically click the link to trigger download.
+        document.body.removeChild(link); // Clean up the temporary link.
       });
       // --- End Export to JSON Logic ---
 
-      // Initial fetch and display of containers when the page loads
+      // Initial fetch and display of containers when the page loads.
       fetchContainerData();
 
-      // Add event listeners for sorting
+      // Add event listeners for sorting table headers.
       document.querySelectorAll(".sortable-header").forEach((header) => {
         header.addEventListener("click", () => {
           const column = header.dataset.sortColumn;
           if (column === currentSortColumn) {
+            // If the same column is clicked, toggle sort direction.
             currentSortDirection =
               currentSortDirection === "asc" ? "desc" : "asc";
           } else {
+            // If a new column is clicked, set it as the sort column and default to ascending.
             currentSortColumn = column;
             currentSortDirection = "asc";
           }
-          filterAndDisplayContainers();
+          filterAndDisplayContainers(); // Re-filter and display with new sort settings.
         });
       });
 
-      // Add event listener for search input
+      // Add event listener for search input to filter containers in real-time.
       searchInput.addEventListener("input", filterAndDisplayContainers);
 
-      // Optional: Auto-refresh data every 5 seconds
+      // Optional: Auto-refresh data every 5 seconds (uncomment to enable).
       // setInterval(fetchContainerData, 5000);
     });
   </script>

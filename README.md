@@ -18,7 +18,7 @@
 ## 📸 Screenshots
 
 <p align="left">
-  <img src="dockpeek_night_mode.png" alt="Night mode" width="800" />
+  <img src="screenshot.png" alt="Night mode" width="800" />
 </p>
 
 ---
@@ -38,9 +38,9 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key # <--- REQUIRED CHANGE TO A UNIQUE VALUE!
-      - USERNAME=admin         # <--- REQUIRED CHANGE!
-      - PASSWORD=admin         # <--- REQUIRED CHANGE!
+      - SECRET_KEY=my_secret_key   # Set a strong secret key
+      - USERNAME=admin             # Change default username
+      - PASSWORD=admin             # Change default password
       - DOCKER_HOST=tcp://socket-proxy:2375
     ports:
       - "3420:8000"
@@ -52,8 +52,8 @@ services:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: socket-proxy
     environment:
-      - CONTAINERS=1 # Enables access to Container API
-      - IMAGES=1     # Enables access to Image API
+      - CONTAINERS=1
+      - IMAGES=1
       - PING=1
       - VERSION=1
       - LOG_LEVEL=info
@@ -78,9 +78,9 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key # <--- REQUIRED CHANGE TO A UNIQUE VALUE!
-      - USERNAME=admin         # <--- REQUIRED CHANGE!
-      - PASSWORD=admin         # <--- REQUIRED CHANGE!
+      - SECRET_KEY=my_secret_key   # Set a strong secret key
+      - USERNAME=admin             # Change default username
+      - PASSWORD=admin             # Change default password
     ports:
       - "3420:8000"
     volumes:

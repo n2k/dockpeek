@@ -24,30 +24,31 @@
     }
 
     .logo-title {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
       color: #e1e4e8;
     }
     body.dark-mode .logo-title {
       color: #2a2f37;
     }
     .github {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
       color: #acb1b9;
     }
     body.dark-mode .github {
-      color: #40444d;
+      color: #6a737d;
     }
 
     .status-none {
-      color: #d3d6db;
+      color: #b8bcc3;
     }
 
     body.dark-mode .status-none {
-      color: #2d3139;
+      color: #474c55;
+    }
+
+     .data-content-name {
+      color: #30363d;
+    }
+    body.dark-mode .data-content-name {
+      color: #c9d1d9;
     }
 
     .text-gray-800 {
@@ -448,7 +449,7 @@
 
   <template id="container-row-template">
     <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
-      <td class="py-3 px-4 border-b border-gray-200 font-bold text-gray-900" data-content="name">
+      <td class="data-content-name py-3 px-4 border-b border-gray-200 font-bold" data-content="name">
       </td>
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>

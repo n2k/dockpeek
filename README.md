@@ -2,35 +2,36 @@
 
 # dockpeek
 
-**dockpeek** is a lightweight web-based dashboard for quickly checking the status and port mappings of your Docker containers. It provides a simple interface to monitor your Dockerized services.
+**dockpeek** is a lightweight, dashboard for monitoring Docker containers. With an simple UI and built-in authentication, it allows users to inspect container statuses and port mappings securely.
 
 ---
 
-## ✨ Key Features
+## Features
 
--   **Port Mapping Visibility**: Clearly see host ports and their corresponding container ports, simplifying service access and networking.
--   **Container Overview**: Get a quick glance at all your Docker containers.
--   **Basic Authentication**: A simple username/password login secures access to your dashboard.
--   **Secure Docker Socket Access**: Utilizes a secure proxy (socket-proxy) for Docker API communication, limiting `dockpeek`'s permissions to only essential read-only operations.
+* **Port Mapping Visibility** — Maps host → container ports with clickable links
+* **Container Overview** — Instantly see all running/stopped containers
+* **Security-Oriented Design** — Supports `socket-proxy` for read-only Docker access
+* **Export Data** — Easily export container information in JSON format
+* **Login Authentication** — Simple username/password access
+* **Dark Mode Support** — Theme toggle with persistence
 
 ---
 
 ## 📸 Screenshots
 
 <p align="left">
-  <img src="screenshot.png" alt="Night mode" width="800" />
+  <img src="screenshot.png" alt="Night mode" width="800" />
 </p>
 
 ---
 
-## Installation & Usage
-💡 Deployment Options
+## Getting Started
 
-`dockpeek` can be deployed in two ways. **It is strongly recommended to use the configuration with `socket-proxy` due to enhanced security.**
+### Deployment Options
 
-#### Recommended Configuration (with `socket-proxy`)
+> **Recommended:** Use `socket-proxy` for secure access to Docker API.
 
-This configuration is recommended as it utilizes the `socket-proxy` container as a secure intermediary for accessing the Docker daemon. `socket-proxy` limits `dockpeek`'s permissions exclusively to essential read-only operations (e.g., viewing containers and images), thereby minimizing potential security risks.
+### 🔧 Option 1: Secure Setup (with `socket-proxy`)
 
 ```yaml
 services:
@@ -38,19 +39,19 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Set a strong secret key
+      - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username
       - PASSWORD=admin             # Change default password
-      - DOCKER_HOST=tcp://socket-proxy:2375
+      - DOCKER_HOST=tcp://dockpeek-socket-proxy:2375
     ports:
       - "3420:8000"
     depends_on:
-      - socket-proxy
+      - dockpeek-socket-proxy
     restart: unless-stopped
 
-  socket-proxy:
+  dockpeek-socket-proxy:
     image: lscr.io/linuxserver/socket-proxy:latest
-    container_name: socket-proxy
+    container_name: dockpeek-socket-proxy
     environment:
       - CONTAINERS=1
       - IMAGES=1
@@ -58,19 +59,18 @@ services:
       - VERSION=1
       - LOG_LEVEL=info
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
     tmpfs:
       - /run
     ports:
       - "2375:2375"
     restart: unless-stopped
-
 ```
 
-#### Alternative Configuration (without `socket-proxy` - **NOT RECOMMENDED!**)
+### Option 2: Direct Access (without proxy)
 
-This configuration is simpler but carries significant security risks, as `dockpeek` gains full access to the host's Docker daemon.
+> **⚠️ Not Recommended:** Grants full access to Docker Socket.
 
 ```yaml
 services:
@@ -78,7 +78,7 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Set a strong secret key
+      - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username
       - PASSWORD=admin             # Change default password
     ports:

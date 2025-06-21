@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import docker
 from flask_cors import CORS
@@ -7,6 +8,7 @@ from flask_login import (
     logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from urllib.parse import urlparse
 
 # === Flask Init ===
 app = Flask(__name__)
@@ -47,54 +49,103 @@ def unauthorized_callback():
     return redirect(url_for('login'))
 
 # === Docker Client Init ===
-try:
-    docker_host = os.environ.get("DOCKER_HOST", "unix:///var/run/docker.sock")
-    client = docker.DockerClient(base_url=docker_host)
-    client.ping()
-    print("✅ Connected to Docker daemon.")
-except Exception as e:
-    print(f"❌ Error connecting to Docker daemon: {e}")
-    client = None
+clients = []
+# Support for DOCKER_HOST for backward compatibility
+if "DOCKER_HOST" in os.environ:
+    host_url = os.environ.get("DOCKER_HOST")
+    public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
+    try:
+        client = docker.DockerClient(base_url=host_url)
+        client.ping()
+        clients.append({"name": "default", "client": client, "url": host_url, "public_hostname": public_hostname})
+        print(f"✅ Connected to default Docker daemon at {host_url}")
+    except Exception as e:
+        print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
+
+# Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
+host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
+for key, url in host_vars.items():
+    match = re.match(r"^DOCKER_HOST_(\d+)_URL$", key)
+    if match:
+        num = match.group(1)
+        name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
+        public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
+        try:
+            client = docker.DockerClient(base_url=url)
+            client.ping()
+            clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname})
+            print(f"✅ Connected to Docker daemon '{name}' at {url}")
+        except Exception as e:
+            print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
+
+if not clients:
+    print("⚠️ No Docker hosts configured. Trying local socket...")
+    try:
+        client = docker.from_env()
+        client.ping()
+        # For local socket, the URL scheme is unix, hostname will be localhost
+        clients.append({"name": "localhost", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
+        print("✅ Connected to local Docker daemon via socket.")
+    except Exception as e:
+        print(f"❌ Failed to connect to any Docker daemon: {e}")
+
 
 # === Helpers ===
 def get_container_data():
-    if client is None:
+    if not clients:
         return []
 
-    try:
-        containers = client.containers.list(all=True)
-    except Exception as e:
-        print(f"Error retrieving container list: {e}")
-        return []
+    all_data = []
+    for host in clients:
+        server_name = host["name"]
+        client = host["client"]
+        server_url_str = host["url"]
+        public_hostname = host["public_hostname"]
 
-    data = []
-    for container in containers:
-        ports = container.attrs['NetworkSettings']['Ports']
-        port_map = []
+        # Determine the hostname for links
+        link_hostname = "localhost" # Default value
+        if public_hostname:
+            link_hostname = public_hostname
+        else:
+            parsed_url = urlparse(server_url_str)
+            if parsed_url.hostname:
+                link_hostname = parsed_url.hostname
 
-        if ports:
-            for container_port, mappings in ports.items():
-                if mappings:
-                    m = mappings[0]
-                    host_ip = m['HostIp']
-                    host_port = m['HostPort']
-                    link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
-                    link = f"http://{link_ip}:{host_port}"
-                    port_map.append({
-                        'container_port': container_port,
-                        'host_port': host_port,
-                        'link': link
-                    })
+        try:
+            containers = client.containers.list(all=True)
+        except Exception as e:
+            print(f"Error retrieving container list from '{server_name}': {e}")
+            continue # Skip this host and move to the next
 
-        data.append({
-            'name': container.name,
-            'id': container.short_id,
-            'status': container.status,
-            'image': container.image.tags[0] if container.image.tags else "none",
-            'ports': port_map
-        })
+        for container in containers:
+            ports = container.attrs['NetworkSettings']['Ports']
+            port_map = []
 
-    return data
+            if ports:
+                for container_port, mappings in ports.items():
+                    if mappings:
+                        m = mappings[0]
+                        host_port = m['HostPort']
+                        
+                        # Use the determined hostname to build the link
+                        link = f"http://{link_hostname}:{host_port}"
+                        
+                        port_map.append({
+                            'container_port': container_port,
+                            'host_port': host_port,
+                            'link': link
+                        })
+
+            all_data.append({
+                'server': server_name,
+                'name': container.name,
+                'id': container.short_id,
+                'status': container.status,
+                'image': container.image.tags[0] if container.image.tags else "none",
+                'ports': port_map
+            })
+
+    return all_data
 
 # === Routes ===
 

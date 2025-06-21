@@ -181,6 +181,39 @@
       border-radius: 0.25rem;
       font-size: 0.875rem;
     }
+    
+    .filter-button {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        background-color: #e1e4e8;
+        color: #24292e;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .filter-button.active {
+        background-color: #2188ff;
+        color: white;
+        box-shadow: 0 0 0 2px rgba(33, 136, 255, 0.5);
+    }
+
+    body.dark-mode .filter-button {
+        background-color: #21262d;
+        color: #c9d1d9;
+    }
+
+    body.dark-mode .filter-button.active {
+        background-color: #2188ff;
+        color: white;
+    }
+    
+    /* === NOWE STYLE DO UKRYWANIA KOLUMNY === */
+    .table-single-server .server-column {
+        display: none;
+    }
+    /* === KONIEC NOWYCH STYLI === */
+
 
     /* Dark Mode Styles */
     body.dark-mode {
@@ -299,6 +332,12 @@
       td.table-cell-status {
         display: none;
       }
+      
+      /* Also hide server column on mobile if it's not already hidden */
+      .server-column {
+          display: none;
+      }
+
 
       .py-3.px-4 {
         padding: 0.5rem 0.75rem;
@@ -345,22 +384,17 @@
 
     body.dark-mode #modal-cancel-button {
       background-color: #21262d;
-      /* Darker background for dark mode */
       color: #c9d1d9;
-      /* Lighter text for dark mode */
     }
 
     body.dark-mode #modal-cancel-button:hover {
       background-color: #30363d;
-      /* Even darker on hover in dark mode */
     }
 
     /* Loading Spinner */
     .loader {
       border: 4px solid #f3f3f3;
-      /* Light grey */
       border-top: 4px solid #3498db;
-      /* Blue */
       border-radius: 50%;
       width: 40px;
       height: 40px;
@@ -414,17 +448,24 @@
     </div>
 
     <div class="mb-6">
-      <input type="text" id="search-input" placeholder="Search by name, image, or port..."
+      <input type="text" id="search-input" placeholder="Search by name, image, port, or server..."
         class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
     </div>
 
+    <div id="server-filter-container" class="mb-4 flex flex-wrap gap-2"></div>
+
+
     <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">
-      <table class="min-w-full bg-white border border-gray-200">
+      <table id="main-table" class="min-w-full bg-white border border-gray-200">
         <thead class="bg-gray-100">
           <tr>
             <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
               data-sort-column="name">
               Container
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header server-column"
+              data-sort-column="server">
+              Server
             </th>
             <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
               data-sort-column="ports">
@@ -450,6 +491,8 @@
   <template id="container-row-template">
     <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
       <td class="data-content-name py-3 px-4 border-b border-gray-200 font-bold" data-content="name">
+      </td>
+      <td class="py-3 px-4 border-b border-gray-200 server-column" data-content="server">
       </td>
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>
@@ -482,18 +525,21 @@
       let filteredAndSortedContainers = []; // Data after filtering and sorting
       let currentSortColumn = "name";
       let currentSortDirection = "asc";
+      let currentServerFilter = "all";
 
       // --- DOM ELEMENT SELECTORS ---
       const searchInput = document.getElementById("search-input");
       const containerRowsBody = document.getElementById("container-rows");
       const body = document.body;
       const rowTemplate = document.getElementById("container-row-template");
+      const serverFilterContainer = document.getElementById("server-filter-container");
+      const mainTable = document.getElementById("main-table");
 
       /**
        * Shows a loading indicator in the table body.
        */
       function showLoadingIndicator() {
-        containerRowsBody.innerHTML = `<tr><td colspan="4"><div class="loader"></div></td></tr>`;
+        containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
       }
 
       /**
@@ -501,22 +547,23 @@
        * @param {string} message - The error message to display.
        */
       function displayError(message) {
-        containerRowsBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">${message}</td></tr>`;
+        containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
       }
 
       /**
        * Renders the container table using the HTML template.
        */
       function renderTable() {
-        containerRowsBody.innerHTML = ""; // Clear previous content
+        containerRowsBody.innerHTML = "";
 
         const pageItems = filteredAndSortedContainers;
 
         if (pageItems.length === 0) {
-          if (searchInput.value) {
-            containerRowsBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+          const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
+          if (searchInput.value || currentServerFilter !== 'all') {
+            containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
           } else {
-            containerRowsBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
+            containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
           }
           return;
         }
@@ -526,6 +573,7 @@
           const clone = rowTemplate.content.cloneNode(true);
 
           clone.querySelector('[data-content="name"]').textContent = c.name;
+          clone.querySelector('[data-content="server"]').textContent = c.server;
           clone.querySelector('[data-content="image"]').textContent = c.image;
 
           const statusCell = clone.querySelector('[data-content="status"]');
@@ -544,20 +592,83 @@
         }
         containerRowsBody.appendChild(fragment);
       }
+      
+      /**
+       * Renders server filter buttons and manages server column visibility.
+       */
+      function setupServerUI() {
+        serverFilterContainer.innerHTML = '';
+        const serverNames = [...new Set(allContainersData.map(c => c.server))];
+        
+        // Zdecyduj, czy pokazać kolumnę serwera i filtry
+        if (serverNames.length > 1) {
+            mainTable.classList.remove('table-single-server');
+
+            // Utwórz przycisk "Wszystkie"
+            const allButton = document.createElement('button');
+            allButton.textContent = 'All';
+            allButton.dataset.server = 'all';
+            allButton.className = 'filter-button';
+            serverFilterContainer.appendChild(allButton);
+
+            // Utwórz przyciski dla każdego serwera
+            serverNames.forEach(name => {
+                const button = document.createElement('button');
+                button.textContent = name;
+                button.dataset.server = name;
+                button.className = 'filter-button';
+                serverFilterContainer.appendChild(button);
+            });
+
+            // Dodaj Event Listenery do przycisków
+            serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentServerFilter = button.dataset.server;
+                    updateDisplay();
+                });
+            });
+        } else {
+            mainTable.classList.add('table-single-server');
+        }
+        
+        updateActiveButton();
+      }
+      
+      /**
+       * Updates the visual state of the active filter button.
+       */
+      function updateActiveButton() {
+          serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
+              if (button.dataset.server === currentServerFilter) {
+                  button.classList.add('active');
+              } else {
+                  button.classList.remove('active');
+              }
+          });
+      }
+
 
       /**
        * Sorts and filters the container list, then triggers a re-render.
        */
       function updateDisplay() {
+        let workingData = [...allContainersData];
+
+        if (currentServerFilter !== "all") {
+            workingData = workingData.filter(c => c.server === currentServerFilter);
+        }
+
         const searchTerm = searchInput.value.toLowerCase().trim();
+        if (searchTerm) {
+            workingData = workingData.filter(c =>
+              c.name.toLowerCase().includes(searchTerm) ||
+              c.image.toLowerCase().includes(searchTerm) ||
+              c.server.toLowerCase().includes(searchTerm) ||
+              c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
+            );
+        }
 
-        const filtered = allContainersData.filter(c =>
-          c.name.toLowerCase().includes(searchTerm) ||
-          c.image.toLowerCase().includes(searchTerm) ||
-          c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
-        );
-
-        filtered.sort((a, b) => {
+        workingData.sort((a, b) => {
           let valA = a[currentSortColumn];
           let valB = b[currentSortColumn];
 
@@ -579,8 +690,9 @@
           return 0;
         });
 
-        filteredAndSortedContainers = filtered;
+        filteredAndSortedContainers = workingData;
         renderTable();
+        updateActiveButton();
       }
 
       /**
@@ -606,6 +718,7 @@
             throw new Error(errorMsg);
           }
           allContainersData = await response.json();
+          setupServerUI(); // ZBUDUJ FILTRY I ZARZĄDZAJ WIDOCZNOŚCIĄ KOLUMNY
           updateDisplay();
         } catch (error) {
           console.error("Error fetching container data:", error);
@@ -705,7 +818,6 @@
             currentSortColumn = column;
             currentSortDirection = "asc";
           }
-          // Update header classes for sort direction indicator
           document.querySelectorAll(".sortable-header").forEach(h => h.classList.remove('asc', 'desc'));
           header.classList.add(currentSortDirection);
 

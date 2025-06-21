@@ -102,15 +102,6 @@ def get_container_data():
         server_url_str = host["url"]
         public_hostname = host["public_hostname"]
 
-        # Determine the hostname for links
-        link_hostname = "localhost" # Default value
-        if public_hostname:
-            link_hostname = public_hostname
-        else:
-            parsed_url = urlparse(server_url_str)
-            if parsed_url.hostname:
-                link_hostname = parsed_url.hostname
-
         try:
             containers = client.containers.list(all=True)
         except Exception as e:
@@ -127,8 +118,20 @@ def get_container_data():
                         m = mappings[0]
                         host_port = m['HostPort']
                         
-                        # Use the determined hostname to build the link
-                        link = f"http://{link_hostname}:{host_port}"
+                        if server_name == "default":
+                            host_ip = m.get('HostIp', '0.0.0.0') # Get HostIp, default to '0.0.0.0' if not present
+                            link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
+                            link = f"http://{link_ip}:{host_port}"
+                        else:
+                            # Determine the hostname for links for non-default clients
+                            link_hostname = "localhost" # Default value
+                            if public_hostname:
+                                link_hostname = public_hostname
+                            else:
+                                parsed_url = urlparse(server_url_str)
+                                if parsed_url.hostname:
+                                    link_hostname = parsed_url.hostname
+                            link = f"http://{link_hostname}:{host_port}"
                         
                         port_map.append({
                             'container_port': container_port,

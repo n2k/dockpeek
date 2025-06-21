@@ -4,24 +4,28 @@ services:
     build:
       context: . 
     environment:
-      - SECRET_KEY=your_very_secret_key_here # Change to a unique, strong key
-      - USERNAME=admin                       # Change the default username
-      - PASSWORD=admin                       # Change the default password
-      - DOCKER_HOST=tcp://socket-proxy:2375  # Docker endpoint, defaults to proxy
-      # Add or modify entries for other Docker hosts (optional)
+      - SECRET_KEY=your_very_secret_key_here
+      - USERNAME=admin                      
+      - PASSWORD=admin
+      - DOCKER_HOST=tcp://socket-proxy:2375
+
+    #  # Add or modify entries for other Docker hosts (optional)
+    # Host 1
       - DOCKER_HOST_1_URL=tcp://192.168.1.168:2375 # URL of the first host
       - DOCKER_HOST_1_NAME=Synology # Display name for the first host
       - DOCKER_HOST_1_PUBLIC_HOSTNAME=
+    # Docker 2    
       - DOCKER_HOST_2_URL=unix:///var/run/docker.sock # URL of the second host
       - DOCKER_HOST_2_NAME=StagingEnvironment # Display name
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=
-      # ...DOCKER_HOST_3_URL, DOCKER_HOST_3_NAME, DOCKER_HOST_3_PUBLIC_HOSTNAME etc.
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=pisi
+    # Docker 3 ... etc. 
+    
     ports:
       - "3420:8000"
     depends_on:
       - socket-proxy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro 
+  #  volumes:
+  #    - /var/run/docker.sock:/var/run/docker.sock:ro 
 
   socket-proxy:
     image: lscr.io/linuxserver/socket-proxy:latest

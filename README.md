@@ -87,3 +87,24 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 ```
+```yaml
+
+environment:
+  - SECRET_KEY=your_very_secret_key_here # **Required:** Change this to a unique, strong key for session management.
+  - USERNAME=admin                       # **Required:** Change the default username for login.
+  - PASSWORD=admin                       # **Required:** Change the default password for the specified username.
+  - DOCKER_HOST=tcp://socket-proxy:2375  # **Optional:** Specifies the primary Docker daemon endpoint. If not set, the application attempts to connect to a local Docker socket.
+
+  # **Optional:** Configure additional Docker hosts by uncommenting and modifying the following lines.
+  # Each host requires a DOCKER_HOST_N_URL and DOCKER_HOST_N_NAME, where 'N' is an incrementing number.
+  # Docker 1
+  - DOCKER_HOST_1_URL=tcp://192.168.1.168:2375 # **Required for DOCKER_HOST_N_**: URL of the first additional Docker host.
+  - DOCKER_HOST_1_NAME=Synology             # **Required for DOCKER_HOST_N_**: Display name for the first additional host in the UI.
+  - DOCKER_HOST_1_PUBLIC_HOSTNAME=          # **Optional:** Public hostname/IP for the first host. Used for generating clickable links to exposed container ports. If empty, the app will try to infer from DOCKER_HOST_N_URL.
+  # Docker 2
+  - DOCKER_HOST_2_URL=unix:///var/run/docker.sock # **Required for DOCKER_HOST_N_**: URL of the second additional Docker host.
+  - DOCKER_HOST_2_NAME=StagingEnvironment       # **Required for DOCKER_HOST_N_**: Display name for the second additional host in the UI.
+  - DOCKER_HOST_2_PUBLIC_HOSTNAME=pisi          # **Optional:** Public hostname/IP for the second host. Used for generating clickable links to exposed container ports. If empty, the app will try to infer from DOCKER_HOST_N_URL.
+  # Docker 3 ... etc.
+
+  ```

@@ -141,7 +141,8 @@
     }
 
     #theme-switcher,
-    #export-json-button {
+    #export-json-button,
+    #refresh-button {
       background-color: #e1e4e8;
       color: #626c78;
       padding: 0.5rem 1rem;
@@ -150,14 +151,20 @@
     }
 
     #theme-switcher:hover,
-    #export-json-button:hover {
+    #export-json-button:hover,
+    #refresh-button:hover {
       background-color: #d1d5da;
     }
 
     #theme-switcher:focus,
-    #export-json-button:focus {
+    #export-json-button:focus,
+    #refresh-button:focus {
       outline: none;
       box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
+    }
+    
+    #refresh-button.loading svg {
+        animation: spin 1s linear infinite;
     }
 
     .text-red-500 {
@@ -208,11 +215,9 @@
         color: white;
     }
     
-    /* === NOWE STYLE DO UKRYWANIA KOLUMNY === */
     .table-single-server .server-column {
         display: none;
     }
-    /* === KONIEC NOWYCH STYLI === */
 
 
     /* Dark Mode Styles */
@@ -283,13 +288,15 @@
     }
 
     body.dark-mode #theme-switcher,
-    body.dark-mode #export-json-button {
+    body.dark-mode #export-json-button,
+    body.dark-mode #refresh-button {
       background-color: #21262d;
       color: #97a1ab;
     }
 
     body.dark-mode #theme-switcher:hover,
-    body.dark-mode #export-json-button:hover {
+    body.dark-mode #export-json-button:hover,
+    body.dark-mode #refresh-button:hover {
       background-color: #30363d;
     }
 
@@ -333,7 +340,6 @@
         display: none;
       }
       
-      /* Also hide server column on mobile if it's not already hidden */
       .server-column {
           display: none;
       }
@@ -428,6 +434,12 @@
           class="github no-underline">
           GitHub
         </a>
+        <button id="refresh-button" title="Refresh Data"
+            class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M8.54636 19.7673C10.9455 20.8316 13.803 20.7738 16.2499 19.361C20.3154 17.0138 21.7084 11.8153 19.3612 7.74983L19.1112 7.31682M4.63826 16.25C2.29105 12.1845 3.68399 6.98595 7.74948 4.63874C10.1965 3.22597 13.0539 3.16816 15.4531 4.23253M2.49316 16.3336L5.22521 17.0657L5.95727 14.3336M18.0424 9.66565L18.7744 6.9336L21.5065 7.66565" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
         <button id="theme-switcher" title="Switch Theme"
           class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
           <span id="theme-icon"> </span>
@@ -534,12 +546,21 @@
       const rowTemplate = document.getElementById("container-row-template");
       const serverFilterContainer = document.getElementById("server-filter-container");
       const mainTable = document.getElementById("main-table");
+      const refreshButton = document.getElementById('refresh-button');
 
       /**
        * Shows a loading indicator in the table body.
        */
       function showLoadingIndicator() {
+        refreshButton.classList.add('loading');
         containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
+      }
+      
+      /**
+       * Hides loading indicators.
+       */
+      function hideLoadingIndicator() {
+        refreshButton.classList.remove('loading');
       }
 
       /**
@@ -547,6 +568,7 @@
        * @param {string} message - The error message to display.
        */
       function displayError(message) {
+        hideLoadingIndicator();
         containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
       }
 
@@ -600,18 +622,15 @@
         serverFilterContainer.innerHTML = '';
         const serverNames = [...new Set(allContainersData.map(c => c.server))];
         
-        // Zdecyduj, czy pokazać kolumnę serwera i filtry
         if (serverNames.length > 1) {
             mainTable.classList.remove('table-single-server');
 
-            // Utwórz przycisk "Wszystkie"
             const allButton = document.createElement('button');
             allButton.textContent = 'All';
             allButton.dataset.server = 'all';
             allButton.className = 'filter-button';
             serverFilterContainer.appendChild(allButton);
 
-            // Utwórz przyciski dla każdego serwera
             serverNames.forEach(name => {
                 const button = document.createElement('button');
                 button.textContent = name;
@@ -620,7 +639,6 @@
                 serverFilterContainer.appendChild(button);
             });
 
-            // Dodaj Event Listenery do przycisków
             serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
                 button.addEventListener('click', () => {
                     currentServerFilter = button.dataset.server;
@@ -691,6 +709,7 @@
         });
 
         filteredAndSortedContainers = workingData;
+        hideLoadingIndicator();
         renderTable();
         updateActiveButton();
       }
@@ -718,7 +737,7 @@
             throw new Error(errorMsg);
           }
           allContainersData = await response.json();
-          setupServerUI(); // ZBUDUJ FILTRY I ZARZĄDZAJ WIDOCZNOŚCIĄ KOLUMNY
+          setupServerUI();
           updateDisplay();
         } catch (error) {
           console.error("Error fetching container data:", error);
@@ -799,6 +818,9 @@
 
       // Apply saved theme
       applyTheme(localStorage.getItem("theme") || "dark");
+
+      // Refresh button
+      refreshButton.addEventListener("click", fetchContainerData);
 
       // Theme switcher
       document.getElementById("theme-switcher").addEventListener("click", () => {

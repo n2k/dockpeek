@@ -9,6 +9,8 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse
+from docker.client import DockerClient
+from docker.constants import DEFAULT_TIMEOUT_SECONDS
 
 # === Flask Init ===
 app = Flask(__name__)
@@ -48,105 +50,124 @@ def load_user(user_id):
 def unauthorized_callback():
     return redirect(url_for('login'))
 
-# === Docker Client Init ===
-clients = []
-# Support for DOCKER_HOST for backward compatibility
-if "DOCKER_HOST" in os.environ:
-    host_url = os.environ.get("DOCKER_HOST")
-    public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
-    try:
-        client = docker.DockerClient(base_url=host_url)
-        client.ping()
-        clients.append({"name": "default", "client": client, "url": host_url, "public_hostname": public_hostname})
-        print(f"✅ Connected to default Docker daemon at {host_url}")
-    except Exception as e:
-        print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
+# === Docker Client Logic ===
 
-# Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
-host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
-for key, url in host_vars.items():
-    match = re.match(r"^DOCKER_HOST_(\d+)_URL$", key)
-    if match:
-        num = match.group(1)
-        name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
-        public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
+DOCKER_TIMEOUT = 5 # Timeout in seconds
+
+def discover_docker_clients():
+    """
+    Discovers and initializes Docker clients from environment variables.
+    This function is called on each data request to ensure the client list is fresh.
+    """
+    clients = []
+    
+    # Support for DOCKER_HOST for backward compatibility
+    if "DOCKER_HOST" in os.environ:
+        host_url = os.environ.get("DOCKER_HOST")
+        public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         try:
-            client = docker.DockerClient(base_url=url)
+            client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
+            # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname})
-            print(f"✅ Connected to Docker daemon '{name}' at {url}")
+            clients.append({"name": "default", "client": client, "url": host_url, "public_hostname": public_hostname})
+            print(f"✅ Discovered and connected to default Docker daemon at {host_url}")
         except Exception as e:
-            print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
+            print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
 
-if not clients:
-    print("⚠️ No Docker hosts configured. Trying local socket...")
-    try:
-        client = docker.from_env()
-        client.ping()
-        # For local socket, the URL scheme is unix, hostname will be localhost
-        clients.append({"name": "localhost", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
-        print("✅ Connected to local Docker daemon via socket.")
-    except Exception as e:
-        print(f"❌ Failed to connect to any Docker daemon: {e}")
+    # Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
+    host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
+    for key, url in host_vars.items():
+        match = re.match(r"^DOCKER_HOST_(\d+)_URL$", key)
+        if match:
+            num = match.group(1)
+            name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
+            public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
+            try:
+                client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
+                # Perform a quick ping to check connectivity
+                client.ping()
+                clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname})
+                print(f"✅ Discovered and connected to Docker daemon '{name}' at {url}")
+            except Exception as e:
+                print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
+
+    # If no hosts are configured via environment variables, try the local socket
+    if not clients:
+        print("⚠️ No Docker hosts configured via environment variables. Trying local socket...")
+        try:
+            client = docker.from_env(timeout=DOCKER_TIMEOUT)
+            # Perform a quick ping to check connectivity
+            client.ping()
+            clients.append({"name": "localhost", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
+            print("✅ Discovered and connected to local Docker daemon via socket.")
+        except Exception as e:
+            print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
+            
+    return clients
 
 
 # === Helpers ===
 def get_container_data():
+    # ** FIX: Re-discover clients on every data fetch to get the latest list **
+    clients = discover_docker_clients()
+    
     if not clients:
         return []
 
     all_data = []
     for host in clients:
-        server_name = host["name"]
-        client = host["client"]
-        server_url_str = host["url"]
-        public_hostname = host["public_hostname"]
-
+        # Wrap the logic for a single host in a try-except block to handle individual failures
         try:
+            server_name = host["name"]
+            client = host["client"]
+            server_url_str = host["url"]
+            public_hostname = host["public_hostname"]
+
+            # This will throw a timeout exception if the server is down, which will be caught below
             containers = client.containers.list(all=True)
-        except Exception as e:
-            print(f"Error retrieving container list from '{server_name}': {e}")
-            continue # Skip this host and move to the next
 
-        for container in containers:
-            ports = container.attrs['NetworkSettings']['Ports']
-            port_map = []
+            for container in containers:
+                ports = container.attrs['NetworkSettings']['Ports']
+                port_map = []
 
-            if ports:
-                for container_port, mappings in ports.items():
-                    if mappings:
-                        m = mappings[0]
-                        host_port = m['HostPort']
-                        
-                        if server_name == "default":
-                            host_ip = m.get('HostIp', '0.0.0.0') # Get HostIp, default to '0.0.0.0' if not present
-                            link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
-                            link = f"http://{link_ip}:{host_port}"
-                        else:
-                            # Determine the hostname for links for non-default clients
-                            link_hostname = "localhost" # Default value
-                            if public_hostname:
-                                link_hostname = public_hostname
+                if ports:
+                    for container_port, mappings in ports.items():
+                        if mappings:
+                            m = mappings[0]
+                            host_port = m['HostPort']
+                            
+                            if server_name == "default":
+                                host_ip = m.get('HostIp', '0.0.0.0')
+                                link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
+                                link = f"http://{link_ip}:{host_port}"
                             else:
-                                parsed_url = urlparse(server_url_str)
-                                if parsed_url.hostname:
-                                    link_hostname = parsed_url.hostname
-                            link = f"http://{link_hostname}:{host_port}"
-                        
-                        port_map.append({
-                            'container_port': container_port,
-                            'host_port': host_port,
-                            'link': link
-                        })
+                                link_hostname = "localhost"
+                                if public_hostname:
+                                    link_hostname = public_hostname
+                                else:
+                                    parsed_url = urlparse(server_url_str)
+                                    if parsed_url.hostname:
+                                        link_hostname = parsed_url.hostname
+                                link = f"http://{link_hostname}:{host_port}"
+                            
+                            port_map.append({
+                                'container_port': container_port,
+                                'host_port': host_port,
+                                'link': link
+                            })
 
-            all_data.append({
-                'server': server_name,
-                'name': container.name,
-                'id': container.short_id,
-                'status': container.status,
-                'image': container.image.tags[0] if container.image.tags else "none",
-                'ports': port_map
-            })
+                all_data.append({
+                    'server': server_name,
+                    'name': container.name,
+                    'id': container.short_id,
+                    'status': container.status,
+                    'image': container.image.tags[0] if container.image.tags else "none",
+                    'ports': port_map
+                })
+        except Exception as e:
+            # If any error occurs with a host, print it and continue to the next one
+            print(f"❌ Could not retrieve data from host '{host.get('name', 'unknown')}'. Error: {e}. Skipping.")
+            continue
 
     return all_data
 

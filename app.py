@@ -52,7 +52,7 @@ def unauthorized_callback():
 
 # === Docker Client Logic ===
 
-DOCKER_TIMEOUT = 5 # Timeout in seconds
+DOCKER_TIMEOUT = 1 # Timeout in seconds
 
 def discover_docker_clients():
     """

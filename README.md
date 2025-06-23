@@ -3,9 +3,8 @@
     <img src="static/logo_2.svg" alt="dockpeek logo" width="70" height="70"/>
   </a>
 </p>
-<h1 align="left">
-  Dockpeek <span style="font-weight: normal; font-size: 0.6em;">— Port Mapping Dashboard</span>
-</h1>
+
+# **Dockpeek** — Port Mapping Dashboard
 
 **Dockpeek** is a lightweight dashboard to quickly view Docker container port mappings. Supports multiple Docker sockets and instant opening of exposed ports for easy access to your containerized apps.
 
@@ -120,7 +119,7 @@ DockPeek is configured entirely through environment variables. These allow flexi
 | `SECRET_KEY`                    | Yes      | A strong, unique secret used to secure session data and cookie encryption.                                               |
 | `USERNAME`                      | Yes      | Username used to authenticate into the DockPeek dashboard.                                                               |
 | `PASSWORD`                      | Yes      | Corresponding password for the user account.                                                                             |
-| `DOCKER_HOST`                   | No       | URL of the primary Docker socket (e.g., `tcp://socket-proxy:2375`). Defaults to local socket if omitted.                 |
+| `DOCKER_HOST`                   | No       | URL of the primary Docker socket (e.g., `unix:///var/run/docker.sock` or `tcp://socket-proxy:2375`). Defaults to local socket if omitted. Recommended for use with a local proxy                |
 | `DOCKER_HOST_N_URL`             | No       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).     |
 | `DOCKER_HOST_N_NAME`            | No       | Friendly name for display in the UI, associated with the corresponding `DOCKER_HOST_N_URL`.                              |
 | `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Optional public hostname or IP used for generating clickable container links. If unset, it's inferred from the host URL. |

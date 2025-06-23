@@ -1,4 +1,6 @@
-<img src="static/logo_2.svg" alt="dockpeek logo" width="60" height="60" />
+<a href="#">
+  <img src="static/logo_2.svg" alt="dockpeek logo" width="60" height="60" />
+</a>
 
 # Dockpeek — Docker Port Mapping Dashboard
 

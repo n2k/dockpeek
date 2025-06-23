@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/dockpeek/dockpeek">
-     <img src="static/logo_2.svg" alt="dockpeek logo" width="90" height="90"/>
+     <img src="static/logo_2.svg" alt="dockpeek logo" width="80" height="80"/>
   </a>
 </div>
 
@@ -30,8 +30,6 @@ It supports multiple Docker sockets and lets you open exposed ports with one cli
 ![Dockpeek Night mode screenshot](screenshot.png)
 
 </div>
-
-<br>
 
 ### Why Use Dockpeek?
 

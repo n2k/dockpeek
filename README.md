@@ -1,8 +1,9 @@
-<a href="https://github.com/dockpeek/dockpeek">
-  <img src="static/logo_2.svg" alt="dockpeek logo" width="60" height="60" />
-</a>
-
-# Dockpeek — Docker Port Mapping Dashboard
+<p align="center">
+  <a href="https://github.com/dockpeek/dockpeek">
+    <img src="static/logo_2.svg" alt="dockpeek logo" width="70" height="70"/>
+  </a>
+</p>
+<h1 align="center">Dockpeek — Port Mapping Dashboard</h1>
 
 **Dockpeek** is a lightweight dashboard to quickly view Docker container port mappings. Supports multiple Docker sockets and instant opening of exposed ports for easy access to your containerized apps.
 

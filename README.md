@@ -1,14 +1,20 @@
-<p align="center">
+<div align="center">
   <a href="https://github.com/dockpeek/dockpeek">
-    <img src="static/logo_2.svg" alt="dockpeek logo" width="70" height="70"/>
+     <img src="static/logo_2.svg" alt="dockpeek logo" width="90" height="90"/>
   </a>
-</p>
+</div>
 
-# **Dockpeek** — Port Mapping Dashboard
+<h1 align="center">Dockpeek</h1>
+<h3 align="center">Port Mapping Dashboard</h3>
 
-**Dockpeek** is a lightweight dashboard to quickly view Docker container port mappings. Supports multiple Docker sockets and instant opening of exposed ports for easy access to your containerized apps.
+<br>
+<br>
 
-## Key Features
+**Dockpeek** is a lightweight dashboard for instantly viewing Docker container port mappings.
+It supports multiple Docker sockets and lets you open exposed ports with one click — making it easy to access and manage your containerized applications.
+
+
+### Features
 
 - **Port Mapping** — Clickable host-to-container port links for instant web app access.  
 - **Multi Docker Sockets** — Manage multiple Docker sockets in one place.  
@@ -17,19 +23,25 @@
 - **Data Export** — Export container and port details as JSON.  
 - **User-Friendly UI** — Clean design with persistent dark mode.
 
-## Screenshots
+<br>
 
-<p align="left">
-  <img src="screenshot.png" alt="Night mode" width="800" />
-</p>
+<div align="center">
 
-## Why Use Dockpeek?
+![Dockpeek Night mode screenshot](screenshot.png)
+
+</div>
+
+<br>
+
+### Why Use Dockpeek?
 
 In complex setups with multiple Docker hosts or many containers, tracking which app uses which port can be tough. **Dockpeek** makes it easy by offering a centralized, secure, and user-friendly interface to view all port mappings at a glance.
 
-## Getting Started
+<br>
 
-### Option 1: Direct Access
+## Installation
+
+### Option 1: Direct Access to Socket
 ```yaml
 services:
   dockpeek:
@@ -45,6 +57,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 ```
+
+<br>
 
 ### Option 2 : Through `socket-proxy`
 
@@ -84,6 +98,8 @@ services:
     restart: unless-stopped
 ```
 
+<br>
+
 ### Additional Docker Sockets
 ```yaml
     environment:
@@ -108,12 +124,16 @@ services:
       # Add more Docker hosts as needed, incrementing N accordingly.
 
 ```
-   `unix:///var/run/docker.sock`   Requires mounting the Docker socket `volumes: /var/run/docker.sock:/var/run/docker.sock`
+  
+> [!NOTE]
+> `unix:///var/run/docker.sock`   Requires mounting the Docker socket `volumes: /var/run/docker.sock:/var/run/docker.sock`
 
+
+<br>
 
   ## Environment
 
-DockPeek is configured entirely through environment variables. These allow flexible deployment across varying host setups and security requirements.
+Dockpeek is configured entirely through environment variables. 
 | Variable                        | Required | Description                                                                                                              |
 | ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `SECRET_KEY`                    | Yes      | A strong, unique secret used to secure session data and cookie encryption.                                               |
@@ -123,5 +143,6 @@ DockPeek is configured entirely through environment variables. These allow flexi
 | `DOCKER_HOST_N_URL`             | No       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).     |
 | `DOCKER_HOST_N_NAME`            | No       | Friendly name for display in the UI, associated with the corresponding `DOCKER_HOST_N_URL`.                              |
 | `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Optional public hostname or IP used for generating clickable container links. If unset, it's inferred from the host URL. |
-
-> **Note:** All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.
+  
+> [!NOTE]
+> All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.

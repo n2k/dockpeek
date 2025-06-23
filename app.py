@@ -98,7 +98,7 @@ def discover_docker_clients():
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": "localhost", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
+            clients.append({"name": "default", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
             print("✅ Discovered and connected to local Docker daemon via socket.")
         except Exception as e:
             print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")

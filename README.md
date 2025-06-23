@@ -1,41 +1,29 @@
-<a href="#">
+<a href="https://github.com/dockpeek/dockpeek">
   <img src="static/logo_2.svg" alt="dockpeek logo" width="60" height="60" />
 </a>
 
 # Dockpeek — Docker Port Mapping Dashboard
 
-**DockPeek** is a lightweight dashboard designed to give you a quick and clear overview of your Docker container port mappings. It supports multiple Docker sockets and lets you instantly open exposed host ports in your browser — perfect for managing and accessing your containerized web applications across different environments.
+**Dockpeek** is a lightweight dashboard to quickly view Docker container port mappings. Supports multiple Docker sockets and instant opening of exposed ports for easy access to your containerized apps.
 
 ## Key Features
 
-- **Port Mapping**  
-  View all host-to-container port mappings with clickable links to immediately access web apps.
+- **Port Mapping** — Clickable host-to-container port links for instant web app access.  
+- **Multi Docker Sockets** — Manage multiple Docker sockets in one place.  
+- **Secure by Design** — Authentication and socket-proxy for secure, read-only Docker API access.  
+- **Effortless Search** — Find containers by name or external port.  
+- **Data Export** — Export container and port details as JSON.  
+- **User-Friendly UI** — Clean design with persistent dark mode.
 
-- **Multi Docker Sockets Support**  
-  Connect to and switch between multiple Docker sockets from a single interface.
-
-- **Secure by Design**  
-  Built-in authentication and full support for `socket-proxy` to grant secure, read-only access to the Docker API.
-
-- **Effortless Search**  
-  Quickly find containers by name or filter by an external port number.
-
-- **Data Export**  
-  Export container and port information to a JSON file
-
-- **User-Friendly UI**  
-  A clean interface with a persistent dark mode for comfortable viewing.
-
-
-## Why Use Dockpeek?
-
-In complex environments with multiple Docker hosts or numerous containers, keeping track of which application is running on which port can be a challenge. **Dockpeek** solves this by providing a centralized, secure, and user-friendly interface to view all port mappings at a glance.
-
-## 📸 Screenshots
+## Screenshots
 
 <p align="left">
   <img src="screenshot.png" alt="Night mode" width="800" />
 </p>
+
+## Why Use Dockpeek?
+
+In complex setups with multiple Docker hosts or many containers, tracking which app uses which port can be tough. **Dockpeek** makes it easy by offering a centralized, secure, and user-friendly interface to view all port mappings at a glance.
 
 ## Getting Started
 

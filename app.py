@@ -69,7 +69,7 @@ def discover_docker_clients():
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
             # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": "default", "client": client, "url": host_url, "public_hostname": public_hostname})
+            clients.append({"name": "local", "client": client, "url": host_url, "public_hostname": public_hostname})
             print(f"✅ Discovered and connected to default Docker daemon at {host_url}")
         except Exception as e:
             print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
@@ -98,7 +98,7 @@ def discover_docker_clients():
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": "default", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
+            clients.append({"name": "local", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
             print("✅ Discovered and connected to local Docker daemon via socket.")
         except Exception as e:
             print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
@@ -136,7 +136,7 @@ def get_container_data():
                             m = mappings[0]
                             host_port = m['HostPort']
                             
-                            if server_name == "default":
+                            if server_name == "local":
                                 host_ip = m.get('HostIp', '0.0.0.0')
                                 link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
                                 link = f"http://{link_ip}:{host_port}"

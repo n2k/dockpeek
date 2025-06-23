@@ -460,7 +460,7 @@
     </div>
 
     <div class="mb-6">
-      <input type="text" id="search-input" placeholder="Search by name, image, port, or server..."
+      <input type="text" id="search-input" placeholder="Search by name, image, or port..."
         class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
     </div>
 
@@ -681,8 +681,7 @@
             workingData = workingData.filter(c =>
               c.name.toLowerCase().includes(searchTerm) ||
               c.image.toLowerCase().includes(searchTerm) ||
-              c.server.toLowerCase().includes(searchTerm) ||
-              c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
+              c.ports.some(p => p.host_port.includes(searchTerm))
             );
         }
 

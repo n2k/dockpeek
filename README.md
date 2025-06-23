@@ -1,21 +1,33 @@
 <img src="static/logo_2.svg" alt="dockpeek logo" width="60" height="60" />
 
-# dockpeek
+# Dockpeek — Docker Port Mapping Dashboard
 
-**dockpeek** is a lightweight, dashboard for monitoring Docker containers. With an simple UI and built-in authentication, it allows users to inspect container statuses and port mappings securely.
+**DockPeek** is a lightweight dashboard designed to give you a quick and clear overview of your Docker container port mappings. It supports multiple Docker sockets and lets you instantly open exposed host ports in your browser — perfect for managing and accessing your containerized web applications across different environments.
 
----
+## Key Features
 
-## Features
+- **Port Mapping**  
+  View all host-to-container port mappings with clickable links to immediately access web apps.
 
-* **Port Mapping Visibility** — Maps host → container ports with clickable links
-* **Container Overview** — Instantly see all running/stopped containers
-* **Security-Oriented Design** — Supports `socket-proxy` for read-only Docker access
-* **Export Data** — Easily export container information in JSON format
-* **Login Authentication** — Simple username/password access
-* **Dark Mode Support** — Theme toggle with persistence
+- **Multi Docker Sockets Support**  
+  Connect to and switch between multiple Docker sockets from a single interface.
 
----
+- **Secure by Design**  
+  Built-in authentication and full support for `socket-proxy` to grant secure, read-only access to the Docker API.
+
+- **Effortless Search**  
+  Quickly find containers by name or filter by an external port number.
+
+- **Data Export**  
+  Export container and port information to a JSON file
+
+- **User-Friendly UI**  
+  A clean interface with a persistent dark mode for comfortable viewing.
+
+
+## Why Use Dockpeek?
+
+In complex environments with multiple Docker hosts or numerous containers, keeping track of which application is running on which port can be a challenge. **Dockpeek** solves this by providing a centralized, secure, and user-friendly interface to view all port mappings at a glance.
 
 ## 📸 Screenshots
 
@@ -23,15 +35,27 @@
   <img src="screenshot.png" alt="Night mode" width="800" />
 </p>
 
----
-
 ## Getting Started
 
-### Deployment Options
+### Option 1: Direct Access
+```yaml
+services:
+  dockpeek:
+    image: ghcr.io/dockpeek/dockpeek:latest
+    container_name: dockpeek
+    environment:
+      - SECRET_KEY=my_secret_key   # Set secret key
+      - USERNAME=admin             # Change default username
+      - PASSWORD=admin             # Change default password
+    ports:
+      - "3420:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+```
 
-> **Recommended:** Use `socket-proxy` for secure access to Docker API.
+### Option 2 : Through `socket-proxy`
 
-### 🔧 Option 1: Secure Setup (with `socket-proxy`)
 
 ```yaml
 services:
@@ -68,43 +92,44 @@ services:
     restart: unless-stopped
 ```
 
-### Option 2: Direct Access (without proxy)
-
-> **⚠️ Not Recommended:** Grants full access to Docker Socket.
-
+### Additional Docker Sockets
 ```yaml
-services:
-  dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
-    container_name: dockpeek
     environment:
       - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username
       - PASSWORD=admin             # Change default password
-    ports:
-      - "3420:8000"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
+
+      # Optional: Configure additional Docker hosts by adjusting the following.
+      # Each host requires a matching set of DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
+      
+      # Docker Host 1
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Required for DOCKER_HOST_N: URL of the additional Docker host.
+      - DOCKER_HOST_1_NAME=MyServer1                     # Required for DOCKER_HOST_N: Display name shown in the UI.
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL.
+
+      # Docker Host 1
+      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Required for DOCKER_HOST_N: URL of the additional Docker proxy.
+      - DOCKER_HOST_2_NAME=Synology                      # Required for DOCKER_HOST_N: Display name shown in the UI.
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL. 
+                                                         # Example: Use device name like 'NAS' for easier access via Tailscale.                         
+
+      # Add more Docker hosts as needed, incrementing N accordingly.
+
 ```
-```yaml
+   `unix:///var/run/docker.sock`   Requires mounting the Docker socket `volumes: /var/run/docker.sock:/var/run/docker.sock`
 
-environment:
-  - SECRET_KEY=your_very_secret_key_here # **Required:** Change this to a unique, strong key for session management.
-  - USERNAME=admin                       # **Required:** Change the default username for login.
-  - PASSWORD=admin                       # **Required:** Change the default password for the specified username.
-  - DOCKER_HOST=tcp://socket-proxy:2375  # **Optional:** Specifies the primary Docker daemon endpoint. If not set, the application attempts to connect to a local Docker socket.
 
-  # **Optional:** Configure additional Docker hosts by uncommenting and modifying the following lines.
-  # Each host requires a DOCKER_HOST_N_URL and DOCKER_HOST_N_NAME, where 'N' is an incrementing number.
-  # Docker 1
-  - DOCKER_HOST_1_URL=tcp://192.168.1.168:2375 # **Required for DOCKER_HOST_N_**: URL of the first additional Docker host.
-  - DOCKER_HOST_1_NAME=Synology             # **Required for DOCKER_HOST_N_**: Display name for the first additional host in the UI.
-  - DOCKER_HOST_1_PUBLIC_HOSTNAME=          # **Optional:** Public hostname/IP for the first host. Used for generating clickable links to exposed container ports. If empty, the app will try to infer from DOCKER_HOST_N_URL.
-  # Docker 2
-  - DOCKER_HOST_2_URL=unix:///var/run/docker.sock # **Required for DOCKER_HOST_N_**: URL of the second additional Docker host.
-  - DOCKER_HOST_2_NAME=StagingEnvironment       # **Required for DOCKER_HOST_N_**: Display name for the second additional host in the UI.
-  - DOCKER_HOST_2_PUBLIC_HOSTNAME=pisi          # **Optional:** Public hostname/IP for the second host. Used for generating clickable links to exposed container ports. If empty, the app will try to infer from DOCKER_HOST_N_URL.
-  # Docker 3 ... etc.
+  ## Environment
 
-  ```
+DockPeek is configured entirely through environment variables. These allow flexible deployment across varying host setups and security requirements.
+| Variable                        | Required | Description                                                                                                              |
+| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `SECRET_KEY`                    | Yes      | A strong, unique secret used to secure session data and cookie encryption.                                               |
+| `USERNAME`                      | Yes      | Username used to authenticate into the DockPeek dashboard.                                                               |
+| `PASSWORD`                      | Yes      | Corresponding password for the user account.                                                                             |
+| `DOCKER_HOST`                   | No       | URL of the primary Docker socket (e.g., `tcp://socket-proxy:2375`). Defaults to local socket if omitted.                 |
+| `DOCKER_HOST_N_URL`             | No       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).     |
+| `DOCKER_HOST_N_NAME`            | No       | Friendly name for display in the UI, associated with the corresponding `DOCKER_HOST_N_URL`.                              |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Optional public hostname or IP used for generating clickable container links. If unset, it's inferred from the host URL. |
+
+> **Note:** All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.

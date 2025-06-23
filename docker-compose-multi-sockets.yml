@@ -1,0 +1,31 @@
+services:
+  dockpeek:
+    container_name: dockpeek
+    build:
+      context: . 
+    environment:
+      - SECRET_KEY=my_secret_key   # Set secret key
+      - USERNAME=admin             # Change default username
+      - PASSWORD=admin             # Change default password
+
+      # Optional: Configure additional Docker hosts by adjusting the following.
+      # Each host requires a matching set of DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
+      
+      # Docker Host 1
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Required for DOCKER_HOST_N: URL of the additional Docker host.
+      - DOCKER_HOST_1_NAME=MyServer1                     # Required for DOCKER_HOST_N: Display name shown in the UI.
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL.
+
+      # Docker Host 1
+      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Required for DOCKER_HOST_N: URL of the additional Docker proxy.
+      - DOCKER_HOST_2_NAME=Synology                      # Required for DOCKER_HOST_N: Display name shown in the UI.
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL. 
+                                                         # Example: Use device name like 'NAS' for easier access via Tailscale.                         
+
+      # Add more Docker hosts as needed, incrementing N accordingly.
+
+    ports:
+      - "3420:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

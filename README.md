@@ -31,6 +31,8 @@ It supports multiple Docker sockets and lets you open exposed ports with one cli
 
 </div>
 
+<br>
+
 ### Why Use Dockpeek?
 
 In complex setups with multiple Docker hosts or many containers, tracking which app uses which port can be tough. **Dockpeek** makes it easy by offering a centralized, secure, and user-friendly interface to view all port mappings at a glance.

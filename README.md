@@ -5,23 +5,22 @@
 </div>
 
 <h1 align="center">Dockpeek</h1>
-<h3 align="center">Port Mapping Dashboard</h3>
+<h3 align="center">Docker Port Dashboard</h3>
 
 <br>
 <br>
 
-**Dockpeek** is a lightweight dashboard for instantly viewing Docker container port mappings.
-It supports multiple Docker sockets and lets you open exposed ports with one click — making it easy to access and manage your containerized applications.
+**Dockpeek** is a lightweight dashboard for browsing exposed Docker container ports. It supports both local and remote Docker sockets via socket-proxy, enabling one-click access to containers across multiple hosts.
+
+
 
 
 ### Features
 
-- **Port Mapping** — Clickable host-to-container port links for instant web app access.  
+- **Port Mapping** — View and access exposed ports of running Docker containers with a clean, minimal UI.
+- **Clickable Access** — Instantly open services running in containers via direct links.
 - **Multi Docker Sockets** — Manage multiple Docker sockets in one place.  
-- **Secure by Design** — Authentication and socket-proxy for secure, read-only Docker API access.  
-- **Effortless Search** — Find containers by name or external port.  
-- **Data Export** — Export container and port details as JSON.  
-- **User-Friendly UI** — Clean design with persistent dark mode.
+- **No Configuration Required** – Auto-discovers containers from connected sockets.
 
 <br>
 
@@ -35,7 +34,7 @@ It supports multiple Docker sockets and lets you open exposed ports with one cli
 
 ### Why Use Dockpeek?
 
-In complex setups with multiple Docker hosts or many containers, tracking which app uses which port can be tough. **Dockpeek** makes it easy by offering a centralized, secure, and user-friendly interface to view all port mappings at a glance.
+Managing multiple Docker hosts and containers often means juggling IP addresses and port numbers to access your apps. **Dockpeek** streamlines this by letting you open containerized applications with a single click—no need to remember or type IPs and ports.
 
 <br>
 
@@ -103,25 +102,24 @@ services:
 ### Additional Docker Sockets
 ```yaml
     environment:
-      - SECRET_KEY=my_secret_key   # Set secret key
-      - USERNAME=admin             # Change default username
-      - PASSWORD=admin             # Change default password
-
-      # Optional: Configure additional Docker hosts by adjusting the following.
-      # Each host requires a matching set of DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
+      - SECRET_KEY=my_secret_key      # Set a secret key for security
+      - USERNAME=admin               # Change the default username
+      - PASSWORD=admin               # Change the default password
+      
+      # Optional: Add extra Docker hosts by setting these variables.
+      # Each host needs DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
       
       # Docker Host 1
-      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Required for DOCKER_HOST_N: URL of the additional Docker host.
-      - DOCKER_HOST_1_NAME=MyServer1                     # Required for DOCKER_HOST_N: Display name shown in the UI.
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL.
-
-      # Docker Host 1
-      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Required for DOCKER_HOST_N: URL of the additional Docker proxy.
-      - DOCKER_HOST_2_NAME=Synology                      # Required for DOCKER_HOST_N: Display name shown in the UI.
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL. 
-                                                         # Example: Use device name like 'NAS' for easier access via Tailscale.                         
-
-      # Add more Docker hosts as needed, incrementing N accordingly.
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Docker socket URL
+      - DOCKER_HOST_1_NAME=MyServer1                      # Name shown in the UI
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                    # Optional public hostname or IP for links; if empty, inferred from URL
+      
+      # Docker Host 2
+      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Docker proxy URL
+      - DOCKER_HOST_2_NAME=Synology                        # Name shown in the UI
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                  # Optional public hostname or IP (e.g. 'NAS' for Tailscale access)
+      
+      # Add more Docker hosts by increasing the number (3, 4, etc.)
 
 ```
   
@@ -136,13 +134,13 @@ services:
 Dockpeek is configured entirely through environment variables. 
 | Variable                        | Required | Description                                                                                                              |
 | ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `SECRET_KEY`                    | Yes      | A strong, unique secret used to secure session data and cookie encryption.                                               |
-| `USERNAME`                      | Yes      | Username used to authenticate into the DockPeek dashboard.                                                               |
-| `PASSWORD`                      | Yes      | Corresponding password for the user account.                                                                             |
+| `SECRET_KEY`                    | Yes      | A strong, unique secret.                                               |
+| `USERNAME`                      | Yes      | Username for Dockpeek login.      |
+| `PASSWORD`                      | Yes      | Password for Dockpeek login.        |
 | `DOCKER_HOST`                   | No       | URL of the primary Docker socket (e.g., `unix:///var/run/docker.sock` or `tcp://socket-proxy:2375`). Defaults to local socket if omitted. Recommended for use with a local proxy                |
 | `DOCKER_HOST_N_URL`             | No       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).     |
-| `DOCKER_HOST_N_NAME`            | No       | Friendly name for display in the UI, associated with the corresponding `DOCKER_HOST_N_URL`.                              |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Optional public hostname or IP used for generating clickable container links. If unset, it's inferred from the host URL. |
+| `DOCKER_HOST_N_NAME`            | No       | Friendly name for the additional Docker host shown in the UI.                             |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Public hostname or IP for clickable links (e.g. 'NAS' for Tailscale access); If unset, it's inferred from the `DOCKER_HOST_N_URL`. |
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.

@@ -1,7 +1,8 @@
 services:
   dockpeek:
     container_name: dockpeek
-    image: ghcr.io/dockpeek/dockpeek:latest
+    build:
+      context: .
     environment:
       - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username

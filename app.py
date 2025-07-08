@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import docker
 from flask_cors import CORS
@@ -14,7 +15,12 @@ from docker.constants import DEFAULT_TIMEOUT_SECONDS
 
 # === Flask Init ===
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "defaultsecretkey")
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    print("ERROR: SECRET_KEY environment variable is not set.", file=sys.stderr)
+    sys.exit(1)
+
+app.secret_key = secret_key
 CORS(app)
 
 # === Flask-Login Init ===

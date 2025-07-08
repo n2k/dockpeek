@@ -17,8 +17,7 @@ from docker.constants import DEFAULT_TIMEOUT_SECONDS
 app = Flask(__name__)
 secret_key = os.environ.get("SECRET_KEY")
 if not secret_key:
-    print("ERROR: SECRET_KEY environment variable is not set.", file=sys.stderr)
-    sys.exit(1)
+    raise RuntimeError("ERROR: SECRET_KEY environment variable is not set.")
 
 app.secret_key = secret_key
 CORS(app)

@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import docker
 from flask_cors import CORS
@@ -61,8 +60,8 @@ DOCKER_TIMEOUT = 1 # Timeout in seconds
 
 def discover_docker_clients():
     """
-    Discovers and initializes Docker clients from environment variables.
-    This function is called on each data request to ensure the client list is fresh.
+    Discovers Docker clients from environment variables and checks their status.
+    Returns a list of all discovered servers, including inactive ones.
     """
     clients = []
     
@@ -72,12 +71,12 @@ def discover_docker_clients():
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
-            # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": "local", "client": client, "url": host_url, "public_hostname": public_hostname})
+            clients.append({"name": "local", "client": client, "url": host_url, "public_hostname": public_hostname, "status": "active"})
             print(f"✅ Discovered and connected to default Docker daemon at {host_url}")
         except Exception as e:
             print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
+            clients.append({"name": "local", "client": None, "url": host_url, "public_hostname": public_hostname, "status": "inactive"})
 
     # Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
     host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
@@ -89,46 +88,49 @@ def discover_docker_clients():
             public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
-                # Perform a quick ping to check connectivity
                 client.ping()
-                clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname})
+                clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname, "status": "active"})
                 print(f"✅ Discovered and connected to Docker daemon '{name}' at {url}")
             except Exception as e:
                 print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
+                clients.append({"name": name, "client": None, "url": url, "public_hostname": public_hostname, "status": "inactive"})
 
-    # If no hosts are configured via environment variables, try the local socket
+    # If no hosts are configured, try the local socket
     if not clients:
         print("⚠️ No Docker hosts configured via environment variables. Trying local socket...")
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
-            # Perform a quick ping to check connectivity
             client.ping()
-            clients.append({"name": "local", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost"})
+            clients.append({"name": "local", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "active"})
             print("✅ Discovered and connected to local Docker daemon via socket.")
         except Exception as e:
             print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
+            clients.append({"name": "local", "client": None, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "inactive"})
             
     return clients
 
-
 # === Helpers ===
-def get_container_data():
-    # ** FIX: Re-discover clients on every data fetch to get the latest list **
-    clients = discover_docker_clients()
+def get_all_data():
+    servers = discover_docker_clients()
     
-    if not clients:
-        return []
+    if not servers:
+        return {"servers": [], "containers": []}
 
-    all_data = []
-    for host in clients:
-        # Wrap the logic for a single host in a try-except block to handle individual failures
+    all_container_data = []
+    # Create a serializable list of servers for the frontend, which can be updated if a fetch fails
+    server_list_for_json = [{"name": s["name"], "status": s["status"]} for s in servers]
+
+    for host in servers:
+        # Skip hosts that were already found to be inactive
+        if host['status'] == 'inactive':
+            continue
+        
         try:
             server_name = host["name"]
             client = host["client"]
             server_url_str = host["url"]
             public_hostname = host["public_hostname"]
 
-            # This will throw a timeout exception if the server is down, which will be caught below
             containers = client.containers.list(all=True)
 
             for container in containers:
@@ -161,7 +163,7 @@ def get_container_data():
                                 'link': link
                             })
 
-                all_data.append({
+                all_container_data.append({
                     'server': server_name,
                     'name': container.name,
                     'id': container.short_id,
@@ -170,11 +172,15 @@ def get_container_data():
                     'ports': port_map
                 })
         except Exception as e:
-            # If any error occurs with a host, print it and continue to the next one
-            print(f"❌ Could not retrieve data from host '{host.get('name', 'unknown')}'. Error: {e}. Skipping.")
+            # If an error occurs with a host that was presumed active, mark it as inactive for this response
+            print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")
+            for s in server_list_for_json:
+                if s["name"] == host["name"]:
+                    s["status"] = "inactive"
+                    break
             continue
 
-    return all_data
+    return {"servers": server_list_for_json, "containers": all_container_data}
 
 # === Routes ===
 
@@ -187,7 +193,7 @@ def index():
 @app.route("/data")
 @login_required
 def data():
-    return jsonify(get_container_data())
+    return jsonify(get_all_data())
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

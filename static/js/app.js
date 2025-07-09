@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // --- STATE MANAGEMENT ---
   let allContainersData = []; // Raw data from the server
+  let allServersData = []; // All configured servers with their status
   let filteredAndSortedContainers = []; // Data after filtering and sorting
   let currentSortColumn = "name";
   let currentSortDirection = "asc";
@@ -22,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshButton.classList.add('loading');
     containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
   }
-  
+
   /**
    * Hides loading indicators.
    */
@@ -81,55 +82,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     containerRowsBody.appendChild(fragment);
   }
-  
+
   /**
-   * Renders server filter buttons and manages server column visibility.
+   * Renders server filter buttons based on server status and manages server column visibility.
    */
   function setupServerUI() {
     serverFilterContainer.innerHTML = '';
-    const serverNames = [...new Set(allContainersData.map(c => c.server))];
-    
-    if (serverNames.length > 1) {
-        mainTable.classList.remove('table-single-server');
+    const servers = allServersData;
 
-        const allButton = document.createElement('button');
-        allButton.textContent = 'All';
-        allButton.dataset.server = 'all';
-        allButton.className = 'filter-button';
-        serverFilterContainer.appendChild(allButton);
+    if (servers.length > 1) {
+      mainTable.classList.remove('table-single-server');
 
-        serverNames.forEach(name => {
-            const button = document.createElement('button');
-            button.textContent = name;
-            button.dataset.server = name;
-            button.className = 'filter-button';
-            serverFilterContainer.appendChild(button);
+      const allButton = document.createElement('button');
+      allButton.textContent = 'All';
+      allButton.dataset.server = 'all';
+      allButton.className = 'filter-button';
+      serverFilterContainer.appendChild(allButton);
+
+      servers.forEach(server => {
+        const button = document.createElement('button');
+        button.textContent = server.name;
+        button.dataset.server = server.name;
+        button.className = 'filter-button';
+
+        if (server.status === 'inactive') {
+          button.classList.add('inactive');
+          button.disabled = true;
+          button.title = `${server.name} is offline`;
+        }
+        serverFilterContainer.appendChild(button);
+      });
+
+      serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
+        button.addEventListener('click', () => {
+          currentServerFilter = button.dataset.server;
+          updateDisplay();
         });
-
-        serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
-            button.addEventListener('click', () => {
-                currentServerFilter = button.dataset.server;
-                updateDisplay();
-            });
-        });
+      });
     } else {
-        mainTable.classList.add('table-single-server');
+      mainTable.classList.add('table-single-server');
     }
-    
+
     updateActiveButton();
   }
-  
+
   /**
    * Updates the visual state of the active filter button.
    */
   function updateActiveButton() {
-      serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
-          if (button.dataset.server === currentServerFilter) {
-              button.classList.add('active');
-          } else {
-              button.classList.remove('active');
-          }
-      });
+    serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
+      if (button.dataset.server === currentServerFilter) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
   }
 
   /**
@@ -139,16 +146,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let workingData = [...allContainersData];
 
     if (currentServerFilter !== "all") {
-        workingData = workingData.filter(c => c.server === currentServerFilter);
+      workingData = workingData.filter(c => c.server === currentServerFilter);
     }
 
     const searchTerm = searchInput.value.toLowerCase().trim();
     if (searchTerm) {
-        workingData = workingData.filter(c =>
-          c.name.toLowerCase().includes(searchTerm) ||
-          c.image.toLowerCase().includes(searchTerm) ||
-          c.ports.some(p => p.host_port.includes(searchTerm))
-        );
+      workingData = workingData.filter(c =>
+        c.name.toLowerCase().includes(searchTerm) ||
+        c.image.toLowerCase().includes(searchTerm) ||
+        c.ports.some(p => p.host_port.includes(searchTerm))
+      );
     }
 
     workingData.sort((a, b) => {
@@ -180,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
-   * Fetches container data from the backend with improved error handling.
+   * Fetches container and server data from the backend.
    */
   async function fetchContainerData() {
     showLoadingIndicator();
@@ -201,11 +208,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         throw new Error(errorMsg);
       }
-      allContainersData = await response.json();
+      const responseData = await response.json();
+      allServersData = responseData.servers;
+      allContainersData = responseData.containers;
+
+      const serverExists = allServersData.some(s => s.name === currentServerFilter);
+      const currentServer = allServersData.find(s => s.name === currentServerFilter);
+
+      if (!serverExists ||
+        (currentServer && currentServer.status === 'inactive') ||
+        (allServersData.length === 1 && allServersData[0].status === 'inactive')) {
+        currentServerFilter = 'all';
+      }
+
+      // Jeśli nie ma żadnych aktywnych serwerów, przejdź w tryb single-server
+      if (allServersData.length === 0 ||
+        allServersData.every(s => s.status === 'inactive')) {
+        mainTable.classList.add('table-single-server');
+      }
+
       setupServerUI();
       updateDisplay();
     } catch (error) {
-      console.error("Error fetching container data:", error);
+      console.error("Error fetching data:", error);
       const finalMessage = error.message.includes('Failed to fetch')
         ? `Network Error: Could not connect to the backend. Is it running?`
         : error.message;
@@ -213,124 +238,124 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-      // --- THEME SWITCHER LOGIC ---
-      function applyTheme(theme) {
-        const themeIcon = document.getElementById("theme-icon");
-        if (theme === "dark") {
-          body.classList.add("dark-mode");
-          themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 0111.21 3 7 7 0 0012 21c4.97 0 9-4.03 9-9 0-.07 0-.14-.01-.21z" /></svg>`;
-        } else {
-          body.classList.remove("dark-mode");
-          themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4" /><line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" /><line x1="5" y1="5" x2="6.5" y2="6.5" /><line x1="17.5" y1="17.5" x2="19" y2="19" /><line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" /><line x1="5" y1="19" x2="6.5" y2="17.5" /><line x1="17.5" y1="6.5" x2="19" y2="5" /></svg>`;
+  // --- THEME SWITCHER LOGIC ---
+  function applyTheme(theme) {
+    const themeIcon = document.getElementById("theme-icon");
+    if (theme === "dark") {
+      body.classList.add("dark-mode");
+      themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 0111.21 3 7 7 0 0012 21c4.97 0 9-4.03 9-9 0-.07 0-.14-.01-.21z" /></svg>`;
+    } else {
+      body.classList.remove("dark-mode");
+      themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4" /><line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" /><line x1="5" y1="5" x2="6.5" y2="6.5" /><line x1="17.5" y1="17.5" x2="19" y2="19" /><line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" /><line x1="5" y1="19" x2="6.5" y2="17.5" /><line x1="17.5" y1="6.5" x2="19" y2="5" /></svg>`;
+    }
+    localStorage.setItem("theme", theme);
+  }
+
+  // --- MODAL LOGIC ---
+  const modal = document.getElementById("confirmation-modal");
+  const modalConfirmBtn = document.getElementById("modal-confirm-button");
+  const modalCancelBtn = document.getElementById("modal-cancel-button");
+
+  /**
+   * Displays a confirmation modal and returns a Promise that resolves or rejects based on user action.
+   * @param {string} title - The title for the modal.
+   * @param {string} message - The confirmation message.
+   * @param {string} confirmText - The text for the confirm button.
+   */
+  function showConfirmationModal(title, message, confirmText = 'Confirm') {
+    return new Promise((resolve, reject) => {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-message').textContent = message;
+      modalConfirmBtn.textContent = confirmText;
+      modal.classList.remove('hidden');
+
+      const confirmHandler = () => {
+        modal.classList.add('hidden');
+        cleanup();
+        resolve();
+      };
+
+      const cancelHandler = () => {
+        modal.classList.add('hidden');
+        cleanup();
+        reject();
+      };
+
+      const backdropClickHandler = (e) => {
+        if (e.target === modal) {
+          cancelHandler();
         }
-        localStorage.setItem("theme", theme);
-      }
+      };
 
-      // --- MODAL LOGIC ---
-      const modal = document.getElementById("confirmation-modal");
-      const modalConfirmBtn = document.getElementById("modal-confirm-button");
-      const modalCancelBtn = document.getElementById("modal-cancel-button");
+      const cleanup = () => {
+        modalConfirmBtn.removeEventListener('click', confirmHandler);
+        modalCancelBtn.removeEventListener('click', cancelHandler);
+        modal.removeEventListener('click', backdropClickHandler);
+      };
 
-      /**
-       * Displays a confirmation modal and returns a Promise that resolves or rejects based on user action.
-       * @param {string} title - The title for the modal.
-       * @param {string} message - The confirmation message.
-       * @param {string} confirmText - The text for the confirm button.
-       */
-      function showConfirmationModal(title, message, confirmText = 'Confirm') {
-        return new Promise((resolve, reject) => {
-          document.getElementById('modal-title').textContent = title;
-          document.getElementById('modal-message').textContent = message;
-          modalConfirmBtn.textContent = confirmText;
-          modal.classList.remove('hidden');
-
-          const confirmHandler = () => {
-            modal.classList.add('hidden');
-            cleanup();
-            resolve();
-          };
-
-          const cancelHandler = () => {
-            modal.classList.add('hidden');
-            cleanup();
-            reject();
-          };
-
-          const backdropClickHandler = (e) => {
-            if (e.target === modal) {
-              cancelHandler();
-            }
-          };
-
-          const cleanup = () => {
-            modalConfirmBtn.removeEventListener('click', confirmHandler);
-            modalCancelBtn.removeEventListener('click', cancelHandler);
-            modal.removeEventListener('click', backdropClickHandler);
-          };
-
-          modalConfirmBtn.addEventListener('click', confirmHandler, { once: true });
-          modalCancelBtn.addEventListener('click', cancelHandler, { once: true });
-          modal.addEventListener('click', backdropClickHandler, { once: true });
-        });
-      }
-
-
-
-      // --- INITIALIZATION & EVENT LISTENERS ---
-
-      // Initial data fetch
-      fetchContainerData();
-
-      // Apply saved theme
-      applyTheme(localStorage.getItem("theme") || "dark");
-
-      // Refresh button
-      refreshButton.addEventListener("click", fetchContainerData);
-
-      // Theme switcher
-      document.getElementById("theme-switcher").addEventListener("click", () => {
-        applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
-      });
-
-      // Search input
-      searchInput.addEventListener("input", updateDisplay);
-
-      // Sorting headers
-      document.querySelectorAll(".sortable-header").forEach((header) => {
-        header.addEventListener("click", () => {
-          const column = header.dataset.sortColumn;
-          if (column === currentSortColumn) {
-            currentSortDirection = currentSortDirection === "asc" ? "desc" : "asc";
-          } else {
-            currentSortColumn = column;
-            currentSortDirection = "asc";
-          }
-          document.querySelectorAll(".sortable-header").forEach(h => h.classList.remove('asc', 'desc'));
-          header.classList.add(currentSortDirection);
-
-          updateDisplay();
-        });
-      });
-
-      // Export to JSON button
-      document.getElementById("export-json-button").addEventListener("click", async () => {
-        if (filteredAndSortedContainers.length === 0) {
-          alert("No data to export.");
-          return;
-        }
-
-        try {
-          await showConfirmationModal('Export to JSON', 'Are you sure you want to download the currently displayed container data as a JSON file?', 'Download');
-          const jsonContent = JSON.stringify(filteredAndSortedContainers, null, 2);
-          const blob = new Blob([jsonContent], { type: "application/json" });
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = "dockpeek_containers.json";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } catch {
-          console.log('Export cancelled by user.');
-        }
-      });
+      modalConfirmBtn.addEventListener('click', confirmHandler, { once: true });
+      modalCancelBtn.addEventListener('click', cancelHandler, { once: true });
+      modal.addEventListener('click', backdropClickHandler, { once: true });
     });
+  }
+
+
+
+  // --- INITIALIZATION & EVENT LISTENERS ---
+
+  // Initial data fetch
+  fetchContainerData();
+
+  // Apply saved theme
+  applyTheme(localStorage.getItem("theme") || "dark");
+
+  // Refresh button
+  refreshButton.addEventListener("click", fetchContainerData);
+
+  // Theme switcher
+  document.getElementById("theme-switcher").addEventListener("click", () => {
+    applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
+  });
+
+  // Search input
+  searchInput.addEventListener("input", updateDisplay);
+
+  // Sorting headers
+  document.querySelectorAll(".sortable-header").forEach((header) => {
+    header.addEventListener("click", () => {
+      const column = header.dataset.sortColumn;
+      if (column === currentSortColumn) {
+        currentSortDirection = currentSortDirection === "asc" ? "desc" : "asc";
+      } else {
+        currentSortColumn = column;
+        currentSortDirection = "asc";
+      }
+      document.querySelectorAll(".sortable-header").forEach(h => h.classList.remove('asc', 'desc'));
+      header.classList.add(currentSortDirection);
+
+      updateDisplay();
+    });
+  });
+
+  // Export to JSON button
+  document.getElementById("export-json-button").addEventListener("click", async () => {
+    if (filteredAndSortedContainers.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    try {
+      await showConfirmationModal('Export to JSON', 'Are you sure you want to download the currently displayed container data as a JSON file?', 'Download');
+      const jsonContent = JSON.stringify(filteredAndSortedContainers, null, 2);
+      const blob = new Blob([jsonContent], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "dockpeek_containers.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      console.log('Export cancelled by user.');
+    }
+  });
+});

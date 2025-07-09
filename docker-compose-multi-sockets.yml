@@ -1,12 +1,13 @@
 services:
   dockpeek:
     container_name: dockpeek
-    image: ghcr.io/dockpeek/dockpeek:latest
+    build:
+      context: .
     environment:
-      - SECRET_KEY=my_secret_key   # Set secret key
+      - SECRET_KEY=my_secret_key  # Set secret key
       - USERNAME=admin             # Change default username
-      - PASSWORD=admin             # Change default password
-
+      - PASSWORD=admin             # Change default password]
+      - FLASK_DEBUG=true
       # Optional: Configure additional Docker hosts by adjusting the following.
       # Each host requires a matching set of DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
       
@@ -20,7 +21,9 @@ services:
       - DOCKER_HOST_2_NAME=Synology                      # Required for DOCKER_HOST_N: Display name shown in the UI.
       - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL. 
                                                          # Example: Use device name like 'NAS' for easier access via Tailscale.                         
-
+      - DOCKER_HOST_3_URL=tcp://192.168.1.169:2375       # Required for DOCKER_HOST_N: URL of the additional Docker proxy.
+      - DOCKER_HOST_3_NAME=Synology 2                     # Required for DOCKER_HOST_N: Display name shown in the UI.
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=NAS2                # Optional: Public hostname or IP for clickable links. If empty, inferred from the URL. 
       # Add more Docker hosts as needed, incrementing N accordingly.
 
     ports:

@@ -3,7 +3,7 @@ services:
     container_name: dockpeek
     image: ghcr.io/dockpeek/dockpeek:latest
     environment:
-      - SECRET_KEY=my_secret_key  # Set secret key
+      - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username
       - PASSWORD=admin             # Change default password]
       

@@ -1,0 +1,39 @@
+# Pliki i katalogi ogólne
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+LICENSE
+
+# Node.js / frontend
+node_modules
+npm-debug.log
+yarn.lock
+dist
+build
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+env/
+venv/
+
+# Systemowe / IDE
+*.log
+*.swp
+*.swo
+*.bak
+*.tmp
+*.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Secrets
+.env
+*.key
+*.pem

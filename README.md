@@ -146,16 +146,3 @@ You can connect and manage multiple Docker engines from a single dashboard.
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.
-
-
-### 🔐 Security Tips
-
-- Always use a strong, unique `SECRET_KEY`.
-- Change default credentials before exposing the dashboard.
-- Use VPN or restrict access to Docker socket/proxy (`2375` port) for remote setups.
-
-
-
-### 🔎 SEO Keywords
-
-> Docker dashboard, container port access, Docker UI, click-to-access Docker apps, DevOps tools, multi-host Docker management, remote Docker access, Docker compose dashboard, self-hosted Docker admin panel, minimal Docker interface, container monitoring tool, Docker port viewer, open-source Docker tool

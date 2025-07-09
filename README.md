@@ -5,7 +5,7 @@
 </div>
 
 <h1 align="center">Dockpeek</h1>
-<h3 align="center">Minimalist Docker Port Dashboard for Easy Container Access</h3>
+<h3 align="center">Docker Port Dashboard for Easy Container Access</h3>
 
 <br>
 <br>

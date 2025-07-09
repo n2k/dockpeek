@@ -101,7 +101,7 @@ services:
 
 ###  Add Additional Docker Hosts
 
-You can connect and manage multiple Docker engines from a single dashboard.
+You can connect and manage multiple Docker instances from a single dashboard.
 
 ```yaml
     environment:
@@ -136,13 +136,13 @@ You can connect and manage multiple Docker engines from a single dashboard.
 
 | Variable                         | Required | Description                                                                                      |
 |----------------------------------|----------|--------------------------------------------------------------------------------------------------|
-| `SECRET_KEY`                     | ✅       | Strong key used for session security.                                                            |
-| `USERNAME`                       | ✅       | Username for accessing the Dockpeek dashboard.                                                   |
-| `PASSWORD`                       | ✅       | Password for the user.                                                                           |
-| `DOCKER_HOST`                    | ❌       | Main Docker socket URL (`unix://` or `tcp://`). Defaults to local socket if not specified.       |
-| `DOCKER_HOST_N_URL`              | ❌       | URL of additional Docker host (e.g. `tcp://192.168.1.10:2375`).                                  |
-| `DOCKER_HOST_N_NAME`             | ❌       | Friendly name displayed in the UI for the additional host.                                       |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME`  | ❌       | Public hostname/IP used for generating clickable links. If not set, inferred from socket URL.    |
+| `SECRET_KEY`                     | ✅       | A strong, unique secret.                                                              |
+| `USERNAME`                       | ✅       | Username for Dockpeek login.                                                 |
+| `PASSWORD`                       | ✅       | Password for Dockpeek login.                                                                          |
+| `DOCKER_HOST`                    | ❌       | URL of the primary Docker socket (e.g., `unix:///var/run/docker.sock` or `tcp://socket-proxy:2375`). Defaults to local socket if omitted. Recommended for use with a local proxy   |
+| `DOCKER_HOST_N_URL`              | ❌       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).                                |
+| `DOCKER_HOST_N_NAME`             | ❌       | Friendly name for the additional Docker host shown in the UI.                                       |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME`  | ❌       | Public hostname or IP for clickable links (e.g. 'NAS' for Tailscale access); If unset, it's inferred from the `DOCKER_HOST_N_URL`.    |
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.

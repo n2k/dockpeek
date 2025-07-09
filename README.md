@@ -5,20 +5,20 @@
 </div>
 
 <h1 align="center">Dockpeek</h1>
-<h3 align="center">Docker Port Dashboard</h3>
+<h3 align="center">Minimalist Docker Port Dashboard for Easy Container Access</h3>
 
 <br>
 <br>
 
-**Dockpeek** is a lightweight dashboard for browsing and accessing exposed Docker container ports. It supports both local Docker sockets and remote ones via socket-proxy, making it easy to monitor containers across multiple hosts.
+**Dockpeek** is a lightweight, self-hosted Docker dashboard that allows you to view and access exposed container ports with a clean, click-to-access interface. It supports both local Docker sockets and remote hosts via `socket-proxy`, making it easy to manage multiple Docker environments from a single place.
 
 
-### Features
+### Key Features
 
-- **Port Mapping** — View exposed ports of running Docker containers with a clean, minimal UI.
-- **Clickable Access** — Instantly open services running in containers via direct links.
-- **Multi Docker Sockets** — Manage multiple Docker sockets in one place.  
-- **No Configuration Required** – Auto-discovers containers from connected sockets.
+-  **Port Mapping Overview** – Quickly see all running containers and their exposed ports.
+-  **Click-to-Access URLs** – Open containerized web apps instantly with a single click.
+-  **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
+-  **Zero Configuration** – Automatically detects running containers with no setup required.
 
 <br>
 
@@ -32,13 +32,15 @@
 
 ### Why Use Dockpeek?
 
-Managing multiple Docker hosts and containers often means juggling IP addresses and port numbers to access your apps. **Dockpeek** streamlines this by letting you open containerized applications with a single click—no need to remember or type IPs and ports.
+Tired of remembering IP addresses and port numbers to access your containerized apps? **Dockpeek** gives you a clean, centralized dashboard with one-click access to any exposed container service—whether it's running locally or remotely.
+
+Perfect when you're dealing with many containers across different machines. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized.
 
 <br>
 
-## Installation
+## 🔧 Installation
 
-### Option 1: Direct Access to Socket
+### Option 1: Direct Socket Access
 ```yaml
 services:
   dockpeek:
@@ -57,7 +59,7 @@ services:
 
 <br>
 
-### Option 2 : Through `socket-proxy`
+### Option 2: Using `socket-proxy` (Recommended for remote or multi-host setup)
 
 
 ```yaml
@@ -97,7 +99,10 @@ services:
 
 <br>
 
-### Additional Docker Sockets
+###  Add Additional Docker Hosts
+
+You can connect and manage multiple Docker engines from a single dashboard.
+
 ```yaml
     environment:
       - SECRET_KEY=my_secret_key      # Set a secret key for security
@@ -127,18 +132,30 @@ services:
 
 <br>
 
-  ## Environment
+  ## Environment Variables
 
-Dockpeek is configured entirely through environment variables. 
-| Variable                        | Required | Description                                                                                                              |
-| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `SECRET_KEY`                    | Yes      | A strong, unique secret.                                               |
-| `USERNAME`                      | Yes      | Username for Dockpeek login.      |
-| `PASSWORD`                      | Yes      | Password for Dockpeek login.        |
-| `DOCKER_HOST`                   | No       | URL of the primary Docker socket (e.g., `unix:///var/run/docker.sock` or `tcp://socket-proxy:2375`). Defaults to local socket if omitted. Recommended for use with a local proxy                |
-| `DOCKER_HOST_N_URL`             | No       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).     |
-| `DOCKER_HOST_N_NAME`            | No       | Friendly name for the additional Docker host shown in the UI.                             |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | No       | Public hostname or IP for clickable links (e.g. 'NAS' for Tailscale access); If unset, it's inferred from the `DOCKER_HOST_N_URL`. |
+| Variable                         | Required | Description                                                                                      |
+|----------------------------------|----------|--------------------------------------------------------------------------------------------------|
+| `SECRET_KEY`                     | ✅       | Strong key used for session security.                                                            |
+| `USERNAME`                       | ✅       | Username for accessing the Dockpeek dashboard.                                                   |
+| `PASSWORD`                       | ✅       | Password for the user.                                                                           |
+| `DOCKER_HOST`                    | ❌       | Main Docker socket URL (`unix://` or `tcp://`). Defaults to local socket if not specified.       |
+| `DOCKER_HOST_N_URL`              | ❌       | URL of additional Docker host (e.g. `tcp://192.168.1.10:2375`).                                  |
+| `DOCKER_HOST_N_NAME`             | ❌       | Friendly name displayed in the UI for the additional host.                                       |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME`  | ❌       | Public hostname/IP used for generating clickable links. If not set, inferred from socket URL.    |
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.
+
+
+### 🔐 Security Tips
+
+- Always use a strong, unique `SECRET_KEY`.
+- Change default credentials before exposing the dashboard.
+- Use VPN or restrict access to Docker socket/proxy (`2375` port) for remote setups.
+
+
+
+### 🔎 SEO Keywords
+
+> Docker dashboard, container port access, Docker UI, click-to-access Docker apps, DevOps tools, multi-host Docker management, remote Docker access, Docker compose dashboard, self-hosted Docker admin panel, minimal Docker interface, container monitoring tool, Docker port viewer, open-source Docker tool

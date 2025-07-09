@@ -188,54 +188,87 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /**
    * Fetches container and server data from the backend.
+   * Handles server status changes and automatically resets filters when needed.
    */
   async function fetchContainerData() {
     showLoadingIndicator();
+
     try {
       const response = await fetch("/data");
+
       if (!response.ok) {
-        let errorMsg;
-        switch (response.status) {
-          case 401:
-          case 403:
-            errorMsg = `Authorization Error (${response.status}): You might need to log in again.`;
-            break;
-          case 500:
-            errorMsg = `Server Error (${response.status}): The server encountered an issue. Please try again later.`;
-            break;
-          default:
-            errorMsg = `HTTP Error: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMsg);
-      }
-      const responseData = await response.json();
-      allServersData = responseData.servers;
-      allContainersData = responseData.containers;
-
-      const serverExists = allServersData.some(s => s.name === currentServerFilter);
-      const currentServer = allServersData.find(s => s.name === currentServerFilter);
-
-      if (!serverExists ||
-        (currentServer && currentServer.status === 'inactive') ||
-        (allServersData.length === 1 && allServersData[0].status === 'inactive')) {
-        currentServerFilter = 'all';
+        throw createResponseError(response);
       }
 
-      // Jeśli nie ma żadnych aktywnych serwerów, przejdź w tryb single-server
-      if (allServersData.length === 0 ||
-        allServersData.every(s => s.status === 'inactive')) {
-        mainTable.classList.add('table-single-server');
-      }
+      const { servers = [], containers = [] } = await response.json();
+      [allServersData, allContainersData] = [servers, containers];
+
+      handleServerFilterReset();
+      handleSingleServerMode();
 
       setupServerUI();
       updateDisplay();
+
     } catch (error) {
-      console.error("Error fetching data:", error);
-      const finalMessage = error.message.includes('Failed to fetch')
-        ? `Network Error: Could not connect to the backend. Is it running?`
-        : error.message;
-      displayError(finalMessage);
+      handleFetchError(error);
+    } finally {
+      hideLoadingIndicator();
     }
+  }
+
+  /**
+   * Creates appropriate error message based on HTTP response status
+   */
+  function createResponseError(response) {
+    const status = response.status;
+    const messages = {
+      401: `Authorization Error (${status}): Please log in again`,
+      403: `Authorization Error (${status}): Access denied`,
+      500: `Server Error (${status}): Please try again later`,
+      default: `HTTP Error: ${status} ${response.statusText}`
+    };
+    return new Error(messages[status] || messages.default);
+  }
+
+  /**
+   * Resets server filter if selected server becomes unavailable
+   */
+  function handleServerFilterReset() {
+    const shouldReset = !allServersData.some(s => s.name === currentServerFilter) ||
+      (allServersData.find(s => s.name === currentServerFilter)?.status === 'inactive') ||
+      (allServersData.length === 1 && allServersData[0].status === 'inactive');
+
+    if (shouldReset) {
+      currentServerFilter = 'all';
+      console.log('Server filter reset to "all" due to server unavailability');
+    }
+  }
+
+  /**
+   * Switches to single-server mode if no active servers available
+   */
+  function handleSingleServerMode() {
+    const noActiveServers = allServersData.length === 0 ||
+      allServersData.every(s => s.status === 'inactive');
+
+    mainTable.classList.toggle('table-single-server', noActiveServers);
+
+    if (noActiveServers) {
+      console.warn('No active servers available - switching to single-server mode');
+    }
+  }
+
+  /**
+   * Handles and displays fetch errors appropriately
+   */
+  function handleFetchError(error) {
+    console.error("Data fetch error:", error);
+
+    const message = error.message.includes('Failed to fetch')
+      ? "Network Error: Could not connect to backend service"
+      : error.message;
+
+    displayError(message);
   }
 
   // --- THEME SWITCHER LOGIC ---
@@ -243,10 +276,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const themeIcon = document.getElementById("theme-icon");
     if (theme === "dark") {
       body.classList.add("dark-mode");
-      themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 0111.21 3 7 7 0 0012 21c4.97 0 9-4.03 9-9 0-.07 0-.14-.01-.21z" /></svg>`;
+      themeIcon.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 11.5373 21.3065 11.4608 21.0672 11.8568C19.9289 13.7406 17.8615 15 15.5 15C11.9101 15 9 12.0899 9 8.5C9 6.13845 10.2594 4.07105 12.1432 2.93276C12.5392 2.69347 12.4627 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"/></svg>`;
     } else {
       body.classList.remove("dark-mode");
-      themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4" /><line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" /><line x1="5" y1="5" x2="6.5" y2="6.5" /><line x1="17.5" y1="17.5" x2="19" y2="19" /><line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" /><line x1="5" y1="19" x2="6.5" y2="17.5" /><line x1="17.5" y1="6.5" x2="19" y2="5" /></svg>`;
+      themeIcon.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 3V4M12 20V21M4 12H3M6.31412 6.31412L5.5 5.5M17.6859 6.31412L18.5 5.5M6.31412 17.69L5.5 18.5001M17.6859 17.69L18.5 18.5001M21 12H20M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     }
     localStorage.setItem("theme", theme);
   }
@@ -346,16 +379,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await showConfirmationModal('Export to JSON', 'Are you sure you want to download the currently displayed container data as a JSON file?', 'Download');
-      const jsonContent = JSON.stringify(filteredAndSortedContainers, null, 2);
+
+      // Przygotowanie danych
+      const exportData = {
+        meta: {
+          generated: new Date().toISOString(),
+        },
+        containers: filteredAndSortedContainers.map(container => ({
+          name: container.name,
+          status: container.status,
+          server: container.server,
+          ports: container.ports.map(p => ({
+            mapping: `${p.host_port}:${p.container_port}`,
+            accessible_at: p.link,
+            host_port: parseInt(p.host_port),
+            container_port: p.container_port.replace('/tcp', '')
+          })),
+        }))
+      };
+
+
+      // Tworzenie i pobieranie pliku
+      const jsonContent = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonContent], { type: "application/json" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "dockpeek_containers.json";
+      link.download = `dockpeek_export_${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
     } catch {
       console.log('Export cancelled by user.');
     }
   });
+
 });

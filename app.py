@@ -166,7 +166,6 @@ def get_all_data():
                 all_container_data.append({
                     'server': server_name,
                     'name': container.name,
-                    'id': container.short_id,
                     'status': container.status,
                     'image': container.image.tags[0] if container.image.tags else "none",
                     'ports': port_map

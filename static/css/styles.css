@@ -15,12 +15,15 @@ body {
 .logo-title {
   color: #e1e4e8;
 }
+
 body.dark-mode .logo-title {
   color: #2a2f37;
 }
+
 .github {
   color: #acb1b9;
 }
+
 body.dark-mode .github {
   color: #6a737d;
 }
@@ -33,9 +36,10 @@ body.dark-mode .status-none {
   color: #474c55;
 }
 
- .data-content-name {
+.data-content-name {
   color: #30363d;
 }
+
 body.dark-mode .data-content-name {
   color: #c9d1d9;
 }
@@ -153,7 +157,7 @@ input[type="text"] {
 }
 
 #refresh-button.loading svg {
-    animation: spin 1s linear infinite;
+  animation: spin-reverse 1s linear infinite;
 }
 
 .text-red-500 {
@@ -179,40 +183,43 @@ code {
 }
 
 .filter-button {
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    background-color: #e1e4e8;
-    color: #24292e;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #e1e4e8;
+  color: #24292e;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .filter-button.active {
-    background-color: #2188ff;
-    color: white;
-    box-shadow: 0 0 0 2px rgba(33, 136, 255, 0.5);
+  background-color: #2188ff;
+  color: white;
+  box-shadow: 0 0 0 2px rgba(33, 136, 255, 0.5);
 }
+
 .filter-button.inactive {
-    color: #d2d3d3;
-    background-color: #f3f3f3;
+  color: #d2d3d3;
+  background-color: #f3f3f3;
 }
+
 body.dark-mode .filter-button {
-    background-color: #21262d;
-    color: #c9d1d9;
+  background-color: #21262d;
+  color: #c9d1d9;
 }
 
 body.dark-mode .filter-button.active {
-    background-color: #2188ff;
-    color: white;
+  background-color: #2188ff;
+  color: white;
 }
+
 body.dark-mode .filter-button.inactive {
-    color: #30353d;
-    background-color: #15181c;
+  color: #30353d;
+  background-color: #15181c;
 }
 
 .table-single-server .server-column {
-    display: none;
+  display: none;
 }
 
 /* Dark Mode Styles */
@@ -334,9 +341,9 @@ body.dark-mode code {
   td.table-cell-status {
     display: none;
   }
-  
+
   .server-column {
-      display: none;
+    display: none;
   }
 
   .py-3.px-4 {
@@ -414,5 +421,15 @@ body.dark-mode .loader {
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
   }
 }

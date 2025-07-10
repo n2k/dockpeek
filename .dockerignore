@@ -6,6 +6,9 @@ Dockerfile
 README.md
 LICENSE
 
+.build/
+.Releases/
+
 # Node.js / frontend
 node_modules
 npm-debug.log

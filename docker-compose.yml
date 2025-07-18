@@ -6,6 +6,7 @@ services:
       - SECRET_KEY=my_secret_key   # Set secret key
       - USERNAME=admin             # Change default username
       - PASSWORD=admin             # Change default password
+      - DOCKER_HOST=unix:///var/run/docker.sock
     ports:
       - "3420:8000"
     volumes:

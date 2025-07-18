@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
       workingData = workingData.filter(c =>
         c.name.toLowerCase().includes(searchTerm) ||
         c.image.toLowerCase().includes(searchTerm) ||
-        c.ports.some(p => p.host_port.includes(searchTerm))
+        c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
       );
     }
 

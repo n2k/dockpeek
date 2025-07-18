@@ -3,9 +3,9 @@ services:
     container_name: dockpeek
     image: ghcr.io/dockpeek/dockpeek:latest
     environment:
-      - SECRET_KEY=my_secret_key   # Set secret key
-      - USERNAME=admin             # Change default username
-      - PASSWORD=admin             # Change default password
+      - SECRET_KEY=my_secret_key   # Change
+      - USERNAME=admin             # Change
+      - PASSWORD=admin             # Change
       - DOCKER_HOST=unix:///var/run/docker.sock
     ports:
       - "3420:8000"

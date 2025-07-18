@@ -56,7 +56,7 @@ def unauthorized_callback():
 
 # === Docker Client Logic ===
 
-DOCKER_TIMEOUT = 1  # Timeout in seconds
+DOCKER_TIMEOUT = 0.3  # Timeout in seconds
 
 def _extract_hostname_from_url(url):
     """
@@ -161,7 +161,7 @@ def discover_docker_clients():
     # Support for DOCKER_HOST for backward compatibility
     if "DOCKER_HOST" in os.environ:
         host_url = os.environ.get("DOCKER_HOST")
-        host_name = os.environ.get("DOCKER_HOST_NAME", "local")  # Allow custom name, default to "local"
+        host_name = os.environ.get("DOCKER_HOST_NAME", "default")  # Allow custom name, default to "default"
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         
         # Determine public hostname based on URL if not explicitly set
@@ -237,8 +237,8 @@ def discover_docker_clients():
 
     # If no hosts are configured, try the local socket
     if not clients:
-        fallback_name = os.environ.get("DOCKER_NAME", "local")
-        print("⚠️ No Docker hosts configured via environment variables. Trying local socket...")
+        fallback_name = os.environ.get("DOCKER_NAME", "default")
+        print("⚠️ No Docker hosts configured via environment variables. Trying default socket...")
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             client.ping()
@@ -246,14 +246,14 @@ def discover_docker_clients():
                 "name": fallback_name, 
                 "client": client, 
                 "url": "unix:///var/run/docker.sock", 
-                "public_hostname": "",  # Local socket is always localhost
+                "public_hostname": "", 
                 "status": "active", 
                 "is_docker_host": True,
                 "order": 0
             })
-            print(f"✅ Discovered and connected to local Docker daemon '{fallback_name}' via socket.")
+            print(f"✅ Discovered and connected to default Docker daemon '{fallback_name}' via socket.")
         except Exception as e:
-            print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
+            print(f"❌ Failed to connect to any Docker daemon, including default socket: {e}")
             clients.append({
                 "name": fallback_name, 
                 "client": None, 

@@ -86,62 +86,62 @@ document.addEventListener("DOMContentLoaded", () => {
   /**
  * Renders server filter buttons with active servers first and 'local' server always on top
  */
-function setupServerUI() {
+  function setupServerUI() {
     serverFilterContainer.innerHTML = '';
     const servers = [...allServersData]; // Create a copy to avoid mutating original data
 
     if (servers.length > 1) {
-        mainTable.classList.remove('table-single-server');
+      mainTable.classList.remove('table-single-server');
 
-        // Sort servers: local first, then active, then inactive
-        servers.sort((a, b) => {
-            // Local server always comes first
-            if (a.name.toLowerCase() === 'local') return -1;
-            if (b.name.toLowerCase() === 'local') return 1;
-            
-            // Then active servers before inactive
-            if (a.status === 'inactive' && b.status !== 'inactive') return 1;
-            if (a.status !== 'inactive' && b.status === 'inactive') return -1;
-            
-            // Finally sort alphabetically
-            return a.name.localeCompare(b.name);
+      // Sort servers: local first, then active, then inactive
+      servers.sort((a, b) => {
+        // DOCKER_HOST server always comes first
+        if (a.is_docker_host && !b.is_docker_host) return -1;
+        if (!a.is_docker_host && b.is_docker_host) return 1;
+
+        // Then active servers before inactive
+        if (a.status === 'inactive' && b.status !== 'inactive') return 1;
+        if (a.status !== 'inactive' && b.status === 'inactive') return -1;
+
+        // Finally sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
+
+      // Add 'All' button
+      const allButton = document.createElement('button');
+      allButton.textContent = 'All';
+      allButton.dataset.server = 'all';
+      allButton.className = 'filter-button';
+      serverFilterContainer.appendChild(allButton);
+
+      // Add server buttons
+      servers.forEach(server => {
+        const button = document.createElement('button');
+        button.textContent = server.name;
+        button.dataset.server = server.name;
+        button.className = 'filter-button';
+
+        if (server.status === 'inactive') {
+          button.classList.add('inactive');
+          button.disabled = true;
+          button.title = `${server.name} is offline`;
+        }
+        serverFilterContainer.appendChild(button);
+      });
+
+      // Add click handlers for active buttons
+      serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
+        button.addEventListener('click', () => {
+          currentServerFilter = button.dataset.server;
+          updateDisplay();
         });
-
-        // Add 'All' button
-        const allButton = document.createElement('button');
-        allButton.textContent = 'All';
-        allButton.dataset.server = 'all';
-        allButton.className = 'filter-button';
-        serverFilterContainer.appendChild(allButton);
-
-        // Add server buttons
-        servers.forEach(server => {
-            const button = document.createElement('button');
-            button.textContent = server.name;
-            button.dataset.server = server.name;
-            button.className = 'filter-button';
-
-            if (server.status === 'inactive') {
-                button.classList.add('inactive');
-                button.disabled = true;
-                button.title = `${server.name} is offline`;
-            }
-            serverFilterContainer.appendChild(button);
-        });
-
-        // Add click handlers for active buttons
-        serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
-            button.addEventListener('click', () => {
-                currentServerFilter = button.dataset.server;
-                updateDisplay();
-            });
-        });
+      });
     } else {
-        mainTable.classList.add('table-single-server');
+      mainTable.classList.add('table-single-server');
     }
-    
+
     updateActiveButton();
-}
+  }
   /**
    * Updates the visual state of the active filter button.
    */

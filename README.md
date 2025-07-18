@@ -105,7 +105,7 @@ You can connect and manage multiple Docker instances from a single dashboard.
 
 ```yaml
     environment:
-      - SECRET_KEY=my_secret_key      # Set a secret key for security
+      - SECRET_KEY=my_secret_key     # Set a secret key for security
       - USERNAME=admin               # Change the default username
       - PASSWORD=admin               # Change the default password
       
@@ -114,13 +114,13 @@ You can connect and manage multiple Docker instances from a single dashboard.
       
       # Docker Host 1
       - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Docker socket URL
-      - DOCKER_HOST_1_NAME=MyServer1                      # Name shown in the UI
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                    # Optional public hostname or IP for links; if empty, inferred from URL
+      - DOCKER_HOST_1_NAME=MyServer1                     # Name shown in the UI
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # Optional public hostname or IP for links; if empty, inferred from URL
       
       # Docker Host 2
       - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Docker proxy URL
-      - DOCKER_HOST_2_NAME=Synology                        # Name shown in the UI
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                  # Optional public hostname or IP (e.g. 'NAS' for Tailscale access)
+      - DOCKER_HOST_2_NAME=Synology                      # Name shown in the UI
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                # Optional public hostname or IP (e.g. 'NAS' for Tailscale access)
       
       # Add more Docker hosts by increasing the number (3, 4, etc.)
 

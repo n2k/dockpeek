@@ -68,7 +68,7 @@ def discover_docker_clients():
     # Support for DOCKER_HOST for backward compatibility
     if "DOCKER_HOST" in os.environ:
         host_url = os.environ.get("DOCKER_HOST")
-        name = os.environ.get("DOCKER_HOST_NAME", "local")  # Added support for DOCKER_HOST_NAME
+        name = os.environ.get("DOCKER_HOST_NAME", "default")  # Added support for DOCKER_HOST_NAME
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
@@ -151,19 +151,16 @@ def get_all_data():
                                 link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
                                 link = f"http://{link_ip}:{host_port}"
                             else:
-                                # For non-primary hosts, check if it's a Unix socket
-                                if server_url_str.startswith('unix://'):
+                                # For non-primary hosts, public_hostname always takes precedence
+                                if public_hostname:
+                                    link_hostname = public_hostname
+                                elif server_url_str.startswith('unix://'):
                                     # For Unix sockets, use the current request host
                                     link_hostname = request.host.split(":")[0]
                                 else:
-                                    # For TCP connections, use public hostname or parsed hostname
-                                    link_hostname = "localhost"
-                                    if public_hostname:
-                                        link_hostname = public_hostname
-                                    else:
-                                        parsed_url = urlparse(server_url_str)
-                                        if parsed_url.hostname:
-                                            link_hostname = parsed_url.hostname
+                                    # For TCP connections, use parsed hostname or fallback to localhost
+                                    parsed_url = urlparse(server_url_str)
+                                    link_hostname = parsed_url.hostname if parsed_url.hostname else "localhost"
                                 link = f"http://{link_hostname}:{host_port}"
                             
                             port_map.append({

@@ -102,11 +102,11 @@ def discover_docker_clients():
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({"name": "default", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "active", "is_primary": True, "order": 0})
+            clients.append({"name": "default", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "", "status": "active", "is_primary": True, "order": 0})
             print("✅ Discovered and connected to default Docker daemon via socket.")
         except Exception as e:
             print(f"❌ Failed to connect to any Docker daemon, including default socket: {e}")
-            clients.append({"name": "default", "client": None, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "inactive", "is_primary": True, "order": 0})
+            clients.append({"name": "default", "client": None, "url": "unix:///var/run/docker.sock", "public_hostname": "", "status": "inactive", "is_primary": True, "order": 0})
             
     return clients
 
@@ -147,22 +147,9 @@ def get_all_data():
                             
                             # Use primary host logic for both "default" and DOCKER_HOST
                             if is_primary:
-                                # For primary hosts, public_hostname always takes precedence
-                                if public_hostname:
-                                    link_hostname = public_hostname
-                                elif server_url_str.startswith('unix://'):
-                                    # For Unix sockets, always use current request host
-                                    link_hostname = request.host.split(":")[0]
-                                else:
-                                    # For TCP connections, try to extract IP from URL first
-                                    parsed_url = urlparse(server_url_str)
-                                    if parsed_url.hostname:
-                                        link_hostname = parsed_url.hostname
-                                    else:
-                                        # Fallback to Docker's HostIp logic
-                                        host_ip = m.get('HostIp', '0.0.0.0')
-                                        link_hostname = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
-                                link = f"http://{link_hostname}:{host_port}"
+                                host_ip = m.get('HostIp', '0.0.0.0')
+                                link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
+                                link = f"http://{link_ip}:{host_port}"
                             else:
                                 # For non-primary hosts, public_hostname always takes precedence
                                 if public_hostname:
@@ -189,7 +176,6 @@ def get_all_data():
                     'image': container.image.tags[0] if container.image.tags else "none",
                     'ports': port_map
                 })
-
         except Exception as e:
             # If an error occurs with a host that was presumed active, mark it as inactive for this response
             print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")

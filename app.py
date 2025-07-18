@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 from docker.client import DockerClient
 from docker.constants import DEFAULT_TIMEOUT_SECONDS
 
-# === Flask Init ===
 app = Flask(__name__)
 secret_key = os.environ.get("SECRET_KEY")
 if not secret_key:
@@ -21,19 +20,16 @@ if not secret_key:
 app.secret_key = secret_key
 CORS(app)
 
-# === Flask-Login Init ===
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# === User credentials from environment ===
 ADMIN_USERNAME = os.environ.get("USERNAME")
 ADMIN_PASSWORD = os.environ.get("PASSWORD")
 
 if not ADMIN_USERNAME or not ADMIN_PASSWORD:
     raise RuntimeError("USERNAME and PASSWORD environment variables must be set.")
 
-# Hashed user storage
 users = {
     ADMIN_USERNAME: {
         "password": generate_password_hash(ADMIN_PASSWORD)
@@ -54,32 +50,40 @@ def load_user(user_id):
 def unauthorized_callback():
     return redirect(url_for('login'))
 
-# === Docker Client Logic ===
-
-DOCKER_TIMEOUT = 0.3 # Timeout in seconds
+DOCKER_TIMEOUT = 0.3
 
 def discover_docker_clients():
-    """
-    Discovers Docker clients from environment variables and checks their status.
-    Returns a list of all discovered servers, including inactive ones.
-    """
     clients = []
     
-    # Support for DOCKER_HOST for backward compatibility
     if "DOCKER_HOST" in os.environ:
         host_url = os.environ.get("DOCKER_HOST")
-        host_name = os.environ.get("DOCKER_HOST_NAME", "local")  # Allow custom name, default to "local"
+        host_name = os.environ.get("DOCKER_HOST_NAME", "local")
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({"name": host_name, "client": client, "url": host_url, "public_hostname": public_hostname, "status": "active", "is_docker_host": True})
+            clients.append({
+                "name": host_name,
+                "client": client,
+                "url": host_url,
+                "public_hostname": public_hostname,
+                "status": "active",
+                "is_docker_host": True,
+                "order": 0
+            })
             print(f"✅ Discovered and connected to default Docker daemon '{host_name}' at {host_url}")
         except Exception as e:
             print(f"❌ Error connecting to default Docker daemon '{host_name}' at {host_url}: {e}")
-            clients.append({"name": host_name, "client": None, "url": host_url, "public_hostname": public_hostname, "status": "inactive", "is_docker_host": True})
+            clients.append({
+                "name": host_name,
+                "client": None,
+                "url": host_url,
+                "public_hostname": public_hostname,
+                "status": "inactive",
+                "is_docker_host": True,
+                "order": 0
+            })
 
-    # Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
     host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
     for key, url in host_vars.items():
         match = re.match(r"^DOCKER_HOST_(\d+)_URL$", key)
@@ -90,28 +94,58 @@ def discover_docker_clients():
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
                 client.ping()
-                clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname, "status": "active", "is_docker_host": False})
+                clients.append({
+                    "name": name,
+                    "client": client,
+                    "url": url,
+                    "public_hostname": public_hostname,
+                    "status": "active",
+                    "is_docker_host": False,
+                    "order": int(num)
+                })
                 print(f"✅ Discovered and connected to Docker daemon '{name}' at {url}")
             except Exception as e:
                 print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
-                clients.append({"name": name, "client": None, "url": url, "public_hostname": public_hostname, "status": "inactive", "is_docker_host": False})
+                clients.append({
+                    "name": name,
+                    "client": None,
+                    "url": url,
+                    "public_hostname": public_hostname,
+                    "status": "inactive",
+                    "is_docker_host": False,
+                    "order": int(num)
+                })
 
-    # If no hosts are configured, try the local socket
     if not clients:
-        fallback_name = os.environ.get("DOCKER_NAME", "local")  # Use same naming logic as DOCKER_HOST
+        fallback_name = os.environ.get("DOCKER_NAME", "local")
         print("⚠️ No Docker hosts configured via environment variables. Trying local socket...")
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({"name": fallback_name, "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "active", "is_docker_host": True})
+            clients.append({
+                "name": fallback_name,
+                "client": client,
+                "url": "unix:///var/run/docker.sock",
+                "public_hostname": "localhost",
+                "status": "active",
+                "is_docker_host": True,
+                "order": 0
+            })
             print(f"✅ Discovered and connected to local Docker daemon '{fallback_name}' via socket.")
         except Exception as e:
             print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
-            clients.append({"name": fallback_name, "client": None, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "inactive", "is_docker_host": True})
+            clients.append({
+                "name": fallback_name,
+                "client": None,
+                "url": "unix:///var/run/docker.sock",
+                "public_hostname": "localhost",
+                "status": "inactive",
+                "is_docker_host": True,
+                "order": 0
+            })
             
     return clients
 
-# === Helpers ===
 def get_all_data():
     servers = discover_docker_clients()
     
@@ -119,12 +153,9 @@ def get_all_data():
         return {"servers": [], "containers": []}
 
     all_container_data = []
-    # Create a serializable list of servers for the frontend, which can be updated if a fetch fails
-    server_list_for_json = [{"name": s["name"], "status": s["status"], "is_docker_host": s["is_docker_host"]} for s in servers]
-
+    server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"]} for s in servers]
 
     for host in servers:
-        # Skip hosts that were already found to be inactive
         if host['status'] == 'inactive':
             continue
         
@@ -133,7 +164,7 @@ def get_all_data():
             client = host["client"]
             server_url_str = host["url"]
             public_hostname = host["public_hostname"]
-            is_docker_host = host["is_docker_host"]  # Flag to identify DOCKER_HOST vs DOCKER_HOST_N_
+            is_docker_host = host["is_docker_host"]
 
             containers = client.containers.list(all=True)
 
@@ -147,16 +178,13 @@ def get_all_data():
                          m = mappings[0]
                          host_port = m['HostPort']
                          
-                         # Najpierw sprawdź, czy jest public_hostname
                          if public_hostname:
                              link = f"http://{public_hostname}:{host_port}"
                          elif is_docker_host:
-                             # Dla DOCKER_HOST użyj request.host jako fallback
                              host_ip = m.get('HostIp', '0.0.0.0')
                              link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
                              link = f"http://{link_ip}:{host_port}"
                          else:
-                             # Dla DOCKER_HOST_N_ użyj hostname z URL
                              link_hostname = "localhost"
                              parsed_url = urlparse(server_url_str)
                              if parsed_url.hostname:
@@ -169,7 +197,6 @@ def get_all_data():
                              'link': link
                          })
 
-
                 all_container_data.append({
                     'server': server_name,
                     'name': container.name,
@@ -178,7 +205,6 @@ def get_all_data():
                     'ports': port_map
                 })
         except Exception as e:
-            # If an error occurs with a host that was presumed active, mark it as inactive for this response
             print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")
             for s in server_list_for_json:
                 if s["name"] == host["name"]:
@@ -187,8 +213,6 @@ def get_all_data():
             continue
 
     return {"servers": server_list_for_json, "containers": all_container_data}
-
-# === Routes ===
 
 @app.route("/")
 def index():
@@ -221,7 +245,6 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
-# === Entry Point ===
 if __name__ == "__main__":
     if not os.path.exists('templates'):
         os.makedirs('templates')

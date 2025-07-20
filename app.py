@@ -294,33 +294,65 @@ def get_all_data():
             containers = client.containers.list(all=True)
 
             for container in containers:
-                ports = container.attrs['NetworkSettings']['Ports']
-                port_map = []
+                try:
+                    # Safely get image information
+                    image_name = "unknown"
+                    try:
+                        if hasattr(container, 'image') and container.image:
+                            if hasattr(container.image, 'tags') and container.image.tags:
+                                image_name = container.image.tags[0]
+                            else:
+                                # Fallback to image ID if tags are not available
+                                image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
+                    except Exception as img_error:
+                        # If image access fails, try to get it from container attrs
+                        print(f"⚠️ Could not access image info for container '{container.name}' on '{server_name}': {img_error}")
+                        try:
+                            image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
+                        except:
+                            image_name = "missing-image"
 
-                if ports:
-                    for container_port, mappings in ports.items():
-                        if mappings:
-                            m = mappings[0]
-                            host_port = m['HostPort']
-                            host_ip = m.get('HostIp', '0.0.0.0')
-                            
-                            # Use the unified logic for determining hostname
-                            link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
-                            link = f"http://{link_hostname}:{host_port}"
-                            
-                            port_map.append({
-                                'container_port': container_port,
-                                'host_port': host_port,
-                                'link': link
-                            })
+                    # Safely get port information
+                    ports = container.attrs['NetworkSettings']['Ports']
+                    port_map = []
 
-                all_container_data.append({
-                    'server': server_name,
-                    'name': container.name,
-                    'status': container.status,
-                    'image': container.image.tags[0] if container.image.tags else "none",
-                    'ports': port_map
-                })
+                    if ports:
+                        for container_port, mappings in ports.items():
+                            if mappings:
+                                m = mappings[0]
+                                host_port = m['HostPort']
+                                host_ip = m.get('HostIp', '0.0.0.0')
+                                
+                                # Use the unified logic for determining hostname
+                                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+                                link = f"http://{link_hostname}:{host_port}"
+                                
+                                port_map.append({
+                                    'container_port': container_port,
+                                    'host_port': host_port,
+                                    'link': link
+                                })
+
+                    all_container_data.append({
+                        'server': server_name,
+                        'name': container.name,
+                        'status': container.status,
+                        'image': image_name,
+                        'ports': port_map
+                    })
+                    
+                except Exception as container_error:
+                    # Log individual container errors but continue processing other containers
+                    print(f"⚠️ Error processing container '{getattr(container, 'name', 'unknown')}' on '{server_name}': {container_error}")
+                    # Still add the container with minimal info
+                    all_container_data.append({
+                        'server': server_name,
+                        'name': getattr(container, 'name', 'unknown'),
+                        'status': getattr(container, 'status', 'unknown'),
+                        'image': 'error-loading',
+                        'ports': []
+                    })
+                    
         except Exception as e:
             # If an error occurs with a host that was presumed active, mark it as inactive for this response
             print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")
@@ -331,6 +363,7 @@ def get_all_data():
             continue
 
     return {"servers": server_list_for_json, "containers": all_container_data}
+
 
 
 # === Routes ===

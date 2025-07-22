@@ -1,6 +1,7 @@
 
 .build/
 .Releases/
+.dockerignore
 
 # === Python backend ===
 __pycache__/

@@ -59,7 +59,7 @@ services:
 
 <br>
 
-### Option 2: Using `socket-proxy` (Recommended for remote or multi-host setup)
+### Option 2: Using `socket-proxy`
 
 
 ```yaml
@@ -78,7 +78,7 @@ services:
       - dockpeek-socket-proxy
     restart: unless-stopped
 
-  dockpeek-socket-proxy:
+  dockpeek-socket-proxy:   # socket-proxy for Docker API
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
@@ -103,24 +103,25 @@ services:
 
 You can connect and manage multiple Docker instances from a single dashboard.
 
+The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
+
 ```yaml
     environment:
-      - SECRET_KEY=my_secret_key      # Set a secret key for security
-      - USERNAME=admin               # Change the default username
-      - PASSWORD=admin               # Change the default password
+      - SECRET_KEY=my_secret_key     # Set a secret key for security
+      - USERNAME=admin               # Change
+      - PASSWORD=admin               # Change
       
       # Optional: Add extra Docker hosts by setting these variables.
-      # Each host needs DOCKER_HOST_N_URL, DOCKER_HOST_N_NAME, and optionally DOCKER_HOST_N_PUBLIC_HOSTNAME.
-      
+
       # Docker Host 1
       - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Docker socket URL
-      - DOCKER_HOST_1_NAME=MyServer1                      # Name shown in the UI
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                    # Optional public hostname or IP for links; if empty, inferred from URL
+      - DOCKER_HOST_1_NAME=MyServer1                     # Name shown in the UI
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # (Optional) public adress; if empty, inferred from URL
       
       # Docker Host 2
-      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375       # Docker proxy URL
-      - DOCKER_HOST_2_NAME=Synology                        # Name shown in the UI
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS                  # Optional public hostname or IP (e.g. 'NAS' for Tailscale access)
+      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375     
+      - DOCKER_HOST_2_NAME=Synology                    
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS              
       
       # Add more Docker hosts by increasing the number (3, 4, etc.)
 
@@ -132,17 +133,23 @@ You can connect and manage multiple Docker instances from a single dashboard.
 
 <br>
 
-  ## Environment Variables
+## Environment Variables
 
-| Variable                         | Required | Description                                                                                      |
-|----------------------------------|----------|--------------------------------------------------------------------------------------------------|
-| `SECRET_KEY`                     | ✅       | A strong, unique secret.                                                              |
-| `USERNAME`                       | ✅       | Username for Dockpeek login.                                                 |
-| `PASSWORD`                       | ✅       | Password for Dockpeek login.                                                                          |
-| `DOCKER_HOST`                    | ❌       | URL of the primary Docker socket (e.g., `unix:///var/run/docker.sock` or `tcp://socket-proxy:2375`). Defaults to local socket if omitted. Recommended for use with a local proxy   |
-| `DOCKER_HOST_N_URL`              | ❌       | Defines an additional Docker host (e.g., `tcp://192.168.1.10:2375`). Replace `N` with a number (`1`, `2`, `3`, ...).                                |
-| `DOCKER_HOST_N_NAME`             | ❌       | Friendly name for the additional Docker host shown in the UI.                                       |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME`  | ❌       | Public hostname or IP for clickable links (e.g. 'NAS' for Tailscale access); If unset, it's inferred from the `DOCKER_HOST_N_URL`.    |
+| Variable                        | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| `SECRET_KEY`                    | A strong, unique secret.                                                    |
+| `USERNAME`                      | Username for Dockpeek login.                                                |
+| `PASSWORD`                      | Password for Dockpeek login.                                                |  
+| `DOCKER_HOST`                   | URL of the Docker Socket (e.g., `unix:///var/run/docker.sock` for local, or `tcp://socket-proxy:2375` via a local proxy). |
+| `DOCKER_HOST_NAME`              | Name shown in the UI ("local" is default)                                                       |
+| `DOCKER_HOST_PUBLIC_HOSTNAME`   | Public hostname or IP for clickable links (optional)                                  |
+
+### Additional Docker Hosts
+| Variable                        | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| `DOCKER_HOST_N_URL`            | URL for Docker hosts (e.g., `tcp://192.168.1.10:2375`). `N` is a numeric identifier (1, 2, 3, etc.). |
+| `DOCKER_HOST_N_NAME`           | Name shown in the UI                                                        |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME`| Public hostname or IP for clickable links (e.g. 'NAS' for Tailscale access). If unset, it's inferred from the `DOCKER_HOST_N_URL`. |
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.

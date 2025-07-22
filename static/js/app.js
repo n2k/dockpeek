@@ -1,13 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- STATE MANAGEMENT ---
-  let allContainersData = []; // Raw data from the server
-  let allServersData = []; // All configured servers with their status
-  let filteredAndSortedContainers = []; // Data after filtering and sorting
+  let allContainersData = [];
+  let allServersData = [];
+  let filteredAndSortedContainers = [];
   let currentSortColumn = "name";
   let currentSortDirection = "asc";
   let currentServerFilter = "all";
 
-  // --- DOM ELEMENT SELECTORS ---
   const searchInput = document.getElementById("search-input");
   const containerRowsBody = document.getElementById("container-rows");
   const body = document.body;
@@ -16,33 +14,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const mainTable = document.getElementById("main-table");
   const refreshButton = document.getElementById('refresh-button');
 
-  /**
-   * Shows a loading indicator in the table body.
-   */
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
     containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
   }
 
-  /**
-   * Hides loading indicators.
-   */
   function hideLoadingIndicator() {
     refreshButton.classList.remove('loading');
   }
 
-  /**
-   * Displays an error message in the table body.
-   * @param {string} message - The error message to display.
-   */
   function displayError(message) {
     hideLoadingIndicator();
     containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
-  /**
-   * Renders the container table using the HTML template.
-   */
   function renderTable() {
     containerRowsBody.innerHTML = "";
 
@@ -83,68 +68,57 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.appendChild(fragment);
   }
 
-  /**
- * Renders server filter buttons with active servers first and 'local' server always on top
- */
-function setupServerUI() {
+  function setupServerUI() {
     serverFilterContainer.innerHTML = '';
-    const servers = [...allServersData]; // Create a copy to avoid mutating original data
+    const servers = [...allServersData];
 
     if (servers.length > 1) {
-        mainTable.classList.remove('table-single-server');
+      mainTable.classList.remove('table-single-server');
 
-        // Sort servers: local first, then active, then inactive
-        servers.sort((a, b) => {
-            // Local server always comes first
-            if (a.name.toLowerCase() === 'local') return -1;
-            if (b.name.toLowerCase() === 'local') return 1;
-            
-            // Then active servers before inactive
-            if (a.status === 'inactive' && b.status !== 'inactive') return 1;
-            if (a.status !== 'inactive' && b.status === 'inactive') return -1;
-            
-            // Finally sort alphabetically
-            return a.name.localeCompare(b.name);
+      servers.sort((a, b) => {
+        if (a.status !== 'inactive' && b.status === 'inactive') return -1;
+        if (a.status === 'inactive' && b.status !== 'inactive') return 1;
+
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+        
+        return a.name.localeCompare(b.name);
+      });
+
+      const allButton = document.createElement('button');
+      allButton.textContent = 'All';
+      allButton.dataset.server = 'all';
+      allButton.className = 'filter-button';
+      serverFilterContainer.appendChild(allButton);
+
+      servers.forEach(server => {
+        const button = document.createElement('button');
+        button.textContent = server.name;
+        button.dataset.server = server.name;
+        button.className = 'filter-button';
+
+        if (server.status === 'inactive') {
+          button.classList.add('inactive');
+          button.disabled = true;
+          button.title = `${server.name} is offline`;
+        }
+        serverFilterContainer.appendChild(button);
+      });
+
+      serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
+        button.addEventListener('click', () => {
+          currentServerFilter = button.dataset.server;
+          updateDisplay();
         });
-
-        // Add 'All' button
-        const allButton = document.createElement('button');
-        allButton.textContent = 'All';
-        allButton.dataset.server = 'all';
-        allButton.className = 'filter-button';
-        serverFilterContainer.appendChild(allButton);
-
-        // Add server buttons
-        servers.forEach(server => {
-            const button = document.createElement('button');
-            button.textContent = server.name;
-            button.dataset.server = server.name;
-            button.className = 'filter-button';
-
-            if (server.status === 'inactive') {
-                button.classList.add('inactive');
-                button.disabled = true;
-                button.title = `${server.name} is offline`;
-            }
-            serverFilterContainer.appendChild(button);
-        });
-
-        // Add click handlers for active buttons
-        serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
-            button.addEventListener('click', () => {
-                currentServerFilter = button.dataset.server;
-                updateDisplay();
-            });
-        });
+      });
     } else {
-        mainTable.classList.add('table-single-server');
+      mainTable.classList.add('table-single-server');
     }
-    
+
     updateActiveButton();
-}
-  /**
-   * Updates the visual state of the active filter button.
-   */
+  }
+
   function updateActiveButton() {
     serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
       if (button.dataset.server === currentServerFilter) {
@@ -155,9 +129,6 @@ function setupServerUI() {
     });
   }
 
-  /**
-   * Sorts and filters the container list, then triggers a re-render.
-   */
   function updateDisplay() {
     let workingData = [...allContainersData];
 
@@ -170,7 +141,7 @@ function setupServerUI() {
       workingData = workingData.filter(c =>
         c.name.toLowerCase().includes(searchTerm) ||
         c.image.toLowerCase().includes(searchTerm) ||
-        c.ports.some(p => p.host_port.includes(searchTerm))
+        c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
       );
     }
 
@@ -202,10 +173,6 @@ function setupServerUI() {
     updateActiveButton();
   }
 
-  /**
-   * Fetches container and server data from the backend.
-   * Handles server status changes and automatically resets filters when needed.
-   */
   async function fetchContainerData() {
     showLoadingIndicator();
 
@@ -232,9 +199,6 @@ function setupServerUI() {
     }
   }
 
-  /**
-   * Creates appropriate error message based on HTTP response status
-   */
   function createResponseError(response) {
     const status = response.status;
     const messages = {
@@ -246,9 +210,6 @@ function setupServerUI() {
     return new Error(messages[status] || messages.default);
   }
 
-  /**
-   * Resets server filter if selected server becomes unavailable
-   */
   function handleServerFilterReset() {
     const shouldReset = !allServersData.some(s => s.name === currentServerFilter) ||
       (allServersData.find(s => s.name === currentServerFilter)?.status === 'inactive') ||
@@ -260,9 +221,6 @@ function setupServerUI() {
     }
   }
 
-  /**
-   * Switches to single-server mode if no active servers available
-   */
   function handleSingleServerMode() {
     const noActiveServers = allServersData.length === 0 ||
       allServersData.every(s => s.status === 'inactive');
@@ -274,9 +232,6 @@ function setupServerUI() {
     }
   }
 
-  /**
-   * Handles and displays fetch errors appropriately
-   */
   function handleFetchError(error) {
     console.error("Data fetch error:", error);
 
@@ -287,7 +242,6 @@ function setupServerUI() {
     displayError(message);
   }
 
-  // --- THEME SWITCHER LOGIC ---
   function applyTheme(theme) {
     const themeIcon = document.getElementById("theme-icon");
     if (theme === "dark") {
@@ -300,17 +254,10 @@ function setupServerUI() {
     localStorage.setItem("theme", theme);
   }
 
-  // --- MODAL LOGIC ---
   const modal = document.getElementById("confirmation-modal");
   const modalConfirmBtn = document.getElementById("modal-confirm-button");
   const modalCancelBtn = document.getElementById("modal-cancel-button");
 
-  /**
-   * Displays a confirmation modal and returns a Promise that resolves or rejects based on user action.
-   * @param {string} title - The title for the modal.
-   * @param {string} message - The confirmation message.
-   * @param {string} confirmText - The text for the confirm button.
-   */
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {
       document.getElementById('modal-title').textContent = title;
@@ -348,28 +295,18 @@ function setupServerUI() {
     });
   }
 
-
-
-  // --- INITIALIZATION & EVENT LISTENERS ---
-
-  // Initial data fetch
   fetchContainerData();
 
-  // Apply saved theme
   applyTheme(localStorage.getItem("theme") || "dark");
 
-  // Refresh button
   refreshButton.addEventListener("click", fetchContainerData);
 
-  // Theme switcher
   document.getElementById("theme-switcher").addEventListener("click", () => {
     applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
   });
 
-  // Search input
   searchInput.addEventListener("input", updateDisplay);
 
-  // Sorting headers
   document.querySelectorAll(".sortable-header").forEach((header) => {
     header.addEventListener("click", () => {
       const column = header.dataset.sortColumn;
@@ -386,7 +323,6 @@ function setupServerUI() {
     });
   });
 
-  // Export to JSON button
   document.getElementById("export-json-button").addEventListener("click", async () => {
     if (filteredAndSortedContainers.length === 0) {
       alert("No data to export.");
@@ -396,7 +332,6 @@ function setupServerUI() {
     try {
       await showConfirmationModal('Export to JSON', 'Are you sure you want to download the currently displayed container data as a JSON file?', 'Download');
 
-      // Przygotowanie danych
       const exportData = {
         meta: {
           generated: new Date().toISOString(),
@@ -414,8 +349,6 @@ function setupServerUI() {
         }))
       };
 
-
-      // Tworzenie i pobieranie pliku
       const jsonContent = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonContent], { type: "application/json" });
       const link = document.createElement("a");

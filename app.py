@@ -56,7 +56,100 @@ def unauthorized_callback():
 
 # === Docker Client Logic ===
 
-DOCKER_TIMEOUT = 1 # Timeout in seconds
+DOCKER_TIMEOUT = 0.3  # Timeout in seconds
+
+def _extract_hostname_from_url(url):
+    """
+    Extracts hostname from Docker URL for public hostname determination.
+    Returns None for local connections or internal Docker network names.
+    """
+    if not url:
+        return None
+    
+    # Handle unix socket - this means local connection
+    if url.startswith("unix://"):
+        return None  # Will use request.host as fallback
+    
+    # Handle TCP connections
+    if url.startswith("tcp://"):
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            if hostname:
+                # Local addresses should use request.host
+                if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
+                    return None
+                
+                # Check if it's likely a Docker Compose service name
+                # (internal names usually don't have dots and aren't IP addresses)
+                if _is_likely_internal_hostname(hostname):
+                    return None  # Requires explicit public_hostname
+                
+                return hostname  # Return actual remote hostname/IP
+        except Exception:
+            pass
+    
+    # Handle other protocols or malformed URLs
+    try:
+        # Match patterns like tcp://hostname:port or hostname:port
+        match = re.search(r"(?:tcp://)?([^:]+)(?::\d+)?", url)
+        if match:
+            hostname = match.group(1)
+            if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
+                return None
+            
+            if _is_likely_internal_hostname(hostname):
+                return None  # Requires explicit public_hostname
+                
+            return hostname
+    except Exception:
+        pass
+    
+    return None
+
+
+def _is_likely_internal_hostname(hostname):
+    """
+    Determines if a hostname is likely an internal Docker network name.
+    """
+    # If it's an IP address, it's not internal
+    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    if re.match(ip_pattern, hostname):
+        return False
+    
+    # If it contains a dot, it's likely a real domain
+    if '.' in hostname:
+        return False
+    
+    # If it's a single word (like 'dockpeek-dev-socket-proxy'), 
+    # it's likely a Docker Compose service name
+    return True
+
+
+def _get_link_hostname(public_hostname, host_ip, is_docker_host):
+    """
+    Determines the correct hostname for generating links.
+    """
+    # If we have an explicitly set public_hostname, use it
+    if public_hostname:
+        return public_hostname
+    
+    # For connections without explicit public_hostname, we need to be smart
+    # If host_ip is a real remote IP, use it
+    if host_ip and host_ip not in ['0.0.0.0', '127.0.0.1']:
+        return host_ip
+    
+    # For local bindings (0.0.0.0, 127.0.0.1) or when host_ip is None,
+    # use request.host as fallback
+    # This works for:
+    # - Local Docker connections
+    # - Docker Compose setups where the app and containers are on the same host
+    try:
+        return request.host.split(":")[0]
+    except:
+        # If request is not available (e.g., in tests), fallback to localhost
+        return "localhost"
+
 
 def discover_docker_clients():
     """
@@ -68,15 +161,39 @@ def discover_docker_clients():
     # Support for DOCKER_HOST for backward compatibility
     if "DOCKER_HOST" in os.environ:
         host_url = os.environ.get("DOCKER_HOST")
+        host_name = os.environ.get("DOCKER_HOST_NAME", "default")  # Allow custom name, default to "default"
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
+        
+        # Determine public hostname based on URL if not explicitly set
+        if not public_hostname:
+            public_hostname = _extract_hostname_from_url(host_url)
+            # If still None, it means local connection or internal Docker name
+            # - will use request.host later or require explicit configuration
+        
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({"name": "local", "client": client, "url": host_url, "public_hostname": public_hostname, "status": "active"})
-            print(f"✅ Discovered and connected to default Docker daemon at {host_url}")
+            clients.append({
+                "name": host_name, 
+                "client": client, 
+                "url": host_url, 
+                "public_hostname": public_hostname, 
+                "status": "active", 
+                "is_docker_host": True,
+                "order": 0
+            })
+            print(f"✅ Discovered and connected to default Docker daemon '{host_name}' at {host_url}")
         except Exception as e:
-            print(f"❌ Error connecting to default Docker daemon at {host_url}: {e}")
-            clients.append({"name": "local", "client": None, "url": host_url, "public_hostname": public_hostname, "status": "inactive"})
+            print(f"❌ Error connecting to default Docker daemon '{host_name}' at {host_url}: {e}")
+            clients.append({
+                "name": host_name, 
+                "client": None, 
+                "url": host_url, 
+                "public_hostname": public_hostname, 
+                "status": "inactive", 
+                "is_docker_host": True,
+                "order": 0
+            })
 
     # Discovery of DOCKER_HOST_n_URL and DOCKER_HOST_n_NAME
     host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
@@ -86,31 +203,74 @@ def discover_docker_clients():
             num = match.group(1)
             name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
             public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
+            
+            # Determine public hostname based on URL if not explicitly set
+            if not public_hostname:
+                public_hostname = _extract_hostname_from_url(url)
+                # If still None, it means local connection or internal Docker name
+                # - will use request.host later or require explicit configuration
+            
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
                 client.ping()
-                clients.append({"name": name, "client": client, "url": url, "public_hostname": public_hostname, "status": "active"})
+                clients.append({
+                    "name": name, 
+                    "client": client, 
+                    "url": url, 
+                    "public_hostname": public_hostname, 
+                    "status": "active", 
+                    "is_docker_host": False,
+                    "order": int(num)
+                })
                 print(f"✅ Discovered and connected to Docker daemon '{name}' at {url}")
             except Exception as e:
                 print(f"❌ Error connecting to Docker daemon '{name}' at {url}: {e}")
-                clients.append({"name": name, "client": None, "url": url, "public_hostname": public_hostname, "status": "inactive"})
+                clients.append({
+                    "name": name, 
+                    "client": None, 
+                    "url": url, 
+                    "public_hostname": public_hostname, 
+                    "status": "inactive", 
+                    "is_docker_host": False,
+                    "order": int(num)
+                })
 
     # If no hosts are configured, try the local socket
     if not clients:
-        print("⚠️ No Docker hosts configured via environment variables. Trying local socket...")
+        fallback_name = os.environ.get("DOCKER_NAME", "default")
+        print("⚠️ No Docker hosts configured via environment variables. Trying default socket...")
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({"name": "local", "client": client, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "active"})
-            print("✅ Discovered and connected to local Docker daemon via socket.")
+            clients.append({
+                "name": fallback_name, 
+                "client": client, 
+                "url": "unix:///var/run/docker.sock", 
+                "public_hostname": "", 
+                "status": "active", 
+                "is_docker_host": True,
+                "order": 0
+            })
+            print(f"✅ Discovered and connected to default Docker daemon '{fallback_name}' via socket.")
         except Exception as e:
-            print(f"❌ Failed to connect to any Docker daemon, including local socket: {e}")
-            clients.append({"name": "local", "client": None, "url": "unix:///var/run/docker.sock", "public_hostname": "localhost", "status": "inactive"})
+            print(f"❌ Failed to connect to any Docker daemon, including default socket: {e}")
+            clients.append({
+                "name": fallback_name, 
+                "client": None, 
+                "url": "unix:///var/run/docker.sock", 
+                "public_hostname": "", 
+                "status": "inactive", 
+                "is_docker_host": True,
+                "order": 0
+            })
             
     return clients
 
-# === Helpers ===
+
 def get_all_data():
+    """
+    Retrieves container data from all discovered Docker hosts.
+    """
     servers = discover_docker_clients()
     
     if not servers:
@@ -118,7 +278,7 @@ def get_all_data():
 
     all_container_data = []
     # Create a serializable list of servers for the frontend, which can be updated if a fetch fails
-    server_list_for_json = [{"name": s["name"], "status": s["status"]} for s in servers]
+    server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"]} for s in servers]
 
     for host in servers:
         # Skip hosts that were already found to be inactive
@@ -128,48 +288,71 @@ def get_all_data():
         try:
             server_name = host["name"]
             client = host["client"]
-            server_url_str = host["url"]
             public_hostname = host["public_hostname"]
+            is_docker_host = host["is_docker_host"]
 
             containers = client.containers.list(all=True)
 
             for container in containers:
-                ports = container.attrs['NetworkSettings']['Ports']
-                port_map = []
-
-                if ports:
-                    for container_port, mappings in ports.items():
-                        if mappings:
-                            m = mappings[0]
-                            host_port = m['HostPort']
-                            
-                            if server_name == "local":
-                                host_ip = m.get('HostIp', '0.0.0.0')
-                                link_ip = request.host.split(":")[0] if host_ip in ['0.0.0.0', '127.0.0.1'] else host_ip
-                                link = f"http://{link_ip}:{host_port}"
+                try:
+                    # Safely get image information
+                    image_name = "unknown"
+                    try:
+                        if hasattr(container, 'image') and container.image:
+                            if hasattr(container.image, 'tags') and container.image.tags:
+                                image_name = container.image.tags[0]
                             else:
-                                link_hostname = "localhost"
-                                if public_hostname:
-                                    link_hostname = public_hostname
-                                else:
-                                    parsed_url = urlparse(server_url_str)
-                                    if parsed_url.hostname:
-                                        link_hostname = parsed_url.hostname
-                                link = f"http://{link_hostname}:{host_port}"
-                            
-                            port_map.append({
-                                'container_port': container_port,
-                                'host_port': host_port,
-                                'link': link
-                            })
+                                # Fallback to image ID if tags are not available
+                                image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
+                    except Exception as img_error:
+                        # If image access fails, try to get it from container attrs
+                        print(f"⚠️ Could not access image info for container '{container.name}' on '{server_name}': {img_error}")
+                        try:
+                            image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
+                        except:
+                            image_name = "missing-image"
 
-                all_container_data.append({
-                    'server': server_name,
-                    'name': container.name,
-                    'status': container.status,
-                    'image': container.image.tags[0] if container.image.tags else "none",
-                    'ports': port_map
-                })
+                    # Safely get port information
+                    ports = container.attrs['NetworkSettings']['Ports']
+                    port_map = []
+
+                    if ports:
+                        for container_port, mappings in ports.items():
+                            if mappings:
+                                m = mappings[0]
+                                host_port = m['HostPort']
+                                host_ip = m.get('HostIp', '0.0.0.0')
+                                
+                                # Use the unified logic for determining hostname
+                                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+                                link = f"http://{link_hostname}:{host_port}"
+                                
+                                port_map.append({
+                                    'container_port': container_port,
+                                    'host_port': host_port,
+                                    'link': link
+                                })
+
+                    all_container_data.append({
+                        'server': server_name,
+                        'name': container.name,
+                        'status': container.status,
+                        'image': image_name,
+                        'ports': port_map
+                    })
+                    
+                except Exception as container_error:
+                    # Log individual container errors but continue processing other containers
+                    print(f"⚠️ Error processing container '{getattr(container, 'name', 'unknown')}' on '{server_name}': {container_error}")
+                    # Still add the container with minimal info
+                    all_container_data.append({
+                        'server': server_name,
+                        'name': getattr(container, 'name', 'unknown'),
+                        'status': getattr(container, 'status', 'unknown'),
+                        'image': 'error-loading',
+                        'ports': []
+                    })
+                    
         except Exception as e:
             # If an error occurs with a host that was presumed active, mark it as inactive for this response
             print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")
@@ -180,6 +363,8 @@ def get_all_data():
             continue
 
     return {"servers": server_list_for_json, "containers": all_container_data}
+
+
 
 # === Routes ===
 

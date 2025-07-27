@@ -1,5 +1,9 @@
+
 import os
 import re
+import threading
+import time
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import docker
 from flask_cors import CORS
@@ -14,7 +18,9 @@ from docker.constants import DEFAULT_TIMEOUT_SECONDS
 import hashlib
 from packaging import version
 import re
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
+from threading import Lock
 
 # === Flask Init ===
 app = Flask(__name__)
@@ -24,6 +30,99 @@ if not secret_key:
 
 app.secret_key = secret_key
 CORS(app)
+
+# === Cache dla update checks ===
+update_cache = {}
+cache_lock = Lock()
+CACHE_DURATION = 300  # 5 minut cache
+
+# === ThreadPoolExecutor dla asynchronicznych operacji ===
+executor = ThreadPoolExecutor(max_workers=4)
+
+class UpdateChecker:
+    def __init__(self):
+        self.cache = {}
+        self.lock = Lock()
+        self.cache_duration = 300  # 5 minut
+        
+    def get_cache_key(self, server_name, container_name, image_name):
+        return f"{server_name}:{container_name}:{image_name}"
+    
+    def is_cache_valid(self, timestamp):
+        return datetime.now() - timestamp < timedelta(seconds=self.cache_duration)
+    
+    def get_cached_result(self, cache_key):
+        with self.lock:
+            if cache_key in self.cache:
+                result, timestamp = self.cache[cache_key]
+                if self.is_cache_valid(timestamp):
+                    return result, True
+        return None, False
+    
+    def set_cache_result(self, cache_key, result):
+        with self.lock:
+            self.cache[cache_key] = (result, datetime.now())
+    
+    def check_image_updates_async(self, client, container, server_name):
+        """
+        Asynchroniczna wersja check_image_updates z cache
+        """
+        try:
+            container_image_id = container.attrs.get('Image', '')
+            if not container_image_id:
+                return False
+                
+            image_name = container.attrs.get('Config', {}).get('Image', '')
+            if not image_name:
+                return False
+            
+            cache_key = self.get_cache_key(server_name, container.name, image_name)
+            
+            # Sprawdź cache
+            cached_result, is_valid = self.get_cached_result(cache_key)
+            if is_valid:
+                print(f"🔄 Using cached update result for {image_name}")
+                return cached_result
+            
+            # Extract image name and tag
+            if ':' in image_name:
+                base_name, current_tag = image_name.rsplit(':', 1)
+            else:
+                base_name = image_name
+                current_tag = 'latest'
+            
+            print(f"🔍 Checking for updates for image {base_name}:{current_tag}")
+            
+            try:
+                # Pull z timeoutem
+                client.images.pull(base_name, tag=current_tag)
+                updated_image = client.images.get(f"{base_name}:{current_tag}")
+                updated_hash = updated_image.id
+                
+                result = container_image_id != updated_hash
+                
+                # Zapisz w cache
+                self.set_cache_result(cache_key, result)
+                
+                if result:
+                    print(f"✅ Update available for {base_name}:{current_tag}")
+                else:
+                    print(f"ℹ️ Image {base_name}:{current_tag} is up to date")
+                
+                return result
+                
+            except Exception as pull_error:
+                print(f"⚠️ Cannot pull latest version of {base_name}:{current_tag}: {pull_error}")
+                # Cache negative result for shorter time
+                self.set_cache_result(cache_key, False)
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error checking image updates: {e}")
+            return False
+
+# Global update checker instance
+update_checker = UpdateChecker()
 
 # === Flask-Login Init ===
 login_manager = LoginManager()
@@ -270,64 +369,54 @@ def discover_docker_clients():
             
     return clients
 
-def check_image_updates(client, container):
+def check_image_updates_background(server_data, container_data_list):
     """
-    Checks if a newer version of the container's image is available.
-    Only checks the same tag that the container is currently using.
-    Returns True if an update is available.
+    Sprawdza aktualizacje w tle i aktualizuje dane kontenerów
     """
-    try:
-        # Get current container image - use the original image ID from container creation
-        container_image_id = container.attrs.get('Image', '')
-        if not container_image_id:
-            return False
-            
-        # Get image name from container config
-        image_name = container.attrs.get('Config', {}).get('Image', '')
-        if not image_name:
-            return False
-        
-        # Extract image name and tag
-        if ':' in image_name:
-            base_name, current_tag = image_name.rsplit(':', 1)
-        else:
-            base_name = image_name
-            current_tag = 'latest'
-        
-        print(f"🔍 Checking for updates for image {base_name}:{current_tag}")
-        print(f"📋 Container using image ID: {container_image_id[:12]}...")
+    def check_single_container(args):
+        server, container_data = args
+        client = server["client"]
+        server_name = server["name"]
         
         try:
-            # Pull the latest version of the same tag
-            client.images.pull(base_name, tag=current_tag)
-            updated_image = client.images.get(f"{base_name}:{current_tag}")
+            # Znajdź prawdziwy kontener na podstawie nazwy
+            containers = client.containers.list(all=True)
+            container = None
+            for c in containers:
+                if c.name == container_data['name']:
+                    container = c
+                    break
             
-            # Compare the container's original image ID with the pulled image ID
-            updated_hash = updated_image.id
-            
-            print(f"📋 Latest image ID: {updated_hash[:12]}...")
-            
-            if container_image_id != updated_hash:
-                print(f"✅ Update available for {base_name}:{current_tag}")
-                return True
-            else:
-                print(f"ℹ️ Image {base_name}:{current_tag} is up to date")
-                return False
+            if container and container.status == 'running':
+                update_available = update_checker.check_image_updates_async(
+                    client, container, server_name
+                )
+                container_data['update_available'] = update_available
                 
-        except Exception as pull_error:
-            print(f"⚠️ Cannot pull latest version of {base_name}:{current_tag}: {pull_error}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Error checking image updates: {e}")
-        return False
-
-
-
+        except Exception as e:
+            print(f"❌ Background update check failed for {container_data['name']}: {e}")
+            container_data['update_available'] = False
+    
+    # Przygotuj argumenty dla każdego kontenera
+    check_args = []
+    for container_data in container_data_list:
+        # Znajdź odpowiedni serwer
+        server = None
+        for s in server_data:
+            if s['name'] == container_data['server'] and s['status'] == 'active':
+                server = s
+                break
+        
+        if server:
+            check_args.append((server, container_data))
+    
+    # Wykonaj sprawdzenia równolegle
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        executor.map(check_single_container, check_args)
 
 def get_all_data():
     """
-    Retrieves container data from all discovered Docker hosts.
+    Szybka wersja - najpierw zwraca dane, potem sprawdza aktualizacje w tle
     """
     servers = discover_docker_clients()
     
@@ -335,11 +424,10 @@ def get_all_data():
         return {"servers": [], "containers": []}
 
     all_container_data = []
-    # Create a serializable list of servers for the frontend, which can be updated if a fetch fails
     server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"]} for s in servers]
 
+    # Szybkie zbieranie podstawowych danych kontenerów
     for host in servers:
-        # Skip hosts that were already found to be inactive
         if host['status'] == 'inactive':
             continue
         
@@ -355,40 +443,27 @@ def get_all_data():
                 try:
                     # Get the original image name from container configuration
                     image_name = "unknown"
-                    update_available = False
                     
                     try:
-                        # First, try to get the original image name from container config
-                        # This is the image name used when the container was created
                         original_image = container.attrs.get('Config', {}).get('Image', '')
                         
                         if original_image:
                             image_name = original_image
-                            print(f"📋 Using original image name from config: {image_name}")
                         else:
-                            # Fallback to current image tags if config is not available
                             if hasattr(container, 'image') and container.image:
                                 if hasattr(container.image, 'tags') and container.image.tags:
                                     image_name = container.image.tags[0]
-                                    print(f"📋 Fallback to current image tag: {image_name}")
                                 else:
-                                    # Final fallback to image ID if tags are not available
                                     image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
-                                    print(f"📋 Fallback to image ID: {image_name}")
-                        
-                        # Check for updates only for running containers
-                        if container.status == 'running':
-                            update_available = check_image_updates(client, container)
                                     
                     except Exception as img_error:
                         print(f"⚠️ Could not access image info for container '{container.name}' on '{server_name}': {img_error}")
-                        # Try one more fallback to container attrs
                         try:
                             image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
                         except:
                             image_name = "missing-image"
 
-                    # Safely get port information
+                    # Port information
                     ports = container.attrs['NetworkSettings']['Ports']
                     port_map = []
 
@@ -399,7 +474,6 @@ def get_all_data():
                                 host_port = m['HostPort']
                                 host_ip = m.get('HostIp', '0.0.0.0')
                                 
-                                # Use the unified logic for determining hostname
                                 link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
                                 link = f"http://{link_hostname}:{host_port}"
                                 
@@ -409,31 +483,35 @@ def get_all_data():
                                     'link': link
                                 })
 
-                    all_container_data.append({
+                    # Sprawdź cache dla update_available
+                    cache_key = update_checker.get_cache_key(server_name, container.name, image_name)
+                    cached_update, is_cache_valid = update_checker.get_cached_result(cache_key)
+                    
+                    container_info = {
                         'server': server_name,
                         'name': container.name,
                         'status': container.status,
                         'image': image_name,
                         'ports': port_map,
-                        'update_available': update_available
-                    })
+                        'update_available': cached_update if is_cache_valid else False,
+                        'checking_updates': not is_cache_valid and container.status == 'running'
+                    }
+                    
+                    all_container_data.append(container_info)
                     
                 except Exception as container_error:
-                    # Log individual container errors but continue processing other containers
                     print(f"⚠️ Error processing container '{getattr(container, 'name', 'unknown')}' on '{server_name}': {container_error}")
-                    # Still add the container with minimal info
                     all_container_data.append({
                         'server': server_name,
                         'name': getattr(container, 'name', 'unknown'),
                         'status': getattr(container, 'status', 'unknown'),
                         'image': 'error-loading',
                         'ports': [],
-                        'update_available': False
+                        'update_available': False,
+                        'checking_updates': False
                     })
-
                     
         except Exception as e:
-            # If an error occurs with a host that was presumed active, mark it as inactive for this response
             print(f"❌ Could not retrieve container data from host '{host.get('name', 'unknown')}'. Error: {e}. Marking as inactive.")
             for s in server_list_for_json:
                 if s["name"] == host["name"]:
@@ -441,7 +519,14 @@ def get_all_data():
                     break
             continue
 
+    # Uruchom sprawdzanie aktualizacji w tle dla kontenerów bez ważnego cache
+    containers_to_check = [c for c in all_container_data if c.get('checking_updates', False)]
+    if containers_to_check:
+        print(f"🔄 Starting background update checks for {len(containers_to_check)} containers")
+        executor.submit(check_image_updates_background, servers, containers_to_check)
+
     return {"servers": server_list_for_json, "containers": all_container_data}
+
 
 # === Routes ===
 
@@ -475,6 +560,39 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+@app.route("/updates-status")
+@login_required
+def updates_status():
+    """
+    Endpoint zwracający aktualny status sprawdzania aktualizacji
+    """
+    servers = discover_docker_clients()
+    active_servers = [s for s in servers if s['status'] == 'active']
+    
+    updates_status = {}
+    
+    for server in active_servers:
+        try:
+            containers = server['client'].containers.list(all=True)
+            for container in containers:
+                if container.status == 'running':
+                    image_name = container.attrs.get('Config', {}).get('Image', '')
+                    cache_key = update_checker.get_cache_key(
+                        server['name'], container.name, image_name
+                    )
+                    
+                    cached_result, is_valid = update_checker.get_cached_result(cache_key)
+                    
+                    updates_status[f"{server['name']}:{container.name}"] = {
+                        'update_available': cached_result if is_valid else False,
+                        'last_checked': is_valid,
+                        'checking': not is_valid
+                    }
+        except Exception as e:
+            print(f"❌ Error getting updates status for {server['name']}: {e}")
+    
+    return jsonify(updates_status)
 
 # === Entry Point ===
 if __name__ == "__main__":

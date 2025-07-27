@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
         if (c.update_available) {
           updateIndicator.classList.remove('hidden');
-          updateIndicator.title = 'Dostępna aktualizacja obrazu';
+          updateIndicator.title = 'Image update available';
         } else {
           updateIndicator.classList.add('hidden');
         }

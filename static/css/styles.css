@@ -442,11 +442,11 @@ body.dark-mode .loader {
 }
 
 .update-indicator svg {
-  color: #f59e0b; /* orange-500 */
+  color: #d65910; /* orange-500 */
 }
 
 body.dark-mode .update-indicator svg {
-  color: #fbbf24; /* orange-400 for better visibility in dark mode */
+  color: #c45312; /* orange-400 for better visibility in dark mode */
 }
 
 @keyframes pulse-orange {
@@ -454,7 +454,7 @@ body.dark-mode .update-indicator svg {
     opacity: 1;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.8;
   }
 }
 

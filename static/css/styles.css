@@ -433,3 +433,41 @@ body.dark-mode .loader {
     transform: rotate(-360deg);
   }
 }
+
+/* Update indicator styles */
+.update-indicator {
+  display: inline-flex;
+  align-items: center;
+  animation: pulse-orange 2s infinite;
+}
+
+.update-indicator svg {
+  color: #f59e0b; /* orange-500 */
+}
+
+body.dark-mode .update-indicator svg {
+  color: #fbbf24; /* orange-400 for better visibility in dark mode */
+}
+
+@keyframes pulse-orange {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Ensure proper spacing in image cell */
+.table-cell-image div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Mobile responsiveness for update indicator */
+@media (max-width: 768px) {
+  .update-indicator {
+    display: none; /* Hide on mobile to save space */
+  }
+}

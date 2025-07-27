@@ -72,10 +72,9 @@
               data-sort-column="ports">
               Ports
             </th>
-            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
-              data-sort-column="image">
-              Image
-            </th>
+            <td class="py-3 px-4 border-b border-gray-200 table-cell-image">
+              <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
+            </td>
             <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
               data-sort-column="status">
               Status
@@ -98,7 +97,16 @@
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>
       <td class="py-3 px-4 border-b border-gray-200 table-cell-image">
-        <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
+        <div class="flex items-center space-x-2">
+          <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
+          <span class="update-indicator hidden" data-content="update-indicator" title="Update available">
+            <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.585V6z"
+                clip-rule="evenodd" />
+            </svg>
+          </span>
+        </div>
       </td>
       <td class="py-3 px-4 border-b border-gray-200 table-cell-status" data-content="status">
       </td>

@@ -11,6 +11,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse
 from docker.client import DockerClient
 from docker.constants import DEFAULT_TIMEOUT_SECONDS
+import hashlib
+from packaging import version
+import re
+
 
 # === Flask Init ===
 app = Flask(__name__)
@@ -266,6 +270,54 @@ def discover_docker_clients():
             
     return clients
 
+def check_image_updates(client, container):
+    """
+    Checks if a newer version of the container's image is available.
+    Only checks the same tag that the container is currently using.
+    Returns True if an update is available.
+    """
+    try:
+        # Get current container image
+        current_image = container.image
+        image_name = current_image.tags[0] if current_image.tags else current_image.id
+        
+        # Extract image name and tag
+        if ':' in image_name:
+            base_name, current_tag = image_name.rsplit(':', 1)
+        else:
+            base_name = image_name
+            current_tag = 'latest'
+        
+        current_hash = current_image.id
+        
+        print(f"🔍 Checking for updates for image {base_name}:{current_tag}")
+        
+        try:
+            # Pull the latest version of the same tag
+            client.images.pull(base_name, tag=current_tag)
+            updated_image = client.images.get(f"{base_name}:{current_tag}")
+            
+            # Compare hashes
+            updated_hash = updated_image.id
+            
+            if current_hash != updated_hash:
+                print(f"✅ Update available for {base_name}:{current_tag}")
+                return True
+            else:
+                print(f"ℹ️ Image {base_name}:{current_tag} is up to date")
+                return False
+                
+        except Exception as pull_error:
+            print(f"⚠️ Cannot pull latest version of {base_name}:{current_tag}: {pull_error}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error checking image updates: {e}")
+        return False
+
+
+
+
 
 def get_all_data():
     """
@@ -292,66 +344,76 @@ def get_all_data():
             is_docker_host = host["is_docker_host"]
 
             containers = client.containers.list(all=True)
-
+            
             for container in containers:
-                try:
-                    # Safely get image information
-                    image_name = "unknown"
                     try:
-                        if hasattr(container, 'image') and container.image:
-                            if hasattr(container.image, 'tags') and container.image.tags:
-                                image_name = container.image.tags[0]
-                            else:
-                                # Fallback to image ID if tags are not available
-                                image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
-                    except Exception as img_error:
-                        # If image access fails, try to get it from container attrs
-                        print(f"⚠️ Could not access image info for container '{container.name}' on '{server_name}': {img_error}")
+                        # Safely get image information
+                        image_name = "unknown"
+                        update_available = False  # Dodaj tę linię
+                        
                         try:
-                            image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
-                        except:
-                            image_name = "missing-image"
-
-                    # Safely get port information
-                    ports = container.attrs['NetworkSettings']['Ports']
-                    port_map = []
-
-                    if ports:
-                        for container_port, mappings in ports.items():
-                            if mappings:
-                                m = mappings[0]
-                                host_port = m['HostPort']
-                                host_ip = m.get('HostIp', '0.0.0.0')
+                            if hasattr(container, 'image') and container.image:
+                                if hasattr(container.image, 'tags') and container.image.tags:
+                                    image_name = container.image.tags[0]
+                                else:
+                                    # Fallback to image ID if tags are not available
+                                    image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
                                 
-                                # Use the unified logic for determining hostname
-                                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
-                                link = f"http://{link_hostname}:{host_port}"
-                                
-                                port_map.append({
-                                    'container_port': container_port,
-                                    'host_port': host_port,
-                                    'link': link
-                                })
+                                # Sprawdź aktualizacje tylko dla uruchomionych kontenerów
+                                if container.status == 'running':
+                                    update_available = check_image_updates(client, container)
+                                    
+                        except Exception as img_error:
+                            # If image access fails, try to get it from container attrs
+                            print(f"⚠️ Could not access image info for container '{container.name}' on '{server_name}': {img_error}")
+                            try:
+                                image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
+                            except:
+                                image_name = "missing-image"
 
-                    all_container_data.append({
-                        'server': server_name,
-                        'name': container.name,
-                        'status': container.status,
-                        'image': image_name,
-                        'ports': port_map
-                    })
-                    
-                except Exception as container_error:
-                    # Log individual container errors but continue processing other containers
-                    print(f"⚠️ Error processing container '{getattr(container, 'name', 'unknown')}' on '{server_name}': {container_error}")
-                    # Still add the container with minimal info
-                    all_container_data.append({
-                        'server': server_name,
-                        'name': getattr(container, 'name', 'unknown'),
-                        'status': getattr(container, 'status', 'unknown'),
-                        'image': 'error-loading',
-                        'ports': []
-                    })
+                        # Safely get port information
+                        ports = container.attrs['NetworkSettings']['Ports']
+                        port_map = []
+
+                        if ports:
+                            for container_port, mappings in ports.items():
+                                if mappings:
+                                    m = mappings[0]
+                                    host_port = m['HostPort']
+                                    host_ip = m.get('HostIp', '0.0.0.0')
+                                    
+                                    # Use the unified logic for determining hostname
+                                    link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+                                    link = f"http://{link_hostname}:{host_port}"
+                                    
+                                    port_map.append({
+                                        'container_port': container_port,
+                                        'host_port': host_port,
+                                        'link': link
+                                    })
+
+                        all_container_data.append({
+                            'server': server_name,
+                            'name': container.name,
+                            'status': container.status,
+                            'image': image_name,
+                            'ports': port_map,
+                            'update_available': update_available  # Dodaj tę linię
+                        })
+                        
+                    except Exception as container_error:
+                        # Log individual container errors but continue processing other containers
+                        print(f"⚠️ Error processing container '{getattr(container, 'name', 'unknown')}' on '{server_name}': {container_error}")
+                        # Still add the container with minimal info
+                        all_container_data.append({
+                            'server': server_name,
+                            'name': getattr(container, 'name', 'unknown'),
+                            'status': getattr(container, 'status', 'unknown'),
+                            'image': 'error-loading',
+                            'ports': [],
+                            'update_available': False  # Dodaj tę linię
+                        })
+
                     
         except Exception as e:
             # If an error occurs with a host that was presumed active, mark it as inactive for this response

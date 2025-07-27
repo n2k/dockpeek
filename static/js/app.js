@@ -28,44 +28,55 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
+  
+
   function renderTable() {
-    containerRowsBody.innerHTML = "";
-
-    const pageItems = filteredAndSortedContainers;
-
-    if (pageItems.length === 0) {
-      const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
-      if (searchInput.value || currentServerFilter !== 'all') {
-        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
-      } else {
-        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
+      containerRowsBody.innerHTML = "";
+  
+      const pageItems = filteredAndSortedContainers;
+  
+      if (pageItems.length === 0) {
+        const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
+        if (searchInput.value || currentServerFilter !== 'all') {
+          containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+        } else {
+          containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
+        }
+        return;
       }
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    for (const c of pageItems) {
-      const clone = rowTemplate.content.cloneNode(true);
-
-      clone.querySelector('[data-content="name"]').textContent = c.name;
-      clone.querySelector('[data-content="server"]').textContent = c.server;
-      clone.querySelector('[data-content="image"]').textContent = c.image;
-
-      const statusCell = clone.querySelector('[data-content="status"]');
-      statusCell.textContent = c.status;
-      statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${c.status === "running" ? "status-running" : "status-exited"}`;
-
-      const portsCell = clone.querySelector('[data-content="ports"]');
-      if (c.ports.length > 0) {
-        portsCell.innerHTML = c.ports.map(p =>
-          `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
-        ).join('<br>');
-      } else {
-        portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
+  
+      const fragment = document.createDocumentFragment();
+      for (const c of pageItems) {
+        const clone = rowTemplate.content.cloneNode(true);
+  
+        clone.querySelector('[data-content="name"]').textContent = c.name;
+        clone.querySelector('[data-content="server"]').textContent = c.server;
+        clone.querySelector('[data-content="image"]').textContent = c.image;
+  
+        // Obsługa ikony aktualizacji - DODAJ TEN KOD
+        const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
+        if (c.update_available) {
+          updateIndicator.classList.remove('hidden');
+          updateIndicator.title = 'Dostępna aktualizacja obrazu';
+        } else {
+          updateIndicator.classList.add('hidden');
+        }
+  
+        const statusCell = clone.querySelector('[data-content="status"]');
+        statusCell.textContent = c.status;
+        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${c.status === "running" ? "status-running" : "status-exited"}`;
+  
+        const portsCell = clone.querySelector('[data-content="ports"]');
+        if (c.ports.length > 0) {
+          portsCell.innerHTML = c.ports.map(p =>
+            `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
+          ).join('<br>');
+        } else {
+          portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
+        }
+        fragment.appendChild(clone);
       }
-      fragment.appendChild(clone);
-    }
-    containerRowsBody.appendChild(fragment);
+      containerRowsBody.appendChild(fragment);
   }
 
   function setupServerUI() {

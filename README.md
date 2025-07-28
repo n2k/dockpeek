@@ -19,6 +19,7 @@
 -  **Click-to-Access URLs** – Open containerized web apps instantly with a single click.
 -  **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
 -  **Zero Configuration** – Automatically detects running containers with no setup required.
+-  **Image Update Checking** – Monitor available updates for your container images.
 
 <br>
 
@@ -34,7 +35,7 @@
 
 Tired of remembering IP addresses and port numbers to access your containerized apps? **Dockpeek** gives you a clean, centralized dashboard with one-click access to any exposed container service—whether it's running locally or remotely.
 
-Perfect when you're dealing with many containers across different machines. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized.
+Perfect when you're dealing with many containers across different machines and need to keep track of which images have updates available. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized while ensuring your containers stay current.RetryClaude can make mistakes. Please double-check responses.
 
 <br>
 
@@ -82,11 +83,12 @@ services:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
-      - CONTAINERS=1
-      - IMAGES=1
-      - PING=1
-      - VERSION=1
-      - LOG_LEVEL=info
+      - CONTAINERS=1 
+      - IMAGES=1     
+      - PING=1       
+      - VERSION=1    
+      - INFO=1
+      - POST=1       # <-- This is needed for Check Updates operations
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -107,10 +109,6 @@ The easiest way to do this is by installing a Docker Socket Proxy on each Docker
 
 ```yaml
     environment:
-      - SECRET_KEY=my_secret_key     # Set a secret key for security
-      - USERNAME=admin               # Change
-      - PASSWORD=admin               # Change
-      
       # Optional: Add extra Docker hosts by setting these variables.
 
       # Docker Host 1

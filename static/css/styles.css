@@ -438,7 +438,6 @@ body.dark-mode .loader {
 .update-indicator {
   display: inline-flex;
   align-items: center;
-  animation: pulse-orange 2s infinite;
 }
 
 .update-indicator svg {
@@ -446,16 +445,7 @@ body.dark-mode .loader {
 }
 
 body.dark-mode .update-indicator svg {
-  color: #d67a10;
-}
-
-@keyframes pulse-orange {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
+  color: #b9711f;
 }
 
 /* Ensure proper spacing in image cell */

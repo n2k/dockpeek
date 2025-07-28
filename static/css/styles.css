@@ -442,11 +442,11 @@ body.dark-mode .loader {
 }
 
 .update-indicator svg {
-  color: #d67a10; /* orange-500 */
+  color: #d67a10;
 }
 
 body.dark-mode .update-indicator svg {
-  color: #c45312; /* orange-400 for better visibility in dark mode */
+  color: #d67a10;
 }
 
 @keyframes pulse-orange {
@@ -486,6 +486,7 @@ body.dark-mode .update-indicator svg {
 
 #check-updates-button.loading svg {
   animation: spin 1s linear infinite;
+  color: #d67a10;
 }
 
 body.dark-mode #check-updates-button {

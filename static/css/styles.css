@@ -618,3 +618,18 @@ body.dark-mode #updates-list::-webkit-scrollbar-thumb {
 body.dark-mode #updates-list::-webkit-scrollbar-thumb:hover {
   background: #8b949e;
 }
+
+/* Styl dla wiadomości "brak aktualizacji" */
+#updates-list .no-updates-message {
+  color: #28a745;
+  font-weight: 600;
+  text-align: center;
+  padding: 2rem 1rem;
+  border: none;
+  font-size: 1rem;
+  white-space: normal;
+}
+
+body.dark-mode #updates-list .no-updates-message {
+  color: #56d364;
+}

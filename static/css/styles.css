@@ -471,3 +471,28 @@ body.dark-mode .update-indicator svg {
     display: none; /* Hide on mobile to save space */
   }
 }
+
+#check-updates-button {
+  background-color: #e1e4e8;
+  color: #626c78;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+#check-updates-button:hover {
+  background-color: #d1d5da;
+}
+
+#check-updates-button.loading svg {
+  animation: spin 1s linear infinite;
+}
+
+body.dark-mode #check-updates-button {
+  background-color: #21262d;
+  color: #97a1ab;
+}
+
+body.dark-mode #check-updates-button:hover {
+  background-color: #30363d;
+}

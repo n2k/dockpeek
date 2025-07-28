@@ -369,51 +369,6 @@ def discover_docker_clients():
             
     return clients
 
-def check_image_updates_background(server_data, container_data_list):
-    """
-    Sprawdza aktualizacje w tle i aktualizuje dane kontenerów
-    """
-    def check_single_container(args):
-        server, container_data = args
-        client = server["client"]
-        server_name = server["name"]
-        
-        try:
-            # Znajdź prawdziwy kontener na podstawie nazwy
-            containers = client.containers.list(all=True)
-            container = None
-            for c in containers:
-                if c.name == container_data['name']:
-                    container = c
-                    break
-            
-            if container and container.status == 'running':
-                update_available = update_checker.check_image_updates_async(
-                    client, container, server_name
-                )
-                container_data['update_available'] = update_available
-                
-        except Exception as e:
-            print(f"❌ Background update check failed for {container_data['name']}: {e}")
-            container_data['update_available'] = False
-    
-    # Przygotuj argumenty dla każdego kontenera
-    check_args = []
-    for container_data in container_data_list:
-        # Znajdź odpowiedni serwer
-        server = None
-        for s in server_data:
-            if s['name'] == container_data['server'] and s['status'] == 'active':
-                server = s
-                break
-        
-        if server:
-            check_args.append((server, container_data))
-    
-    # Wykonaj sprawdzenia równolegle
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        executor.map(check_single_container, check_args)
-
 def get_all_data():
     """
     Szybka wersja - najpierw zwraca dane, potem sprawdza aktualizacje w tle
@@ -493,8 +448,7 @@ def get_all_data():
                         'status': container.status,
                         'image': image_name,
                         'ports': port_map,
-                        'update_available': cached_update if is_cache_valid else False,
-                        'checking_updates': not is_cache_valid and container.status == 'running'
+                        'update_available': False  
                     }
                     
                     all_container_data.append(container_info)
@@ -518,12 +472,6 @@ def get_all_data():
                     s["status"] = "inactive"
                     break
             continue
-
-    # Uruchom sprawdzanie aktualizacji w tle dla kontenerów bez ważnego cache
-    containers_to_check = [c for c in all_container_data if c.get('checking_updates', False)]
-    if containers_to_check:
-        print(f"🔄 Starting background update checks for {len(containers_to_check)} containers")
-        executor.submit(check_image_updates_background, servers, containers_to_check)
 
     return {"servers": server_list_for_json, "containers": all_container_data}
 
@@ -561,38 +509,50 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
-@app.route("/updates-status")
+@app.route("/check-updates", methods=["POST"])
 @login_required
-def updates_status():
+def check_updates():
     """
-    Endpoint zwracający aktualny status sprawdzania aktualizacji
+    Endpoint do ręcznego sprawdzania aktualizacji wszystkich running kontenerów
     """
     servers = discover_docker_clients()
     active_servers = [s for s in servers if s['status'] == 'active']
     
-    updates_status = {}
+    updates = {}
     
+    def check_container_update(args):
+        server, container = args
+        try:
+            if container.status == 'running':
+                update_available = update_checker.check_image_updates_async(
+                    server['client'], container, server['name']
+                )
+                container_key = f"{server['name']}:{container.name}"
+                return container_key, update_available
+        except Exception as e:
+            print(f"❌ Error checking updates for {container.name}: {e}")
+            return f"{server['name']}:{container.name}", False
+        return None, None
+    
+    # Zbierz wszystkie running kontenery
+    check_args = []
     for server in active_servers:
         try:
             containers = server['client'].containers.list(all=True)
             for container in containers:
                 if container.status == 'running':
-                    image_name = container.attrs.get('Config', {}).get('Image', '')
-                    cache_key = update_checker.get_cache_key(
-                        server['name'], container.name, image_name
-                    )
-                    
-                    cached_result, is_valid = update_checker.get_cached_result(cache_key)
-                    
-                    updates_status[f"{server['name']}:{container.name}"] = {
-                        'update_available': cached_result if is_valid else False,
-                        'last_checked': is_valid,
-                        'checking': not is_valid
-                    }
+                    check_args.append((server, container))
         except Exception as e:
-            print(f"❌ Error getting updates status for {server['name']}: {e}")
+            print(f"❌ Error accessing containers on {server['name']}: {e}")
     
-    return jsonify(updates_status)
+    # Sprawdź równolegle
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = executor.map(check_container_update, check_args)
+        for container_key, update_result in results:
+            if container_key:
+                updates[container_key] = update_result
+    
+    return jsonify({"updates": updates})
 
 # === Entry Point ===
 if __name__ == "__main__":

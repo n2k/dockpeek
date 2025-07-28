@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const serverFilterContainer = document.getElementById("server-filter-container");
   const mainTable = document.getElementById("main-table");
   const refreshButton = document.getElementById('refresh-button');
+  const checkUpdatesButton = document.getElementById('check-updates-button');
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
@@ -28,55 +29,94 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
-  
+  async function checkForUpdates() {
+    checkUpdatesButton.classList.add('loading');
+    checkUpdatesButton.disabled = true;
+
+    try {
+      const response = await fetch("/check-updates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const { updates } = await response.json();
+
+      // Aktualizuj dane kontenerów z wynikami
+      allContainersData.forEach(container => {
+        const key = `${container.server}:${container.name}`;
+        if (updates.hasOwnProperty(key)) {
+          container.update_available = updates[key];
+        }
+      });
+
+      // Odśwież wyświetlanie
+      updateDisplay();
+
+    } catch (error) {
+      console.error("Update check failed:", error);
+      alert("Failed to check for updates. Please try again.");
+    } finally {
+      checkUpdatesButton.classList.remove('loading');
+      checkUpdatesButton.disabled = false;
+    }
+  }
+
+  // Dodaj event listener:
+  checkUpdatesButton.addEventListener("click", checkForUpdates);
 
   function renderTable() {
-      containerRowsBody.innerHTML = "";
-  
-      const pageItems = filteredAndSortedContainers;
-  
-      if (pageItems.length === 0) {
-        const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
-        if (searchInput.value || currentServerFilter !== 'all') {
-          containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
-        } else {
-          containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
-        }
-        return;
+    containerRowsBody.innerHTML = "";
+
+    const pageItems = filteredAndSortedContainers;
+
+    if (pageItems.length === 0) {
+      const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
+      if (searchInput.value || currentServerFilter !== 'all') {
+        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      } else {
+        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
       }
-  
-      const fragment = document.createDocumentFragment();
-      for (const c of pageItems) {
-        const clone = rowTemplate.content.cloneNode(true);
-  
-        clone.querySelector('[data-content="name"]').textContent = c.name;
-        clone.querySelector('[data-content="server"]').textContent = c.server;
-        clone.querySelector('[data-content="image"]').textContent = c.image;
-  
-        // Obsługa ikony aktualizacji - DODAJ TEN KOD
-        const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
-        if (c.update_available) {
-          updateIndicator.classList.remove('hidden');
-          updateIndicator.title = 'Image update available';
-        } else {
-          updateIndicator.classList.add('hidden');
-        }
-  
-        const statusCell = clone.querySelector('[data-content="status"]');
-        statusCell.textContent = c.status;
-        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${c.status === "running" ? "status-running" : "status-exited"}`;
-  
-        const portsCell = clone.querySelector('[data-content="ports"]');
-        if (c.ports.length > 0) {
-          portsCell.innerHTML = c.ports.map(p =>
-            `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
-          ).join('<br>');
-        } else {
-          portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
-        }
-        fragment.appendChild(clone);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const c of pageItems) {
+      const clone = rowTemplate.content.cloneNode(true);
+
+      clone.querySelector('[data-content="name"]').textContent = c.name;
+      clone.querySelector('[data-content="server"]').textContent = c.server;
+      clone.querySelector('[data-content="image"]').textContent = c.image;
+
+      // Obsługa ikony aktualizacji - DODAJ TEN KOD
+      const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
+      if (c.update_available) {
+        updateIndicator.classList.remove('hidden');
+        updateIndicator.title = 'Image update available';
+      } else {
+        updateIndicator.classList.add('hidden');
       }
-      containerRowsBody.appendChild(fragment);
+
+      const statusCell = clone.querySelector('[data-content="status"]');
+      statusCell.textContent = c.status;
+      statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${c.status === "running" ? "status-running" : "status-exited"}`;
+
+      const portsCell = clone.querySelector('[data-content="ports"]');
+      if (c.ports.length > 0) {
+        portsCell.innerHTML = c.ports.map(p =>
+          `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
+        ).join('<br>');
+      } else {
+        portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
+      }
+      fragment.appendChild(clone);
+    }
+    containerRowsBody.appendChild(fragment);
   }
 
   function setupServerUI() {
@@ -93,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (a.order !== b.order) {
           return a.order - b.order;
         }
-        
+
         return a.name.localeCompare(b.name);
       });
 

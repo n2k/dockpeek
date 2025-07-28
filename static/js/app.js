@@ -328,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     localStorage.setItem("theme", theme);
   }
-  
+
   function showUpdatesModal(updatedContainers) {
     const updatesList = document.getElementById("updates-list");
 
@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Dodaj kontenery z aktualizacjami
     updatedContainers.forEach(container => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${container.name}</strong> (${container.server}) - <em>${container.image}</em>`;
+      li.innerHTML = `<strong>${container.name}</strong> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
       updatesList.appendChild(li);
     });
 

@@ -134,6 +134,22 @@
       </div>
     </div>
   </div>
+  <div id="updates-modal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="updates-modal-title" class="text-lg font-semibold mb-4">Updates Found</h3>
+    <div id="updates-modal-message" class="mb-6">
+      <p class="mb-3">Found updates for the following containers:</p>
+      <ul id="updates-list" class="list-disc list-inside text-left space-y-1 max-h-48 overflow-y-auto">
+        <!-- Lista kontenerów z aktualizacjami -->
+      </ul>
+    </div>
+    <div class="flex justify-center space-x-3">
+      <button id="updates-modal-ok-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
 
   <script src="/static/js/app.js"></script>
 </body>

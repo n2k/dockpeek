@@ -14,6 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const mainTable = document.getElementById("main-table");
   const refreshButton = document.getElementById('refresh-button');
   const checkUpdatesButton = document.getElementById('check-updates-button');
+  const updatesModal = document.getElementById("updates-modal");
+  const updatesModalOkBtn = document.getElementById("updates-modal-ok-button");
+  const modal = document.getElementById("confirmation-modal");
+  const modalConfirmBtn = document.getElementById("modal-confirm-button");
+  const modalCancelBtn = document.getElementById("modal-cancel-button");
+
+
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
@@ -47,16 +54,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { updates } = await response.json();
 
+      // Lista kontenerów z aktualizacjami
+      const updatedContainers = [];
+
       // Aktualizuj dane kontenerów z wynikami
       allContainersData.forEach(container => {
         const key = `${container.server}:${container.name}`;
         if (updates.hasOwnProperty(key)) {
           container.update_available = updates[key];
+
+          // Dodaj do listy jeśli ma aktualizację
+          if (updates[key]) {
+            updatedContainers.push(container);
+          }
         }
       });
 
       // Odśwież wyświetlanie
       updateDisplay();
+
+      // Pokaż modal z wynikami
+      if (updatedContainers.length > 0) {
+        showUpdatesModal(updatedContainers);
+      } else {
+        // Pokaż informację że nie znaleziono aktualizacji
+        alert("No updates found. All containers are up to date!");
+      }
 
     } catch (error) {
       console.error("Update check failed:", error);
@@ -66,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
       checkUpdatesButton.disabled = false;
     }
   }
+
 
   // Dodaj event listener:
   checkUpdatesButton.addEventListener("click", checkForUpdates);
@@ -304,10 +328,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     localStorage.setItem("theme", theme);
   }
+  
+  function showUpdatesModal(updatedContainers) {
+    const updatesList = document.getElementById("updates-list");
 
-  const modal = document.getElementById("confirmation-modal");
-  const modalConfirmBtn = document.getElementById("modal-confirm-button");
-  const modalCancelBtn = document.getElementById("modal-cancel-button");
+    // Wyczyść poprzednią listę
+    updatesList.innerHTML = "";
+
+    // Dodaj kontenery z aktualizacjami
+    updatedContainers.forEach(container => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${container.name}</strong> (${container.server}) - <em>${container.image}</em>`;
+      updatesList.appendChild(li);
+    });
+
+    // Pokaż modal
+    updatesModal.classList.remove('hidden');
+
+    // Event listener dla przycisku OK
+    const okHandler = () => {
+      updatesModal.classList.add('hidden');
+      updatesModalOkBtn.removeEventListener('click', okHandler);
+    };
+
+    updatesModalOkBtn.addEventListener('click', okHandler);
+
+    // Zamknij modal po kliknięciu w tło
+    const backdropHandler = (e) => {
+      if (e.target === updatesModal) {
+        okHandler();
+        updatesModal.removeEventListener('click', backdropHandler);
+      }
+    };
+
+    updatesModal.addEventListener('click', backdropHandler);
+  }
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {

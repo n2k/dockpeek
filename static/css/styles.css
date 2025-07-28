@@ -496,3 +496,25 @@ body.dark-mode #check-updates-button {
 body.dark-mode #check-updates-button:hover {
   background-color: #30363d;
 }
+
+#updates-list {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e1e4e8;
+}
+
+#updates-list li {
+  color: #24292e;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+}
+
+body.dark-mode #updates-list {
+  background-color: #21262d;
+  border-color: #30363d;
+}
+
+body.dark-mode #updates-list li {
+  color: #c9d1d9;
+}

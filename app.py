@@ -62,6 +62,40 @@ class UpdateChecker:
     def set_cache_result(self, cache_key, result):
         with self.lock:
             self.cache[cache_key] = (result, datetime.now())
+
+    def check_local_image_updates(self, client, container, server_name):
+        """
+        Sprawdza czy lokalnie dostępny jest nowszy obraz niż ten używany przez kontener
+        (szybkie sprawdzenie bez pullowania)
+        """
+        try:
+            container_image_id = container.attrs.get('Image', '')
+            if not container_image_id:
+                return False
+                
+            image_name = container.attrs.get('Config', {}).get('Image', '')
+            if not image_name:
+                return False
+            
+            # Extract image name and tag
+            if ':' in image_name:
+                base_name, current_tag = image_name.rsplit(':', 1)
+            else:
+                base_name = image_name
+                current_tag = 'latest'
+            
+            try:
+                # Sprawdź czy lokalnie jest dostępny nowszy obraz
+                local_image = client.images.get(f"{base_name}:{current_tag}")
+                return container_image_id != local_image.id
+                
+            except Exception:
+                # Jeśli nie ma lokalnego obrazu, nie ma aktualizacji
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error checking local image updates: {e}")
+            return False
     
     def check_image_updates_async(self, client, container, server_name):
         """
@@ -447,9 +481,15 @@ def get_all_data():
                         'name': container.name,
                         'status': container.status,
                         'image': image_name,
-                        'ports': port_map,
-                        'update_available': False  
+                        'ports': port_map
                     }
+                    # Sprawdź lokalnie dostępne aktualizacje (szybko, bez pullowania)
+                    if cached_update is not None and is_cache_valid:
+                        container_info['update_available'] = cached_update
+                    else:
+                        # Szybkie sprawdzenie lokalnych obrazów
+                        local_update = update_checker.check_local_image_updates(client, container, server_name)
+                        container_info['update_available'] = local_update
                     
                     all_container_data.append(container_info)
                     
@@ -460,9 +500,7 @@ def get_all_data():
                         'name': getattr(container, 'name', 'unknown'),
                         'status': getattr(container, 'status', 'unknown'),
                         'image': 'error-loading',
-                        'ports': [],
-                        'update_available': False,
-                        'checking_updates': False
+                        'ports': []
                     })
                     
         except Exception as e:

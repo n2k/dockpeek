@@ -21,12 +21,17 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import asyncio
 from threading import Lock
+from flask import session
+from datetime import timedelta
+
 
 # === Flask Init ===
 app = Flask(__name__)
 secret_key = os.environ.get("SECRET_KEY")
 if not secret_key:
     raise RuntimeError("ERROR: SECRET_KEY environment variable is not set.")
+
+app.permanent_session_lifetime = timedelta(days=14)
 
 app.secret_key = secret_key
 CORS(app)
@@ -536,6 +541,7 @@ def login():
         user_record = users.get(username)
         if user_record and check_password_hash(user_record["password"], password):
             login_user(User(username))
+            session.permanent = True
             return redirect(url_for("index"))
         else:
             error = "Invalid credentials. Please try again."

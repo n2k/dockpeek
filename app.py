@@ -551,35 +551,41 @@ def logout():
 @login_required
 def check_updates():
     """
-    Endpoint do ręcznego sprawdzania aktualizacji wszystkich running kontenerów
+    Endpoint do ręcznego sprawdzania aktualizacji kontenerów z wybranego serwera
     """
+    # Pobierz filtr serwera z requestu
+    request_data = request.get_json() or {}
+    server_filter = request_data.get('server_filter', 'all')
+    
     servers = discover_docker_clients()
     active_servers = [s for s in servers if s['status'] == 'active']
+    
+    # Filtruj serwery jeśli wybrano konkretny serwer
+    if server_filter != 'all':
+        active_servers = [s for s in active_servers if s['name'] == server_filter]
     
     updates = {}
     
     def check_container_update(args):
         server, container = args
         try:
-            if container.status == 'running':
-                update_available = update_checker.check_image_updates_async(
-                    server['client'], container, server['name']
-                )
-                container_key = f"{server['name']}:{container.name}"
-                return container_key, update_available
+            update_available = update_checker.check_image_updates_async(
+                server['client'], container, server['name']
+            )
+            container_key = f"{server['name']}:{container.name}"
+            return container_key, update_available
         except Exception as e:
             print(f"❌ Error checking updates for {container.name}: {e}")
             return f"{server['name']}:{container.name}", False
         return None, None
     
-    # Zbierz wszystkie running kontenery
+    # Zbierz wszystkie kontenery z wyfiltrowanych serwerów
     check_args = []
     for server in active_servers:
         try:
             containers = server['client'].containers.list(all=True)
             for container in containers:
-                if container.status == 'running':
-                    check_args.append((server, container))
+                check_args.append((server, container))
         except Exception as e:
             print(f"❌ Error accessing containers on {server['name']}: {e}")
     
@@ -591,7 +597,6 @@ def check_updates():
                 updates[container_key] = update_result
     
     return jsonify({"updates": updates})
-
 # === Entry Point ===
 if __name__ == "__main__":
     if not os.path.exists('templates'):

@@ -41,11 +41,17 @@ document.addEventListener("DOMContentLoaded", () => {
     checkUpdatesButton.disabled = true;
 
     try {
+      // Przygotuj dane do wysłania - tylko wybrany serwer
+      const requestData = {
+        server_filter: currentServerFilter // Dodaj informację o wybranym serwerze
+      };
+
       const response = await fetch("/check-updates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
-        }
+        },
+        body: JSON.stringify(requestData) // Wyślij dane jako JSON
       });
 
       if (!response.ok) {
@@ -363,34 +369,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updatesModal.addEventListener('click', backdropHandler);
   }
-  
+
   function showNoUpdatesModal() {
-  const updatesList = document.getElementById("updates-list");
-  
-  // Wyczyść listę i dodaj informację
-  updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
-  
-  // Pokaż modal
-  updatesModal.classList.remove('hidden');
-  
-  // Event listener dla przycisku OK
-  const okHandler = () => {
-    updatesModal.classList.add('hidden');
-    updatesModalOkBtn.removeEventListener('click', okHandler);
-  };
-  
-  updatesModalOkBtn.addEventListener('click', okHandler);
-  
-  // Zamknij modal po kliknięciu w tło
-  const backdropHandler = (e) => {
-    if (e.target === updatesModal) {
-      okHandler();
-      updatesModal.removeEventListener('click', backdropHandler);
-    }
-  };
-  
-  updatesModal.addEventListener('click', backdropHandler);
-}
+    const updatesList = document.getElementById("updates-list");
+
+    // Wyczyść listę i dodaj informację
+    updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
+
+    // Pokaż modal
+    updatesModal.classList.remove('hidden');
+
+    // Event listener dla przycisku OK
+    const okHandler = () => {
+      updatesModal.classList.add('hidden');
+      updatesModalOkBtn.removeEventListener('click', okHandler);
+    };
+
+    updatesModalOkBtn.addEventListener('click', okHandler);
+
+    // Zamknij modal po kliknięciu w tło
+    const backdropHandler = (e) => {
+      if (e.target === updatesModal) {
+        okHandler();
+        updatesModal.removeEventListener('click', backdropHandler);
+      }
+    };
+
+    updatesModal.addEventListener('click', backdropHandler);
+  }
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {

@@ -88,7 +88,7 @@ services:
       - PING=1       
       - VERSION=1    
       - INFO=1
-      - POST=1       # <-- This is needed for Check Updates operations
+      - POST=1       # <-- This is needed for "Check for updates" operations
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true

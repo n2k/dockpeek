@@ -105,7 +105,8 @@ services:
 
 You can connect and manage multiple Docker instances from a single dashboard.
 
-The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
+> [!TIP]
+> The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
 
 ```yaml
     environment:

@@ -19,6 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("confirmation-modal");
   const modalConfirmBtn = document.getElementById("modal-confirm-button");
   const modalCancelBtn = document.getElementById("modal-cancel-button");
+  const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
+
 
 
 
@@ -215,6 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (currentServerFilter !== "all") {
       workingData = workingData.filter(c => c.server === currentServerFilter);
+    }
+
+    if (filterUpdatesCheckbox.checked) {
+      workingData = workingData.filter(c => c.update_available);
     }
 
     const searchTerm = searchInput.value.toLowerCase().trim();
@@ -444,6 +450,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("theme-switcher").addEventListener("click", () => {
     applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
   });
+  
+  filterUpdatesCheckbox.addEventListener("change", updateDisplay);
 
   searchInput.addEventListener("input", updateDisplay);
 

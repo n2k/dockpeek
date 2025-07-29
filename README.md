@@ -10,7 +10,7 @@
 <br>
 <br>
 
-**Dockpeek** is a lightweight, self-hosted Docker dashboard that allows you to view and access exposed container ports with a clean, click-to-access interface. It supports both local Docker sockets and remote hosts via `socket-proxy`, making it easy to manage multiple Docker environments from a single place.
+**Dockpeek** is a lightweight, self-hosted Docker dashboard that allows you to view and access exposed container ports with a clean, click-to-access interface. It supports both local Docker sockets and remote hosts via `socket-proxy`, making it easy to manage multiple Docker environments from a single place. Additionally, Dockpeek includes built-in **image update checking**, so you can easily see if newer versions of your container images are available.
 
 
 ### Key Features
@@ -19,6 +19,7 @@
 -  **Click-to-Access URLs** – Open containerized web apps instantly with a single click.
 -  **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
 -  **Zero Configuration** – Automatically detects running containers with no setup required.
+-  **Image Update Checking** – Monitor available updates for your container images.
 
 <br>
 
@@ -34,7 +35,7 @@
 
 Tired of remembering IP addresses and port numbers to access your containerized apps? **Dockpeek** gives you a clean, centralized dashboard with one-click access to any exposed container service—whether it's running locally or remotely.
 
-Perfect when you're dealing with many containers across different machines. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized.
+Perfect when you're dealing with many containers across different machines and need to keep track of which images have updates available. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized while ensuring your containers stay current.
 
 <br>
 
@@ -82,11 +83,12 @@ services:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
-      - CONTAINERS=1
-      - IMAGES=1
-      - PING=1
-      - VERSION=1
-      - LOG_LEVEL=info
+      - CONTAINERS=1 
+      - IMAGES=1     
+      - PING=1       
+      - VERSION=1    
+      - INFO=1
+      - POST=1       # <-- This is needed for "Check for updates" operations
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -103,14 +105,11 @@ services:
 
 You can connect and manage multiple Docker instances from a single dashboard.
 
-The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
+> [!TIP]
+> The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
 
 ```yaml
     environment:
-      - SECRET_KEY=my_secret_key     # Set a secret key for security
-      - USERNAME=admin               # Change
-      - PASSWORD=admin               # Change
-      
       # Optional: Add extra Docker hosts by setting these variables.
 
       # Docker Host 1

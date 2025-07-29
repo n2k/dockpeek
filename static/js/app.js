@@ -13,6 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const serverFilterContainer = document.getElementById("server-filter-container");
   const mainTable = document.getElementById("main-table");
   const refreshButton = document.getElementById('refresh-button');
+  const checkUpdatesButton = document.getElementById('check-updates-button');
+  const updatesModal = document.getElementById("updates-modal");
+  const updatesModalOkBtn = document.getElementById("updates-modal-ok-button");
+  const modal = document.getElementById("confirmation-modal");
+  const modalConfirmBtn = document.getElementById("modal-confirm-button");
+  const modalCancelBtn = document.getElementById("modal-cancel-button");
+  const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
+
+
+
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
@@ -27,6 +37,70 @@ document.addEventListener("DOMContentLoaded", () => {
     hideLoadingIndicator();
     containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
+
+  async function checkForUpdates() {
+    checkUpdatesButton.classList.add('loading');
+    checkUpdatesButton.disabled = true;
+
+    try {
+      // Przygotuj dane do wysłania - tylko wybrany serwer
+      const requestData = {
+        server_filter: currentServerFilter // Dodaj informację o wybranym serwerze
+      };
+
+      const response = await fetch("/check-updates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData) // Wyślij dane jako JSON
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const { updates } = await response.json();
+
+      // Lista kontenerów z aktualizacjami
+      const updatedContainers = [];
+
+      // Aktualizuj dane kontenerów z wynikami
+      allContainersData.forEach(container => {
+        const key = `${container.server}:${container.name}`;
+        if (updates.hasOwnProperty(key)) {
+          container.update_available = updates[key];
+
+          // Dodaj do listy jeśli ma aktualizację
+          if (updates[key]) {
+            updatedContainers.push(container);
+          }
+        }
+      });
+
+      // Odśwież wyświetlanie
+      updateDisplay();
+
+      // Pokaż modal z wynikami
+      if (updatedContainers.length > 0) {
+        showUpdatesModal(updatedContainers);
+      } else {
+        // Pokaż modal z informacją że nie znaleziono aktualizacji
+        showNoUpdatesModal();
+      }
+
+    } catch (error) {
+      console.error("Update check failed:", error);
+      alert("Failed to check for updates. Please try again.");
+    } finally {
+      checkUpdatesButton.classList.remove('loading');
+      checkUpdatesButton.disabled = false;
+    }
+  }
+
+
+  // Dodaj event listener:
+  checkUpdatesButton.addEventListener("click", checkForUpdates);
 
   function renderTable() {
     containerRowsBody.innerHTML = "";
@@ -50,6 +124,15 @@ document.addEventListener("DOMContentLoaded", () => {
       clone.querySelector('[data-content="name"]').textContent = c.name;
       clone.querySelector('[data-content="server"]').textContent = c.server;
       clone.querySelector('[data-content="image"]').textContent = c.image;
+
+      // Obsługa ikony aktualizacji - DODAJ TEN KOD
+      const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
+      if (c.update_available) {
+        updateIndicator.classList.remove('hidden');
+        updateIndicator.title = 'Image update available';
+      } else {
+        updateIndicator.classList.add('hidden');
+      }
 
       const statusCell = clone.querySelector('[data-content="status"]');
       statusCell.textContent = c.status;
@@ -82,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (a.order !== b.order) {
           return a.order - b.order;
         }
-        
+
         return a.name.localeCompare(b.name);
       });
 
@@ -134,6 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (currentServerFilter !== "all") {
       workingData = workingData.filter(c => c.server === currentServerFilter);
+    }
+
+    if (filterUpdatesCheckbox.checked) {
+      workingData = workingData.filter(c => c.update_available);
     }
 
     const searchTerm = searchInput.value.toLowerCase().trim();
@@ -254,9 +341,68 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("theme", theme);
   }
 
-  const modal = document.getElementById("confirmation-modal");
-  const modalConfirmBtn = document.getElementById("modal-confirm-button");
-  const modalCancelBtn = document.getElementById("modal-cancel-button");
+  function showUpdatesModal(updatedContainers) {
+    const updatesList = document.getElementById("updates-list");
+
+    // Wyczyść poprzednią listę
+    updatesList.innerHTML = "";
+
+    // Dodaj kontenery z aktualizacjami
+    updatedContainers.forEach(container => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${container.name}</strong> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
+      updatesList.appendChild(li);
+    });
+
+    // Pokaż modal
+    updatesModal.classList.remove('hidden');
+
+    // Event listener dla przycisku OK
+    const okHandler = () => {
+      updatesModal.classList.add('hidden');
+      updatesModalOkBtn.removeEventListener('click', okHandler);
+    };
+
+    updatesModalOkBtn.addEventListener('click', okHandler);
+
+    // Zamknij modal po kliknięciu w tło
+    const backdropHandler = (e) => {
+      if (e.target === updatesModal) {
+        okHandler();
+        updatesModal.removeEventListener('click', backdropHandler);
+      }
+    };
+
+    updatesModal.addEventListener('click', backdropHandler);
+  }
+
+  function showNoUpdatesModal() {
+    const updatesList = document.getElementById("updates-list");
+
+    // Wyczyść listę i dodaj informację
+    updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
+
+    // Pokaż modal
+    updatesModal.classList.remove('hidden');
+
+    // Event listener dla przycisku OK
+    const okHandler = () => {
+      updatesModal.classList.add('hidden');
+      updatesModalOkBtn.removeEventListener('click', okHandler);
+    };
+
+    updatesModalOkBtn.addEventListener('click', okHandler);
+
+    // Zamknij modal po kliknięciu w tło
+    const backdropHandler = (e) => {
+      if (e.target === updatesModal) {
+        okHandler();
+        updatesModal.removeEventListener('click', backdropHandler);
+      }
+    };
+
+    updatesModal.addEventListener('click', backdropHandler);
+  }
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {
@@ -304,6 +450,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("theme-switcher").addEventListener("click", () => {
     applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
   });
+  
+  filterUpdatesCheckbox.addEventListener("change", updateDisplay);
 
   searchInput.addEventListener("input", updateDisplay);
 

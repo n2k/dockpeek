@@ -35,7 +35,7 @@
 
 Tired of remembering IP addresses and port numbers to access your containerized apps? **Dockpeek** gives you a clean, centralized dashboard with one-click access to any exposed container service—whether it's running locally or remotely.
 
-Perfect when you're dealing with many containers across different machines and need to keep track of which images have updates available. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized while ensuring your containers stay current.RetryClaude can make mistakes. Please double-check responses.
+Perfect when you're dealing with many containers across different machines and need to keep track of which images have updates available. Whether you're a developer, a sysadmin, or just managing your home lab, Dockpeek keeps things simple and organized while ensuring your containers stay current.
 
 <br>
 

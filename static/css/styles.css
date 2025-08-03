@@ -786,3 +786,8 @@ body.dark-mode input:checked + .slider {
   white-space: pre-line;
   line-height: 1.6;
 }
+
+button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

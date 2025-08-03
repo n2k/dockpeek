@@ -21,9 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalCancelBtn = document.getElementById("modal-cancel-button");
   const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
 
-
-
-
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
     containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
@@ -39,13 +36,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkForUpdates() {
+    const activeServers = allServersData.filter(s => s.status === 'active');
+    const serversToCheck = currentServerFilter === 'all' 
+      ? activeServers 
+      : activeServers.filter(s => s.name === currentServerFilter);
+
+    if (serversToCheck.length > 1) {
+      try {
+        await showConfirmationModal(
+          'Check Updates on Multiple Servers',
+          `You are about to check for updates on ${serversToCheck.length} servers:\n\n${serversToCheck.map(s => `• ${s.name}`).join('\n')}\n\nThis operation may take longer and will pull images from registries. Do you want to continue?`,
+          'Check Updates'
+        );
+      } catch (error) {
+        console.log('Multi-server update check cancelled by user');
+        return;
+      }
+    }
+
     checkUpdatesButton.classList.add('loading');
     checkUpdatesButton.disabled = true;
 
     try {
-      // Przygotuj dane do wysłania - tylko wybrany serwer
       const requestData = {
-        server_filter: currentServerFilter // Dodaj informację o wybranym serwerze
+        server_filter: currentServerFilter
       };
 
       const response = await fetch("/check-updates", {
@@ -53,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(requestData) // Wyślij dane jako JSON
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
@@ -61,31 +75,23 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const { updates } = await response.json();
-
-      // Lista kontenerów z aktualizacjami
       const updatedContainers = [];
 
-      // Aktualizuj dane kontenerów z wynikami
       allContainersData.forEach(container => {
         const key = `${container.server}:${container.name}`;
         if (updates.hasOwnProperty(key)) {
           container.update_available = updates[key];
-
-          // Dodaj do listy jeśli ma aktualizację
           if (updates[key]) {
             updatedContainers.push(container);
           }
         }
       });
 
-      // Odśwież wyświetlanie
       updateDisplay();
 
-      // Pokaż modal z wynikami
       if (updatedContainers.length > 0) {
         showUpdatesModal(updatedContainers);
       } else {
-        // Pokaż modal z informacją że nie znaleziono aktualizacji
         showNoUpdatesModal();
       }
 
@@ -98,22 +104,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
-  // Dodaj event listener:
   checkUpdatesButton.addEventListener("click", checkForUpdates);
 
   function renderTable() {
     containerRowsBody.innerHTML = "";
-
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
       const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
-      if (searchInput.value || currentServerFilter !== 'all') {
-        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
-      } else {
-        containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers to display.</td></tr>`;
-      }
+      containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
 
@@ -125,11 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
       clone.querySelector('[data-content="server"]').textContent = c.server;
       clone.querySelector('[data-content="image"]').textContent = c.image;
 
-      // Obsługa ikony aktualizacji - DODAJ TEN KOD
       const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
       if (c.update_available) {
         updateIndicator.classList.remove('hidden');
-        updateIndicator.title = 'Image update available';
+        updateIndicator.title = 'Update available';
       } else {
         updateIndicator.classList.add('hidden');
       }
@@ -161,11 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
       servers.sort((a, b) => {
         if (a.status !== 'inactive' && b.status === 'inactive') return -1;
         if (a.status === 'inactive' && b.status !== 'inactive') return 1;
-
-        if (a.order !== b.order) {
-          return a.order - b.order;
-        }
-
+        if (a.order !== b.order) return a.order - b.order;
         return a.name.localeCompare(b.name);
       });
 
@@ -204,11 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateActiveButton() {
     serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
-      if (button.dataset.server === currentServerFilter) {
-        button.classList.add('active');
-      } else {
-        button.classList.remove('active');
-      }
+      button.classList.toggle('active', button.dataset.server === currentServerFilter);
     });
   }
 
@@ -262,20 +252,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchContainerData() {
     showLoadingIndicator();
-
     try {
       const response = await fetch("/data");
-
-      if (!response.ok) {
-        throw createResponseError(response);
-      }
-
+      if (!response.ok) throw createResponseError(response);
+      
       const { servers = [], containers = [] } = await response.json();
       [allServersData, allContainersData] = [servers, containers];
 
       handleServerFilterReset();
-      handleSingleServerMode();
-
       setupServerUI();
       updateDisplay();
 
@@ -290,7 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const status = response.status;
     const messages = {
       401: `Authorization Error (${status}): Please log in again`,
-      403: `Authorization Error (${status}): Access denied`,
       500: `Server Error (${status}): Please try again later`,
       default: `HTTP Error: ${status} ${response.statusText}`
     };
@@ -299,33 +282,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function handleServerFilterReset() {
     const shouldReset = !allServersData.some(s => s.name === currentServerFilter) ||
-      (allServersData.find(s => s.name === currentServerFilter)?.status === 'inactive') ||
-      (allServersData.length === 1 && allServersData[0].status === 'inactive');
-
+      (allServersData.find(s => s.name === currentServerFilter)?.status === 'inactive');
     if (shouldReset) {
       currentServerFilter = 'all';
-      console.log('Server filter reset to "all" due to server unavailability');
-    }
-  }
-
-  function handleSingleServerMode() {
-    const noActiveServers = allServersData.length === 0 ||
-      allServersData.every(s => s.status === 'inactive');
-
-    mainTable.classList.toggle('table-single-server', noActiveServers);
-
-    if (noActiveServers) {
-      console.warn('No active servers available - switching to single-server mode');
     }
   }
 
   function handleFetchError(error) {
     console.error("Data fetch error:", error);
-
     const message = error.message.includes('Failed to fetch')
       ? "Network Error: Could not connect to backend service"
       : error.message;
-
     displayError(message);
   }
 
@@ -343,116 +310,75 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showUpdatesModal(updatedContainers) {
     const updatesList = document.getElementById("updates-list");
-
-    // Wyczyść poprzednią listę
     updatesList.innerHTML = "";
 
-    // Dodaj kontenery z aktualizacjami
     updatedContainers.forEach(container => {
       const li = document.createElement("li");
       li.innerHTML = `<strong>${container.name}</strong> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
       updatesList.appendChild(li);
     });
 
-    // Pokaż modal
     updatesModal.classList.remove('hidden');
-
-    // Event listener dla przycisku OK
-    const okHandler = () => {
-      updatesModal.classList.add('hidden');
-      updatesModalOkBtn.removeEventListener('click', okHandler);
-    };
-
-    updatesModalOkBtn.addEventListener('click', okHandler);
-
-    // Zamknij modal po kliknięciu w tło
-    const backdropHandler = (e) => {
-      if (e.target === updatesModal) {
-        okHandler();
-        updatesModal.removeEventListener('click', backdropHandler);
-      }
-    };
-
-    updatesModal.addEventListener('click', backdropHandler);
+    const okHandler = () => updatesModal.classList.add('hidden');
+    updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
+    updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
   }
 
   function showNoUpdatesModal() {
     const updatesList = document.getElementById("updates-list");
-
-    // Wyczyść listę i dodaj informację
     updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
-
-    // Pokaż modal
     updatesModal.classList.remove('hidden');
-
-    // Event listener dla przycisku OK
-    const okHandler = () => {
-      updatesModal.classList.add('hidden');
-      updatesModalOkBtn.removeEventListener('click', okHandler);
-    };
-
-    updatesModalOkBtn.addEventListener('click', okHandler);
-
-    // Zamknij modal po kliknięciu w tło
-    const backdropHandler = (e) => {
-      if (e.target === updatesModal) {
-        okHandler();
-        updatesModal.removeEventListener('click', backdropHandler);
-      }
-    };
-
-    updatesModal.addEventListener('click', backdropHandler);
+    const okHandler = () => updatesModal.classList.add('hidden');
+    updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
+    updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
   }
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {
       document.getElementById('modal-title').textContent = title;
-      document.getElementById('modal-message').textContent = message;
+      document.getElementById('modal-message').innerHTML = message.replace(/\n/g, '<br>');
       modalConfirmBtn.textContent = confirmText;
       modal.classList.remove('hidden');
 
       const confirmHandler = () => {
         modal.classList.add('hidden');
-        cleanup();
+        removeListeners();
         resolve();
       };
 
       const cancelHandler = () => {
         modal.classList.add('hidden');
-        cleanup();
-        reject();
+        removeListeners();
+        reject(new Error('User cancelled'));
       };
 
-      const backdropClickHandler = (e) => {
+      const backdropHandler = (e) => {
         if (e.target === modal) {
           cancelHandler();
         }
       };
-
-      const cleanup = () => {
+      
+      const removeListeners = () => {
         modalConfirmBtn.removeEventListener('click', confirmHandler);
         modalCancelBtn.removeEventListener('click', cancelHandler);
-        modal.removeEventListener('click', backdropClickHandler);
+        modal.removeEventListener('click', backdropHandler);
       };
 
-      modalConfirmBtn.addEventListener('click', confirmHandler, { once: true });
-      modalCancelBtn.addEventListener('click', cancelHandler, { once: true });
-      modal.addEventListener('click', backdropClickHandler, { once: true });
+      modalConfirmBtn.addEventListener('click', confirmHandler);
+      modalCancelBtn.addEventListener('click', cancelHandler);
+      modal.addEventListener('click', backdropHandler);
     });
   }
 
   fetchContainerData();
-
   applyTheme(localStorage.getItem("theme") || "dark");
 
   refreshButton.addEventListener("click", fetchContainerData);
-
   document.getElementById("theme-switcher").addEventListener("click", () => {
     applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
   });
-  
-  filterUpdatesCheckbox.addEventListener("change", updateDisplay);
 
+  filterUpdatesCheckbox.addEventListener("change", updateDisplay);
   searchInput.addEventListener("input", updateDisplay);
 
   document.querySelectorAll(".sortable-header").forEach((header) => {
@@ -466,49 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       document.querySelectorAll(".sortable-header").forEach(h => h.classList.remove('asc', 'desc'));
       header.classList.add(currentSortDirection);
-
       updateDisplay();
     });
   });
-
-  document.getElementById("export-json-button").addEventListener("click", async () => {
-    if (filteredAndSortedContainers.length === 0) {
-      alert("No data to export.");
-      return;
-    }
-
-    try {
-      await showConfirmationModal('Export to JSON', 'Are you sure you want to download the currently displayed container data as a JSON file?', 'Download');
-
-      const exportData = {
-        meta: {
-          generated: new Date().toISOString(),
-        },
-        containers: filteredAndSortedContainers.map(container => ({
-          name: container.name,
-          status: container.status,
-          server: container.server,
-          ports: container.ports.map(p => ({
-            mapping: `${p.host_port}:${p.container_port}`,
-            accessible_at: p.link,
-            host_port: parseInt(p.host_port),
-            container_port: p.container_port.replace('/tcp', '')
-          })),
-        }))
-      };
-
-      const jsonContent = JSON.stringify(exportData, null, 2);
-      const blob = new Blob([jsonContent], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `dockpeek_export_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-    } catch {
-      console.log('Export cancelled by user.');
-    }
-  });
-
 });

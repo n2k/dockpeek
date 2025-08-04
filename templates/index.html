@@ -119,34 +119,46 @@
     </tr>
   </template>
 
-  <div id="confirmation-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-900">Confirmation</h2>
-      <p id="modal-message" class="text-gray-600 mb-6">Are you sure?</p>
-      <div class="flex justify-center space-x-4">
-        <button id="modal-cancel-button"
-          class="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
-        <button id="modal-confirm-button"
-          class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">Confirm</button>
-      </div>
+ <div id="confirmation-modal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-900">
+      Confirmation
+    </h2>
+    <div id="modal-message" class="text-gray-600 mb-6 text-left whitespace-pre-line">
+    </div>
+    <div class="flex justify-center space-x-4">
+      <button id="modal-cancel-button"
+        class="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+        Cancel
+      </button>
+      <button id="modal-confirm-button"
+        class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">
+        Confirm
+      </button>
     </div>
   </div>
-  <div id="updates-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h3 id="updates-modal-title" class="text-lg font-semibold mb-4">Updates Found</h3>
-      <div id="updates-modal-message">
-        <p class="mb-3">Found updates for the following containers:</p>
-        <ul id="updates-list" class="list-none text-left">
-          </ul>
-      </div>
-      <div class="flex justify-center space-x-3 mt-4">
-        <button id="updates-modal-ok-button"
-          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-          OK
-        </button>
-      </div>
+</div>
+
+<div id="updates-modal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="updates-modal-title" class="text-lg font-semibold mb-4 text-gray-900">
+      Updates Found
+    </h3>
+    <div id="updates-modal-message">
+      <p class="mb-3 text-gray-600">
+        Found updates for the following containers:
+      </p>
+      <ul id="updates-list" class="list-none text-left mb-4">
+      </ul>
+    </div>
+    <div class="flex justify-center space-x-3 mt-4">
+      <button id="updates-modal-ok-button"
+        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+        OK
+      </button>
     </div>
   </div>
+</div>
 
   <script src="/static/js/app.js"></script>
 </body>

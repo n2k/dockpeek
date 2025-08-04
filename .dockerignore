@@ -1,6 +1,8 @@
 .git
 .gitignore
 .dockerignore
+package-lock.json
+package.json
 
 #Files
 Dockerfile
@@ -10,6 +12,7 @@ LICENSE
 # Folders
 .build/
 .Releases/
+node_modules
 
 # Secrets
 .env

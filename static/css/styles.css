@@ -1,3 +1,4 @@
+
 body {
   font-family: "Inter", sans-serif;
   background-color: #f6f8fa;
@@ -791,3 +792,8 @@ button:focus {
   outline: none !important;
   box-shadow: none !important;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "tailwindcss";

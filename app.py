@@ -1,28 +1,28 @@
 import os
 import re
+import logging
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from threading import Lock
+from urllib.parse import urlparse
 import docker
+from docker.client import DockerClient
+from packaging import version
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from flask import (
+    Flask, render_template, request, jsonify,
+    redirect, url_for, session
+)
 from flask_cors import CORS
 from flask_login import (
     LoginManager, UserMixin, login_user,
     logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from urllib.parse import urlparse
-from docker.client import DockerClient
-from packaging import version
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Lock
-from flask import session
-import logging
 
 # === Logging Configuration ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("dockpeek" if __name__ == "__main__" else __name__)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-
-
 
 # === Flask Initialization ===
 app = Flask(__name__)

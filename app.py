@@ -173,7 +173,7 @@ def unauthorized_callback():
 # === Docker Client Logic ===
 DOCKER_TIMEOUT = 0.5  # Timeout in seconds
 
-def _extract_hostname_from_url(url):
+def _extract_hostname_from_url(url, is_docker_host):
     """Extracts hostname from Docker URL for public hostname determination"""
     if not url:
         return None
@@ -190,7 +190,7 @@ def _extract_hostname_from_url(url):
             if hostname:
                 if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
                     return None
-                if _is_likely_internal_hostname(hostname):
+                if _is_likely_internal_hostname(hostname, is_docker_host):
                     return None
                 return hostname
         except Exception:
@@ -203,7 +203,7 @@ def _extract_hostname_from_url(url):
             hostname = match.group(1)
             if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
                 return None
-            if _is_likely_internal_hostname(hostname):
+            if _is_likely_internal_hostname(hostname, is_docker_host):
                 return None
             return hostname
     except Exception:
@@ -211,8 +211,14 @@ def _extract_hostname_from_url(url):
     
     return None
 
-def _is_likely_internal_hostname(hostname):
-    """Determine if hostname is likely an internal Docker network name"""
+def _is_likely_internal_hostname(hostname, is_docker_host):
+    """Determine if hostname is likely an internal Docker network name.
+    This check is only applied to the main DOCKER_HOST, not DOCKER_HOST_n instances."""
+    # For numbered hosts (DOCKER_HOST_n), we skip this check to allow
+    # simple hostnames (e.g., 'server1') without being flagged as internal.
+    if not is_docker_host:
+        return False
+        
     ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
     if re.match(ip_pattern, hostname):
         return False
@@ -242,7 +248,7 @@ def discover_docker_clients():
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         
         if not public_hostname:
-            public_hostname = _extract_hostname_from_url(host_url)
+            public_hostname = _extract_hostname_from_url(host_url, is_docker_host=True)
         
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
@@ -277,7 +283,7 @@ def discover_docker_clients():
             public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
             
             if not public_hostname:
-                public_hostname = _extract_hostname_from_url(url)
+                public_hostname = _extract_hostname_from_url(url, is_docker_host=False)
             
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)

@@ -15,6 +15,14 @@ from packaging import version
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 from flask import session
+import logging
+
+# === Logging Configuration ===
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("dockpeek" if __name__ == "__main__" else __name__)
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+
 
 # === Flask Initialization ===
 app = Flask(__name__)
@@ -83,7 +91,7 @@ class UpdateChecker:
                 return False
                 
         except Exception as e:
-            print(f"❌ Error checking local image updates: {e}")
+            logger.error(f"Error checking local image updates for container '{container.name}'")
             return False
     
     def check_image_updates_async(self, client, container, server_name):
@@ -102,7 +110,7 @@ class UpdateChecker:
             # Check cache first
             cached_result, is_valid = self.get_cached_result(cache_key)
             if is_valid:
-                print(f"🔄 Using cached update result for {image_name}")
+                logger.info(f"🔄[ {server_name} ] - Using cached update result for {image_name}: {cached_result}")
                 return cached_result
             
             # Extract image name and tag
@@ -121,17 +129,17 @@ class UpdateChecker:
                 result = container_image_id != updated_hash
                 self.set_cache_result(cache_key, result)                
                 if result:
-                    print(f"✅ Update available for {base_name}:{current_tag}")
+                    logger.info(f" [ {server_name} ] - Update available - ⬆️{base_name}  :{current_tag}")
                 else:
-                    print(f"ℹ️ Image {base_name}:{current_tag} is up to date")                
+                    logger.info(f" [ {server_name} ] - Image is up to date - ✅{base_name}  :{current_tag}")                
                 return result                
             except Exception as pull_error:
-                print(f"⚠️ Cannot pull latest version of {base_name}:{current_tag}: {pull_error}")
+                logger.warning(f" [ {server_name} ] - Cannot pull latest version of - ⚠️{base_name}  :{current_tag}  -  it might be a locally built image")
                 self.set_cache_result(cache_key, False)
                 return False
                 
         except Exception as e:
-            print(f"❌ Error checking image updates: {e}")
+            logger.error(f"❌ Error checking image updates for '{container.name}'")
             return False
 
 # Global update checker instance
@@ -173,7 +181,7 @@ def unauthorized_callback():
 # === Docker Client Logic ===
 DOCKER_TIMEOUT = 0.5  # Timeout in seconds
 
-def _extract_hostname_from_url(url, is_docker_host):
+def _extract_hostname_from_url(url):
     """Extracts hostname from Docker URL for public hostname determination"""
     if not url:
         return None
@@ -190,7 +198,7 @@ def _extract_hostname_from_url(url, is_docker_host):
             if hostname:
                 if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
                     return None
-                if _is_likely_internal_hostname(hostname, is_docker_host):
+                if _is_likely_internal_hostname(hostname):
                     return None
                 return hostname
         except Exception:
@@ -203,7 +211,7 @@ def _extract_hostname_from_url(url, is_docker_host):
             hostname = match.group(1)
             if hostname in ["127.0.0.1", "0.0.0.0", "localhost"]:
                 return None
-            if _is_likely_internal_hostname(hostname, is_docker_host):
+            if _is_likely_internal_hostname(hostname):
                 return None
             return hostname
     except Exception:
@@ -211,14 +219,8 @@ def _extract_hostname_from_url(url, is_docker_host):
     
     return None
 
-def _is_likely_internal_hostname(hostname, is_docker_host):
-    """Determine if hostname is likely an internal Docker network name.
-    This check is only applied to the main DOCKER_HOST, not DOCKER_HOST_n instances."""
-    # For numbered hosts (DOCKER_HOST_n), we skip this check to allow
-    # simple hostnames (e.g., 'server1') without being flagged as internal.
-    if not is_docker_host:
-        return False
-        
+def _is_likely_internal_hostname(hostname):
+    """Determine if hostname is likely an internal Docker network name"""
     ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
     if re.match(ip_pattern, hostname):
         return False
@@ -248,11 +250,12 @@ def discover_docker_clients():
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME")
         
         if not public_hostname:
-            public_hostname = _extract_hostname_from_url(host_url, is_docker_host=True)
+            public_hostname = _extract_hostname_from_url(host_url)
         
         try:
             client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
             client.ping()
+            logger.debug(f"Docker host '{host_name}' is active.")
             clients.append({
                 "name": host_name, 
                 "client": client, 
@@ -263,6 +266,7 @@ def discover_docker_clients():
                 "order": 0
             })
         except Exception as e:
+            logger.error(f"Could not connect to DOCKER_HOST '{host_name}' at '{host_url}'")
             clients.append({
                 "name": host_name, 
                 "client": None, 
@@ -283,11 +287,12 @@ def discover_docker_clients():
             public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME")
             
             if not public_hostname:
-                public_hostname = _extract_hostname_from_url(url, is_docker_host=False)
+                public_hostname = _extract_hostname_from_url(url)
             
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
                 client.ping()
+                logger.info(f"[ {name} ]  Docker host is active")
                 clients.append({
                     "name": name, 
                     "client": client, 
@@ -298,6 +303,7 @@ def discover_docker_clients():
                     "order": int(num)
                 })
             except Exception as e:
+                logger.error(f"[ {name} ] 🔴 Could not connect to Docker host at {url}")
                 clients.append({
                     "name": name, 
                     "client": None, 
@@ -495,7 +501,7 @@ def check_updates():
             for container in containers:
                 check_args.append((server, container))
         except Exception as e:
-            print(f"❌ Error accessing containers on {server['name']}: {e}")
+            logger.error(f"❌ Error accessing containers on {server['name']} for update check")
     
     # Parallel check
     with ThreadPoolExecutor(max_workers=4) as executor:

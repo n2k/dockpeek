@@ -355,7 +355,7 @@ def get_all_data():
         return {"servers": [], "containers": []}
 
     all_container_data = []
-    server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"]} for s in servers]
+    server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"], "url": s["url"]} for s in servers]
 
     for host in servers:
         if host['status'] == 'inactive':

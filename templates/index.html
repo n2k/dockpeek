@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dockpeek</title>
-  <link href="/static/css/tailwindcss.css" rel="stylesheet" >
+  <link href="/static/css/tailwindcss.css" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
 </head>
 
@@ -17,7 +17,7 @@
         <a href="https://github.com/dockpeek/dockpeek" target="_blank" class="github no-underline">
           GitHub
         </a>
-        <button id="refresh-button" title="Refresh Data"
+        <button id="refresh-button" data-tooltip="Refresh Data"
           class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -25,7 +25,7 @@
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           </svg>
         </button>
-        <button id="theme-switcher" title="Switch Theme"
+        <button id="theme-switcher" data-tooltip="Switch Theme"
           class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
           <span id="theme-icon"> </span>
         </button>
@@ -49,7 +49,8 @@
         class="w-full p-3 pr-20 md:pr-48 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
       <div class="absolute right-4 flex items-center space-x-3">
         <label for="filter-updates-checkbox"
-          class="hidden md:inline text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">Update available</label>
+          class="hidden md:inline text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">Update
+          available</label>
         <label class="toggle-switch">
           <input type="checkbox" id="filter-updates-checkbox" class="hidden">
           <span class="slider"></span>
@@ -67,7 +68,8 @@
               data-sort-column="name">
               Container
             </th>
-            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header server-column"
+            <th
+              class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header server-column"
               data-sort-column="server">
               Server
             </th>
@@ -96,14 +98,16 @@
     <tr class="hover:bg-gray-50">
       <td class="py-3 px-4 border-b border-gray-200 font-semibold data-content-name" data-content="name">
       </td>
-      <td class="py-3 px-4 border-b border-gray-200 text-gray-400 text-sm server-column data-content-server" data-content="server">
+      <td class="py-3 px-4 border-b border-gray-200 text-gray-400 text-sm server-column" data-content="server">
+        <span data-content="server-name"></span>
       </td>
+
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>
       <td class="py-3 px-4 border-b border-gray-200 table-cell-image">
         <div class="flex items-center space-x-2">
           <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
-          <span class="update-indicator hidden" data-content="update-indicator" title="Update available">
+          <span class="update-indicator hidden" data-content="update-indicator" data-tooltip="Update available">
             <?xml version="1.0" encoding="utf-8"?>
             <svg fill="currentColor" width="22px" height="22px" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -117,46 +121,43 @@
     </tr>
   </template>
 
- <div id="confirmation-modal" class="modal-overlay hidden">
-  <div class="modal-content">
-    <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-900">
-      Confirmation
-    </h2>
-    <div id="modal-message" class="text-gray-600 mb-6 text-left whitespace-pre-line">
-    </div>
-    <div class="flex justify-center space-x-4">
-      <button id="modal-cancel-button"
-        class="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">
-        Cancel
-      </button>
-      <button id="modal-confirm-button"
-        class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
-        Confirm
-      </button>
+  <div id="confirmation-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-900">
+        Confirmation
+      </h2>
+      <div id="modal-message" class="text-gray-600 mb-6 text-left whitespace-pre-line">
+      </div>
+      <div class="flex justify-center space-x-4">
+        <button id="modal-cancel-button" class="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">
+          Cancel
+        </button>
+        <button id="modal-confirm-button" class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
+          Confirm
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="updates-modal" class="modal-overlay hidden">
-  <div class="modal-content">
-    <h3 id="updates-modal-title" class="text-lg font-semibold mb-4 text-gray-900">
-      Updates Found
-    </h3>
-    <div id="updates-modal-message">
-      <p class="mb-3 text-gray-600">
-        Found updates for the following containers:
-      </p>
-      <ul id="updates-list" class="list-none text-left mb-4">
-      </ul>
-    </div>
-    <div class="flex justify-center space-x-3 mt-4">
-      <button id="updates-modal-ok-button"
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-        OK
-      </button>
+  <div id="updates-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 id="updates-modal-title" class="text-lg font-semibold mb-4 text-gray-900">
+        Updates Found
+      </h3>
+      <div id="updates-modal-message">
+        <p class="mb-3 text-gray-600">
+          Found updates for the following containers:
+        </p>
+        <ul id="updates-list" class="list-none text-left mb-4">
+        </ul>
+      </div>
+      <div class="flex justify-center space-x-3 mt-4">
+        <button id="updates-modal-ok-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+          OK
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
   <script src="/static/js/app.js"></script>
 </body>

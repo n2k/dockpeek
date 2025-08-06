@@ -37,8 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function checkForUpdates() {
     const activeServers = allServersData.filter(s => s.status === 'active');
-    const serversToCheck = currentServerFilter === 'all' 
-      ? activeServers 
+    const serversToCheck = currentServerFilter === 'all'
+      ? activeServers
       : activeServers.filter(s => s.name === currentServerFilter);
 
     if (serversToCheck.length > 1) {
@@ -121,13 +121,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const clone = rowTemplate.content.cloneNode(true);
 
       clone.querySelector('[data-content="name"]').textContent = c.name;
-      clone.querySelector('[data-content="server"]').textContent = c.server;
+
+      const serverNameSpan = clone.querySelector('[data-content="server-name"]');
+      serverNameSpan.textContent = c.server;
+      const serverData = allServersData.find(s => s.name === c.server);
+      if (serverData && serverData.url) {
+        serverNameSpan.setAttribute('data-tooltip', serverData.url);
+      }
+
       clone.querySelector('[data-content="image"]').textContent = c.image;
 
       const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
       if (c.update_available) {
         updateIndicator.classList.remove('hidden');
-        updateIndicator.title = 'Update available';
+        updateIndicator.setAttribute('data-tooltip', 'Update available');
       } else {
         updateIndicator.classList.add('hidden');
       }
@@ -139,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const portsCell = clone.querySelector('[data-content="ports"]');
       if (c.ports.length > 0) {
         portsCell.innerHTML = c.ports.map(p =>
-          `<a href="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
+          `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
         ).join('<br>');
       } else {
         portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
@@ -178,7 +185,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (server.status === 'inactive') {
           button.classList.add('inactive');
           button.disabled = true;
-          button.title = `${server.name} is offline`;
+          button.setAttribute('data-tooltip', `${server.url || 'URL unknown'} is offline`);
+        } else {
+          button.setAttribute('data-tooltip', server.url || 'URL unknown');
         }
         serverFilterContainer.appendChild(button);
       });
@@ -255,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch("/data");
       if (!response.ok) throw createResponseError(response);
-      
+
       const { servers = [], containers = [] } = await response.json();
       [allServersData, allContainersData] = [servers, containers];
 
@@ -357,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
           cancelHandler();
         }
       };
-      
+
       const removeListeners = () => {
         modalConfirmBtn.removeEventListener('click', confirmHandler);
         modalCancelBtn.removeEventListener('click', cancelHandler);

@@ -614,8 +614,8 @@ body {
   color: #8b949e;
 }
 button svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 .login-box button {
   background-color: #238636;
@@ -1064,8 +1064,8 @@ body.dark-mode .loader {
   align-items: center;
 }
 .update-indicator svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: #d67a10;
 }
 body.dark-mode .update-indicator svg {
@@ -1100,8 +1100,8 @@ body.dark-mode .update-indicator svg {
   border: 2px solid #f3f3f3;
   border-top: 2px solid #d67a10;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   animation: spin 1s linear infinite;
   vertical-align: middle;
   margin-right: 0.5rem;

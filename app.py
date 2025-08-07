@@ -308,7 +308,7 @@ def discover_docker_clients():
                     "order": int(num)
                 })
             except Exception as e:
-                logger.error(f"[ {name} ] 🔴 Could not connect to Docker host at {url}")
+                logger.error(f"[ {name} ] Could not connect to Docker host at {url}")
                 clients.append({
                     "name": name, 
                     "client": None, 

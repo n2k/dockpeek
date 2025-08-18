@@ -1,20 +1,38 @@
+# Git
 .git
 .gitignore
-.dockerignore
-README.md
-LICENSE
+
+# Environment / Secrets
 .env
 *.key
 *.pem
-.dockerignore
-docker-compose-dev*.yml
-.build/
-.Releases/
-node_modules/
-static/fonts/unused/
-.env
-*.key
-*.pem
+
+# Dependencies / Build
+node_modules
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+.build
+.Releases
+static/fonts/unused
+
+# IDE / Editor
+.vscode
+.idea
+.ideas
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archives / Binaries
 *.com
 *.class
 *.dll
@@ -28,24 +46,12 @@ static/fonts/unused/
 *.rar
 *.tar
 *.zip
+
+# Logs / Dumps
 *.log
 *.sql
 *.sqlite
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-#FOLDERS
-.build/
-.ideas/
-.Releases/
-node_modules/
-static/fonts/unused/
-#Added
+
+# Project specific
 tailwind.config.js
 docker-compose-dev*.yml
-package-lock.json
-package.json

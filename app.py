@@ -347,6 +347,40 @@ def discover_docker_clients():
             
     return clients
 
+def get_container_status_with_exit_code(container):
+    """Get container status with exit code information if available"""
+    try:
+        base_status = container.status
+        container_attrs = container.attrs
+        state = container_attrs.get('State', {})
+        
+        exit_code = state.get('ExitCode')
+        
+        # First check base status - this takes priority over health status
+        if base_status in ['exited', 'dead']:
+            return base_status, exit_code
+        elif base_status in ['paused', 'restarting', 'removing', 'created']:
+            return base_status, None
+        elif base_status == 'running':
+            # Only check health status if container is actually running
+            health = state.get('Health', {})
+            if health:
+                health_status = health.get('Status', '')
+                if health_status == 'healthy':
+                    return 'healthy', None
+                elif health_status == 'unhealthy':
+                    return 'unhealthy', exit_code
+                elif health_status == 'starting':
+                    return 'starting', None
+            # If no health check or running without health info
+            return 'running', None
+        
+        return base_status, None
+            
+    except Exception as e:
+        logger.warning(f"Error getting status with exit code for container {container.name}: {e}")
+        return container.status, None
+    
 def get_all_data():
     """Quick version: return basic data first, check updates in background"""
     servers = discover_docker_clients()
@@ -407,12 +441,16 @@ def get_all_data():
                     cache_key = update_checker.get_cache_key(server_name, container.name, image_name)
                     cached_update, is_cache_valid = update_checker.get_cached_result(cache_key)
                     
+                    # Get status with health check information and exit codes
+                    container_status, exit_code = get_container_status_with_exit_code(container)
+                    
                     container_info = {
-                        'server': server_name,
-                        'name': container.name,
-                        'status': container.status,
-                        'image': image_name,
-                        'ports': port_map
+                         'server': server_name,
+                         'name': container.name,
+                         'status': container_status,
+                         'exit_code': exit_code,
+                         'image': image_name,
+                         'ports': port_map
                     }
                     
                     if cached_update is not None and is_cache_valid:
@@ -443,7 +481,8 @@ def get_all_data():
 @app.route("/")
 def index():
     if current_user.is_authenticated:
-        return render_template("index.html")
+        version = os.environ.get('VERSION', 'dev')
+        return render_template("index.html", version=version)
     return redirect(url_for("login"))
 
 @app.route("/data")

@@ -146,7 +146,115 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const statusCell = clone.querySelector('[data-content="status"]');
       statusCell.textContent = c.status;
-      statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${c.status === "running" ? "status-running" : "status-exited"}`;
+
+      // Add tooltip with exit code if available
+      if (c.exit_code !== null && c.exit_code !== undefined) {
+        let exitCodeText;
+        if (c.exit_code === 0) {
+          exitCodeText = 'Exit code: 0 (normal)';
+        } else {
+          exitCodeText = `Exit code: ${c.exit_code}`;
+          // Add common exit code explanations
+          if (c.exit_code === 137) exitCodeText += ' (SIGKILL - killed)';
+          else if (c.exit_code === 143) exitCodeText += ' (SIGTERM - terminated)';
+          else if (c.exit_code === 125) exitCodeText += ' (Docker daemon error)';
+          else if (c.exit_code === 126) exitCodeText += ' (Container command not executable)';
+          else if (c.exit_code === 127) exitCodeText += ' (Container command not found)';
+          else if (c.exit_code === 1) exitCodeText += ' (General application error)';
+          else if (c.exit_code === 2) exitCodeText += ' (Misuse of shell command)';
+          else if (c.exit_code === 128) exitCodeText += ' (Invalid exit argument)';
+          else if (c.exit_code === 130) exitCodeText += ' (SIGINT - interrupted)';
+          else if (c.exit_code === 134) exitCodeText += ' (SIGABRT - aborted)';
+          else if (c.exit_code === 139) exitCodeText += ' (SIGSEGV - segmentation fault)';
+        }
+        statusCell.setAttribute('data-tooltip-left', exitCodeText);
+      } else {
+        // Add tooltips for all possible statuses
+        let tooltipText;
+        switch (c.status) {
+          case 'running':
+            tooltipText = 'Container is running';
+            break;
+          case 'healthy':
+            tooltipText = 'Health check passed';
+            break;
+          case 'unhealthy':
+            tooltipText = 'Health check failed';
+            break;
+          case 'starting':
+            tooltipText = 'Container is starting up';
+            break;
+          case 'paused':
+            tooltipText = 'Container is paused';
+            break;
+          case 'restarting':
+            tooltipText = 'Container is restarting';
+            break;
+          case 'removing':
+            tooltipText = 'Container is being removed';
+            break;
+          case 'dead':
+            tooltipText = 'Container is dead (cannot be restarted)';
+            break;
+          case 'created':
+            tooltipText = 'Container created but not started';
+            break;
+          default:
+            if (c.status.includes('health unknown')) {
+              tooltipText = 'Container running, health status unknown';
+            } else {
+              tooltipText = `Container status: ${c.status}`;
+            }
+        }
+        statusCell.setAttribute('data-tooltip-left', tooltipText);
+      }
+
+      let statusClass = 'status-unknown';
+
+      // Determine status class based on container status
+      switch (c.status) {
+        case 'running':
+          statusClass = 'status-running';
+          break;
+        case 'healthy':
+          statusClass = 'status-healthy';
+          break;
+        case 'unhealthy':
+          statusClass = 'status-unhealthy';
+          break;
+        case 'starting':
+          statusClass = 'status-starting';
+          break;
+        case 'exited':
+          statusClass = 'status-exited';
+          break;
+        case 'paused':
+          statusClass = 'status-paused';
+          break;
+        case 'restarting':
+          statusClass = 'status-restarting';
+          break;
+        case 'removing':
+          statusClass = 'status-removing';
+          break;
+        case 'dead':
+          statusClass = 'status-dead';
+          break;
+        case 'created':
+          statusClass = 'status-created';
+          break;
+        default:
+          // Handle partial matches for complex statuses
+          if (c.status.includes('exited')) {
+            statusClass = 'status-exited';
+          } else if (c.status.includes('health unknown')) {
+            statusClass = 'status-running'; // Running but health unknown
+          } else {
+            statusClass = 'status-unknown';
+          }
+      }
+
+      statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;
 
       const portsCell = clone.querySelector('[data-content="ports"]');
       if (c.ports.length > 0) {
@@ -241,9 +349,21 @@ document.addEventListener("DOMContentLoaded", () => {
       let valB = b[currentSortColumn];
 
       if (currentSortColumn === "status") {
-        const statusOrder = { running: 1, exited: 2 };
-        valA = statusOrder[valA] || 0;
-        valB = statusOrder[valB] || 0;
+        const statusOrder = {
+          'healthy': 1,
+          'running': 2,
+          'starting': 3,
+          'restarting': 4,
+          'removing': 5,
+          'created': 6,
+          'paused': 7,
+          'unhealthy': 8,
+          'exited': 9,
+          'dead': 10
+        };
+
+        valA = statusOrder[valA] || 99;
+        valB = statusOrder[valB] || 99;
       } else if (currentSortColumn === "ports") {
         const getFirstPort = (container) => container.ports.length > 0 ? parseInt(container.ports[0].host_port, 10) : 0;
         valA = getFirstPort(a);

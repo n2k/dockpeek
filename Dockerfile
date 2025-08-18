@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 WORKDIR /install
 
+ARG VERSION=dev
+ENV VERSION=${VERSION}
+
 COPY requirements.txt .
 
 RUN pip install --prefix=/install/deps --no-cache-dir -r requirements.txt

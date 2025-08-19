@@ -146,18 +146,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const statusCell = clone.querySelector('[data-content="status"]');
 
-      // Create a span element for the status text with tooltip
       const statusSpan = document.createElement('span');
       statusSpan.textContent = c.status;
 
-      // Add tooltip with exit code if available
       if (c.exit_code !== null && c.exit_code !== undefined) {
         let exitCodeText;
         if (c.exit_code === 0) {
           exitCodeText = 'Exit code: 0 (normal)';
         } else {
           exitCodeText = `Exit code: ${c.exit_code}`;
-          // Add common exit code explanations
           if (c.exit_code === 137) exitCodeText += ' (SIGKILL - killed)';
           else if (c.exit_code === 143) exitCodeText += ' (SIGTERM - terminated)';
           else if (c.exit_code === 125) exitCodeText += ' (Docker daemon error)';
@@ -172,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         statusSpan.setAttribute('data-tooltip-left', exitCodeText);
       } else {
-        // Add tooltips for all possible statuses
         let tooltipText;
         switch (c.status) {
           case 'running':
@@ -214,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let statusClass = 'status-unknown';
 
-      // Determine status class based on container status
       switch (c.status) {
         case 'running':
           statusClass = 'status-running';

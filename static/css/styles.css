@@ -204,6 +204,7 @@ input[type="text"] {
   outline: none;
   box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
 }
+
 /*
 #refresh-button.loading svg {
   animation: spin 0.8s linear infinite;
@@ -213,7 +214,10 @@ input[type="text"] {
   color: #cb2431;
 }
 
-/* Add these CSS classes to your stylesheet */
+.table-cell-status,
+.server-column {
+  cursor: default;
+}
 
 /* Green - OK/Running states */
 .status-running {

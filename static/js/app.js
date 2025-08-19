@@ -145,7 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const statusCell = clone.querySelector('[data-content="status"]');
-      statusCell.textContent = c.status;
+
+      // Create a span element for the status text with tooltip
+      const statusSpan = document.createElement('span');
+      statusSpan.textContent = c.status;
 
       // Add tooltip with exit code if available
       if (c.exit_code !== null && c.exit_code !== undefined) {
@@ -167,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
           else if (c.exit_code === 134) exitCodeText += ' (SIGABRT - aborted)';
           else if (c.exit_code === 139) exitCodeText += ' (SIGSEGV - segmentation fault)';
         }
-        statusCell.setAttribute('data-tooltip-left', exitCodeText);
+        statusSpan.setAttribute('data-tooltip-left', exitCodeText);
       } else {
         // Add tooltips for all possible statuses
         let tooltipText;
@@ -206,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
               tooltipText = `Container status: ${c.status}`;
             }
         }
-        statusCell.setAttribute('data-tooltip-left', tooltipText);
+        statusSpan.setAttribute('data-tooltip-left', tooltipText);
       }
 
       let statusClass = 'status-unknown';
@@ -244,17 +247,19 @@ document.addEventListener("DOMContentLoaded", () => {
           statusClass = 'status-created';
           break;
         default:
-          // Handle partial matches for complex statuses
           if (c.status.includes('exited')) {
             statusClass = 'status-exited';
           } else if (c.status.includes('health unknown')) {
-            statusClass = 'status-running'; // Running but health unknown
+            statusClass = 'status-running'; 
           } else {
             statusClass = 'status-unknown';
           }
       }
 
       statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;
+
+      statusCell.innerHTML = '';
+      statusCell.appendChild(statusSpan);
 
       const portsCell = clone.querySelector('[data-content="ports"]');
       if (c.ports.length > 0) {

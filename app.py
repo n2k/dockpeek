@@ -430,7 +430,19 @@ def get_all_data():
                                 host_port = m['HostPort']
                                 host_ip = m.get('HostIp', '0.0.0.0')
                                 link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
-                                link = f"http://{link_hostname}:{host_port}"
+                                
+                                is_https_port = (
+                                    container_port == "443/tcp" or 
+                                    host_port == "443" or 
+                                    host_port.endswith("443")
+                                )
+                                protocol = "https" if is_https_port else "http"
+
+                                if host_port == "443":
+                                    link = f"{protocol}://{link_hostname}"
+                                else:
+                                    link = f"{protocol}://{link_hostname}:{host_port}"
+
                                 port_map.append({
                                     'container_port': container_port,
                                     'host_port': host_port,

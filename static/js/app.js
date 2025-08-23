@@ -245,24 +245,32 @@ document.addEventListener("DOMContentLoaded", () => {
           if (c.status.includes('exited')) {
             statusClass = 'status-exited';
           } else if (c.status.includes('health unknown')) {
-            statusClass = 'status-running'; 
+            statusClass = 'status-running';
           } else {
             statusClass = 'status-unknown';
           }
       }
 
       statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;
-
       statusCell.innerHTML = '';
       statusCell.appendChild(statusSpan);
 
       const portsCell = clone.querySelector('[data-content="ports"]');
       if (c.ports.length > 0) {
+        const arrowSvg =
+          `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle">
+           <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>`;
+
         portsCell.innerHTML = c.ports.map(p =>
-          `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark me-1 rounded">${p.host_port}</a> <small class="text-secondary">→ ${p.container_port}</small>`
-        ).join('<br>');
+          `<div class="flex items-center mb-1">
+            <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
+            ${arrowSvg}
+            <small class="text-secondary">${p.container_port}</small>
+          </div>`
+        ).join('');
       } else {
-        portsCell.innerHTML = `<span class="status-none" style="padding-left: 15px;">none</span>`;
+        portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
       }
       fragment.appendChild(clone);
     }

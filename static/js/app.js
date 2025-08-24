@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      const colspan = mainTable.classList.contains('table-single-server') ? 4 : 5;
+      const colspan = mainTable.classList.contains('table-single-server') ? 5 : 6;
       containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
@@ -134,7 +134,20 @@ document.addEventListener("DOMContentLoaded", () => {
         serverNameSpan.setAttribute('data-tooltip', serverData.url);
       }
 
+      // Stack column
+      clone.querySelector('[data-content="stack"]').textContent = c.stack || '';
+
       clone.querySelector('[data-content="image"]').textContent = c.image;
+
+      // Source link handling
+      const sourceLink = clone.querySelector('[data-content="source-link"]');
+      if (c.source_url) {
+        sourceLink.href = c.source_url;
+        sourceLink.classList.remove('hidden');
+        sourceLink.setAttribute('data-tooltip', 'View source');
+      } else {
+        sourceLink.classList.add('hidden');
+      }
 
       const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
       if (c.update_available) {
@@ -259,15 +272,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (c.ports.length > 0) {
         const arrowSvg =
           `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle">
-           <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-           </svg>`;
+         <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+         </svg>`;
 
         portsCell.innerHTML = c.ports.map(p =>
           `<div class="flex items-center mb-1">
-            <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
-            ${arrowSvg}
-            <small class="text-secondary">${p.container_port}</small>
-          </div>`
+          <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
+          ${arrowSvg}
+          <small class="text-secondary">${p.container_port}</small>
+        </div>`
         ).join('');
       } else {
         portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;

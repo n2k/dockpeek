@@ -67,6 +67,10 @@
               data-sort-column="name">
               Container
             </th>
+            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header"
+              data-sort-column="stack">
+              Stack
+            </th>
             <th
               class="py-3 px-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 sortable-header server-column"
               data-sort-column="server">
@@ -112,15 +116,25 @@
     <tr class="hover:bg-gray-50">
       <td class="py-3 px-4 border-b border-gray-200 font-medium data-content-name" data-content="name">
       </td>
+      <td class="py-3 px-4 border-b border-gray-200 text-gray-600 text-sm" data-content="stack">
+      </td>
       <td class="py-3 px-4 border-b border-gray-200 text-gray-400 text-sm server-column" data-content="server">
         <span data-content="server-name"></span>
       </td>
-
       <td class="py-3 px-4 border-b border-gray-200" data-content="ports">
       </td>
+
       <td class="py-3 px-4 border-b border-gray-200 table-cell-image">
         <div class="flex items-center space-x-2">
           <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
+          <a href="#" class="source-link hidden text-gray-500 hover:text-blue-600" data-content="source-link"
+            target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </a>
           <span class="update-indicator hidden" data-content="update-indicator" data-tooltip="Update available">
             <?xml version="1.0" encoding="utf-8"?>
             <svg fill="currentColor" width="20" height="20" viewBox="2 2 52 52" xmlns="http://www.w3.org/2000/svg">

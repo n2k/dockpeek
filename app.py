@@ -455,6 +455,14 @@ def get_all_data():
                     
                     # Get status with health check information and exit codes
                     container_status, exit_code = get_container_status_with_exit_code(container)
+
+                    # Get stack information from Docker Compose labels
+                    labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
+                    stack_name = labels.get('com.docker.compose.project', '')
+                    
+                    # Get source URL from OCI labels
+                    source_url = (labels.get('org.opencontainers.image.source') or 
+                                labels.get('org.opencontainers.image.url', ''))
                     
                     container_info = {
                          'server': server_name,
@@ -462,6 +470,8 @@ def get_all_data():
                          'status': container_status,
                          'exit_code': exit_code,
                          'image': image_name,
+                         'stack': stack_name,
+                         'source_url': source_url,
                          'ports': port_map
                     }
                     

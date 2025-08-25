@@ -447,9 +447,9 @@ body.dark-mode code {
   }
 
   th[data-sort-column="image"],
-  th[data-sort-column="status"],
+  th[data-sort-column="stack"],
   td.table-cell-image,
-  td.table-cell-status {
+  td.table-cell-stack {
     display: none;
   }
 

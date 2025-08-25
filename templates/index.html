@@ -45,11 +45,22 @@
 
     <div class="mb-6 relative flex items-center">
       <input type="text" id="search-input" placeholder="Search by name, image, or port..."
-        class="w-full p-3 pr-20 md:pr-48 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
       <div class="absolute right-4 flex items-center space-x-3">
+        <button id="clear-search-button" class="mr-3 text-gray-400 hover:text-gray-600 focus:outline-none hidden"
+          data-tooltip="Clear search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
         <label for="filter-updates-checkbox"
-          class="hidden md:inline text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">Update
-          available</label>
+          class="hidden md:inline text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+          Update available
+        </label>
         <label class="toggle-switch">
           <input type="checkbox" id="filter-updates-checkbox" class="hidden">
           <span class="slider"></span>

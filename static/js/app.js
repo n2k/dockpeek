@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let isDataLoaded = false;
 
   const searchInput = document.getElementById("search-input");
+  const clearSearchButton = document.getElementById("clear-search-button");
   const containerRowsBody = document.getElementById("container-rows");
   const body = document.body;
   const rowTemplate = document.getElementById("container-row-template");
@@ -25,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    containerRowsBody.innerHTML = `<tr><td colspan="5"><div class="loader"></div></td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="6"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    containerRowsBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
   async function checkForUpdates() {
@@ -361,6 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
       workingData = workingData.filter(c =>
         c.name.toLowerCase().includes(searchTerm) ||
         c.image.toLowerCase().includes(searchTerm) ||
+        (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
         c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
       );
     }
@@ -371,17 +373,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (currentSortColumn === "status") {
         const statusOrder = {
-          'healthy': 1,
-          'running': 2,
-          'starting': 3,
-          'restarting': 4,
-          'removing': 5,
-          'created': 6,
-          'paused': 7,
-          'unhealthy': 8,
-          'exited': 9,
-          'dead': 10
+          'starting': 1,
+          'restarting': 2,
+          'unhealthy': 3,
+          'removing': 4,
+          'created': 5,
+          'paused': 6,
+          'exited': 7,
+          'dead': 8,
+          'running': 9,
+          'healthy': 10
         };
+
 
         valA = statusOrder[valA] || 99;
         valB = statusOrder[valB] || 99;
@@ -405,6 +408,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updateActiveButton();
   }
 
+
+  function toggleClearButton() {
+    if (searchInput.value.trim() !== '') {
+      clearSearchButton.classList.remove('hidden');
+    } else {
+      clearSearchButton.classList.add('hidden');
+    }
+  }
+
+  function clearSearch() {
+    searchInput.value = '';
+    clearSearchButton.classList.add('hidden');
+    searchInput.focus();
+    updateDisplay(); // Odśwież wyniki po wyczyszczeniu
+  }
+
   async function fetchContainerData() {
     showLoadingIndicator();
     try {
@@ -420,6 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
       handleServerFilterReset();
       setupServerUI();
       updateDisplay();
+      toggleClearButton();
 
     } catch (error) {
       handleFetchError(error);
@@ -539,8 +559,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   filterUpdatesCheckbox.addEventListener("change", updateDisplay);
-  searchInput.addEventListener("input", updateDisplay);
+  
+  searchInput.addEventListener("input", function () {
+    toggleClearButton();
+    updateDisplay();
+  });
 
+  clearSearchButton.addEventListener('click', clearSearch);
+
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      clearSearch();
+    }
+  });
   document.querySelectorAll(".sortable-header").forEach((header) => {
     header.addEventListener("click", () => {
       const column = header.dataset.sortColumn;

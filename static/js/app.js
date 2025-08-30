@@ -359,12 +359,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const searchTerm = searchInput.value.toLowerCase().trim();
     if (searchTerm) {
-      workingData = workingData.filter(c =>
-        c.name.toLowerCase().includes(searchTerm) ||
-        c.image.toLowerCase().includes(searchTerm) ||
-        (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
-        c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
-      );
+      if (searchTerm.startsWith(':')) {
+        const portTerm = searchTerm.substring(1);
+        workingData = workingData.filter(c =>
+          c.ports.some(p => p.host_port.includes(portTerm))
+        );
+      } else {
+        workingData = workingData.filter(c =>
+          c.name.toLowerCase().includes(searchTerm) ||
+          c.image.toLowerCase().includes(searchTerm) ||
+          (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
+          c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
+        );
+      }
     }
 
     workingData.sort((a, b) => {
@@ -559,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   filterUpdatesCheckbox.addEventListener("change", updateDisplay);
-  
+
   searchInput.addEventListener("input", function () {
     toggleClearButton();
     updateDisplay();

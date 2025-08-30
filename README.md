@@ -152,3 +152,25 @@ You can connect and manage multiple Docker instances from a single dashboard.
   
 > [!NOTE]
 > All multi-host variables (`DOCKER_HOST_N_*`) must use matching `N` indices for URL, name, and hostname entries.
+
+
+<br>
+
+##  FAQ
+
+**Q: Can I search for containers by exposed port only?**
+
+Yes. Dockpeek supports searching using `:port`.
+
+For example, typing `:8080` will show all containers exposing port `8080`.
+
+<br>
+
+**Q: How does Dockpeek know when to use HTTPS instead of HTTP?**
+
+Dockpeek automatically treats the following as HTTPS:
+
+* Container port `443/tcp`
+* Any exposed port ending with `443` (e.g., `8443`, `9443`)
+
+Clicking such a port will open the link with `https://` instead of `http://`.

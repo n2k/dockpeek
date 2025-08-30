@@ -668,17 +668,8 @@ body.dark-mode .github {
   border-radius: 0;
   box-shadow: none !important;
 }
-.footer-section {
-  flex: 1;
-}
-.footer-left {
-  text-align: left;
-}
 .footer-center {
   text-align: center;
-}
-.footer-right {
-  text-align: right;
 }
 body.dark-mode .footer {
   color: #424b5d;
@@ -1024,6 +1015,9 @@ body.dark-mode #modal-cancel-button {
 body.dark-mode #modal-cancel-button:hover {
   background-color: #30363d;
 }
+#updates-modal .modal-content:not(.hidden) {
+  max-width: 800px !important;
+}
 #updates-modal-message {
   margin-bottom: 1.5rem;
   flex: 1;
@@ -1040,6 +1034,7 @@ body.dark-mode #modal-cancel-button:hover {
   overflow-y: auto;
   flex: 1;
   min-height: 100px;
+  text-align: center;
 }
 #updates-list li {
   display: flex;

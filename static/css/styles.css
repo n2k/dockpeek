@@ -70,21 +70,10 @@ body.dark-mode .github {
   box-shadow: none !important;
 }
 
-.footer-section {
-  flex: 1;
-}
-
-.footer-left {
-  text-align: left;
-}
-
 .footer-center {
   text-align: center;
 }
 
-.footer-right {
-  text-align: right;
-}
 body.dark-mode .footer {
   color: #424b5d;
 }
@@ -538,6 +527,11 @@ body.dark-mode #modal-cancel-button:hover {
 }
 
 /* Updates Modal Styles */
+
+#updates-modal .modal-content:not(.hidden) {
+  max-width: 800px !important; 
+}
+
 #updates-modal-message {
   margin-bottom: 1.5rem;
   flex: 1;

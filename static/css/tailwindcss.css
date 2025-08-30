@@ -1034,7 +1034,6 @@ body.dark-mode #modal-cancel-button:hover {
   overflow-y: auto;
   flex: 1;
   min-height: 100px;
-  text-align: center;
 }
 #updates-list li {
   display: flex;

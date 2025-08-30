@@ -413,6 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hideLoadingIndicator();
     renderTable();
     updateActiveButton();
+    updateExportLink();
   }
 
 
@@ -557,6 +558,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function updateExportLink() {
+    const exportLink = document.getElementById('export-json-link');
+    if (exportLink) {
+      const serverParam = currentServerFilter === 'all' ? 'all' : encodeURIComponent(currentServerFilter);
+      exportLink.href = `/export/json?server=${serverParam}`;
+    }
+  }
+
+  const exportLink = document.getElementById('export-json-link');
+  if (exportLink) {
+    updateExportLink();
+  }
   fetchContainerData();
   applyTheme(localStorage.getItem("theme") || "dark");
 

@@ -537,23 +537,33 @@ def logout():
 @login_required
 def export_json():
     from flask import make_response
+    server_filter = request.args.get('server', 'all')
     
     data = get_all_data()
+    
+    filtered_servers = data.get("servers", [])
+    filtered_containers = data.get("containers", [])
+    
+    if server_filter != 'all':
+        filtered_servers = [s for s in filtered_servers if s["name"] == server_filter]
+        filtered_containers = [c for c in filtered_containers if c.get("server") == server_filter]
+    
     export_data = {
         "export_info": {
             "timestamp": datetime.now().isoformat(),
             "dockpeek_version": os.environ.get('VERSION', 'dev'),
-            "total_containers": len(data.get("containers", [])),
-            "total_servers": len(data.get("servers", []))
+            "server_filter": server_filter,
+            "total_containers": len(filtered_containers),
+            "total_servers": len(filtered_servers)
         },
         "servers": [
             {k: v for k, v in server.items() if k != "order"} 
-            for server in data.get("servers", [])
+            for server in filtered_servers
         ],
         "containers": []
     }
     
-    for container in data.get("containers", []):
+    for container in filtered_containers:
         enhanced_container = {
             "name": container.get("name"),
             "server": container.get("server"),
@@ -571,11 +581,15 @@ def export_json():
     
     import json
     
-    # Format JSON with proper indentation for readability
     formatted_json = json.dumps(export_data, indent=2, ensure_ascii=False)
+
+    if server_filter == 'all':
+        filename_suffix = 'all-servers'
+    else:
+        filename_suffix = f'server-{server_filter}'
     
     response = make_response(formatted_json)
-    response.headers['Content-Disposition'] = f'attachment; filename=dockpeek-export-{datetime.now().strftime("%Y%m%d-%H%M%S")}.json'
+    response.headers['Content-Disposition'] = f'attachment; filename=dockpeek-export-{filename_suffix}-{datetime.now().strftime("%Y%m%d-%H%M%S")}.json'
     response.headers['Content-Type'] = 'application/json'
     return response
 

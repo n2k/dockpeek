@@ -533,6 +533,52 @@ def logout():
     logout_user()
     return redirect(url_for("login"))
 
+@app.route("/export/json")
+@login_required
+def export_json():
+    from flask import make_response
+    
+    data = get_all_data()
+    export_data = {
+        "export_info": {
+            "timestamp": datetime.now().isoformat(),
+            "dockpeek_version": os.environ.get('VERSION', 'dev'),
+            "total_containers": len(data.get("containers", [])),
+            "total_servers": len(data.get("servers", []))
+        },
+        "servers": [
+            {k: v for k, v in server.items() if k != "order"} 
+            for server in data.get("servers", [])
+        ],
+        "containers": []
+    }
+    
+    for container in data.get("containers", []):
+        enhanced_container = {
+            "name": container.get("name"),
+            "server": container.get("server"),
+            "status": container.get("status"),
+            "exit_code": container.get("exit_code"),
+            "image": container.get("image"),
+            "stack": container.get("stack"),
+            "ports": container.get("ports", []),
+            "port_summary": [
+                f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}" 
+                for p in container.get("ports", [])
+            ] if container.get("ports") else []
+        }
+        export_data["containers"].append(enhanced_container)
+    
+    import json
+    
+    # Format JSON with proper indentation for readability
+    formatted_json = json.dumps(export_data, indent=2, ensure_ascii=False)
+    
+    response = make_response(formatted_json)
+    response.headers['Content-Disposition'] = f'attachment; filename=dockpeek-export-{datetime.now().strftime("%Y%m%d-%H%M%S")}.json'
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
 @app.route("/check-updates", methods=["POST"])
 @login_required
 def check_updates():

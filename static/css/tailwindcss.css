@@ -393,6 +393,9 @@
   .p-3 {
     padding: calc(var(--spacing) * 3);
   }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
   .p-6 {
     padding: calc(var(--spacing) * 6);
   }
@@ -660,10 +663,25 @@ body.dark-mode .github {
   color: #6a737d;
 }
 .footer {
-  color: #bec3c7;
+  color: #b7b9bd;
+  background-color: transparent !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+.footer-section {
+  flex: 1;
+}
+.footer-left {
+  text-align: left;
+}
+.footer-center {
+  text-align: center;
+}
+.footer-right {
+  text-align: right;
 }
 body.dark-mode .footer {
-  color: #2f3746;
+  color: #424b5d;
 }
 .status-none {
   color: #b8bcc3;

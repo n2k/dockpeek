@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameCell = clone.querySelector('[data-content="name"]');
       if (c.custom_url) {
-        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline" data-tooltip="Open ${c.custom_url}">${c.name}</a>`;
+        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline" data-tooltip="${c.custom_url}">${c.name}</a>`;
       } else {
         nameCell.textContent = c.name;
       }
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (c.source_url) {
         sourceLink.href = c.source_url;
         sourceLink.classList.remove('hidden');
-        sourceLink.setAttribute('data-tooltip', 'View source');
+        sourceLink.setAttribute('data-tooltip', c.source_url);
       } else {
         sourceLink.classList.add('hidden');
       }

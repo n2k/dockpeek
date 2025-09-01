@@ -64,8 +64,8 @@ body.dark-mode .github {
 }
 
 .footer {
-  color: #b7b9bd; 
-  background-color: transparent !important; 
+  color: #b7b9bd;
+  background-color: transparent !important;
   border-radius: 0;
   box-shadow: none !important;
 }
@@ -217,6 +217,24 @@ input[type="text"] {
 #refresh-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
+}
+
+/* Custom link color for container names */
+.container-name-cell a {
+  color: #3e71e9 !important;
+}
+
+.container-name-cell a:hover {
+  color: #2151c3 !important;
+}
+
+/* Dark mode version */
+body.dark-mode .container-name-cell a {
+  color: #7098d7 !important;
+}
+
+body.dark-mode .container-name-cell a:hover {
+  color: #4573bd !important;
 }
 
 /*
@@ -529,7 +547,7 @@ body.dark-mode #modal-cancel-button:hover {
 /* Updates Modal Styles */
 
 #updates-modal .modal-content:not(.hidden) {
-  max-width: 800px !important; 
+  max-width: 800px !important;
 }
 
 #updates-modal-message {
@@ -836,6 +854,40 @@ button:focus {
   box-shadow: none !important;
 }
 
+/* Fix for tooltips being cut off in table */
+#container-table-wrapper {
+  overflow: visible !important;
+}
+
+#main-table {
+  overflow: visible;
+}
+
+/* Ensure tooltips appear above table content */
+[data-tooltip]::after,
+[data-tooltip]::before,
+[data-tooltip-left]::after,
+[data-tooltip-left]::before,
+[data-tooltip-right]::after,
+[data-tooltip-right]::before {
+  z-index: 1050;
+  /* Higher than modal z-index */
+}
+
+/* Alternative: make table container handle overflow differently */
+.table-container-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* For mobile responsiveness, still allow horizontal scroll */
+@media (max-width: 768px) {
+  #container-table-wrapper {
+    overflow-x: auto !important;
+    overflow-y: visible;
+  }
+}
+
 /* ======================================== */
 /* Custom Tooltip Styles (Corrected)      */
 /* ======================================== */
@@ -1035,7 +1087,7 @@ body.dark-mode [data-tooltip-left]::before {
   transform: translateY(-50%);
   margin-left: 15px;
   /* Odsuwamy dymek w prawo, tworząc przerwę na strzałkę */
-  
+
   /* Wygląd */
   background-color: #ffffff;
   color: #4f5359;
@@ -1045,10 +1097,10 @@ body.dark-mode [data-tooltip-left]::before {
   border-radius: 0.375rem;
   white-space: nowrap;
   box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
-  
+
   /* Poprawiony z-index */
   z-index: 10;
-  
+
   /* Animacja i widoczność */
   opacity: 0;
   visibility: hidden;
@@ -1067,12 +1119,12 @@ body.dark-mode [data-tooltip-left]::before {
   transform: translateY(-50%);
   margin-left: 0px;
   /* Odsuwamy mniej niż dymek, aby wypełnić przerwę */
-  
+
   /* Kształt strzałki */
   border: 10px solid transparent;
   border-right-color: #ffffff;
   z-index: 11;
-  
+
   /* Animacja i widoczność */
   opacity: 0;
   visibility: hidden;

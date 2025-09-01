@@ -126,7 +126,12 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const c of pageItems) {
       const clone = rowTemplate.content.cloneNode(true);
 
-      clone.querySelector('[data-content="name"]').textContent = c.name;
+      const nameCell = clone.querySelector('[data-content="name"]');
+      if (c.custom_url) {
+        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline" data-tooltip="Open ${c.custom_url}">${c.name}</a>`;
+      } else {
+        nameCell.textContent = c.name;
+      }
 
       const serverNameSpan = clone.querySelector('[data-content="server-name"]');
       serverNameSpan.textContent = c.server;

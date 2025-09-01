@@ -418,37 +418,6 @@ def get_all_data():
                                     image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
                     except Exception:
                         image_name = container.attrs.get('Config', {}).get('Image', 'unknown')
-
-                    # Port information
-                    ports = container.attrs['NetworkSettings']['Ports']
-                    port_map = []
-
-                    if ports:
-                        for container_port, mappings in ports.items():
-                            if mappings:
-                                m = mappings[0]
-                                host_port = m['HostPort']
-                                host_ip = m.get('HostIp', '0.0.0.0')
-                                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
-                                
-                                is_https_port = (
-                                    container_port == "443/tcp" or 
-                                    host_port == "443" or 
-                                    host_port.endswith("443")
-                                )
-                                protocol = "https" if is_https_port else "http"
-
-                                if host_port == "443":
-                                    link = f"{protocol}://{link_hostname}"
-                                else:
-                                    link = f"{protocol}://{link_hostname}:{host_port}"
-
-                                port_map.append({
-                                    'container_port': container_port,
-                                    'host_port': host_port,
-                                    'link': link
-                                })
-
                     # Check update cache
                     cache_key = update_checker.get_cache_key(server_name, container.name, image_name)
                     cached_update, is_cache_valid = update_checker.get_cached_result(cache_key)
@@ -463,6 +432,54 @@ def get_all_data():
                     # Get source URL from OCI labels
                     source_url = (labels.get('org.opencontainers.image.source') or 
                                 labels.get('org.opencontainers.image.url', ''))
+                             
+
+                    # Get custom dockpeek labels
+                    https_ports = labels.get('dockpeek.https', '')
+                    custom_url = labels.get('dockpeek.link', '')
+                    
+                    # Parse HTTPS ports
+                    https_ports_list = []
+                    if https_ports:
+                        try:
+                            https_ports_list = [str(port.strip()) for port in https_ports.split(',') if port.strip()]
+                        except:
+                            https_ports_list = []
+                    
+                    # Port information with HTTPS detection
+                    ports = container.attrs['NetworkSettings']['Ports']
+                    port_map = []
+                    
+                    if ports:
+                        for container_port, mappings in ports.items():
+                            if mappings:
+                                m = mappings[0]
+                                host_port = m['HostPort']
+                                host_ip = m.get('HostIp', '0.0.0.0')
+                                link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+                                
+                                # Check if this port should use HTTPS
+                                is_https_port = (
+                                    container_port == "443/tcp" or 
+                                    host_port == "443" or 
+                                    host_port.endswith("443") or
+                                    str(host_port) in https_ports_list
+                                )
+                                protocol = "https" if is_https_port else "http"
+                    
+                                if host_port == "443":
+                                    link = f"{protocol}://{link_hostname}"
+                                else:
+                                    link = f"{protocol}://{link_hostname}:{host_port}"
+                    
+                                port_map.append({
+                                    'container_port': container_port,
+                                    'host_port': host_port,
+                                    'link': link
+                                })
+                    
+                    # Get status with health check information and exit codes
+                    container_status, exit_code = get_container_status_with_exit_code(container)
                     
                     container_info = {
                          'server': server_name,
@@ -472,6 +489,7 @@ def get_all_data():
                          'image': image_name,
                          'stack': stack_name,
                          'source_url': source_url,
+                         'custom_url': custom_url,
                          'ports': port_map
                     }
                     

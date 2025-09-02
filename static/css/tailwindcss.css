@@ -1237,7 +1237,6 @@ body.dark-mode .update-indicator svg {
 .table-cell-image code {
   display: inline-block;
   max-width: 100%;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   background-color: #ededed;

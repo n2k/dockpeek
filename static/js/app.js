@@ -550,7 +550,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const okHandler = () => {
         updatesModal.classList.add('hidden');
-        filterUpdatesCheckbox.checked = true;
         updateDisplay();
     };
 

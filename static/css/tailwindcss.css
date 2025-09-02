@@ -937,8 +937,8 @@ code {
   background-color: #f3f3f3;
 }
 body.dark-mode .filter-button {
-  background-color: #21262d;
-  color: #aeb7bf;
+  background-color: #232831;
+  color: #b3b9bf;
 }
 body.dark-mode .filter-button.active {
   background-color: #2188ff;
@@ -979,6 +979,14 @@ body.dark-mode .border-gray-200 {
 body.dark-mode table {
   background-color: #161b22;
   border-color: #232831;
+}
+.main-table-header {
+  background-color: #f7f7f7;
+  color: #c7c7c7;
+}
+body.dark-mode .main-table-header {
+  background-color: #21262d;
+  color: #c7c7c7;
 }
 body.dark-mode .hover\:bg-gray-50:hover {
   background-color: #21262d !important;
@@ -1225,6 +1233,21 @@ body.dark-mode .update-indicator svg {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+.table-cell-image code {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: #ededed;
+  color: #3e4043;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+body.dark-mode .table-cell-image code {
+  background-color: #232831;
+  color: #d5d5d5;
 }
 #check-updates-button {
   background-color: #e1e4e8;

@@ -546,10 +546,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     updatesModal.classList.remove('hidden');
-    const okHandler = () => updatesModal.classList.add('hidden');
+
+    const okHandler = () => {
+        updatesModal.classList.add('hidden');
+        filterUpdatesCheckbox.checked = true;
+        updateDisplay();
+    };
+
     updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
     updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
-  }
+}
 
   function showNoUpdatesModal() {
     const updatesList = document.getElementById("updates-list");

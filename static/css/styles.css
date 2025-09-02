@@ -232,7 +232,7 @@ body.dark-mode #search-input:focus {
 }
 
 .source-link {
-  color: #cbcccd !important;
+  color: #99a1af !important;
 }
 
 
@@ -241,7 +241,7 @@ body.dark-mode #search-input:focus {
 }
 
 body.dark-mode .source-link {
-  color: #343a45 !important;
+  color: #474c55 !important;
 }
 
 body.dark-mode .source-link:hover {

@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameCell = clone.querySelector('[data-content="name"]');
       if (c.custom_url) {
-        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline" data-tooltip="${c.custom_url}">${c.name}</a>`;
+        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${c.custom_url}">${c.name}</a>`;
       } else {
         nameCell.textContent = c.name;
       }
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Stack column - make clickable if stack exists
       const stackCell = clone.querySelector('[data-content="stack"]');
       if (c.stack) {
-        stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 hover:underline cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
+        stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
       } else {
         stackCell.textContent = '';
       }
@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (c.source_url) {
         sourceLink.href = c.source_url;
         sourceLink.classList.remove('hidden');
-        sourceLink.setAttribute('data-tooltip', c.source_url);
+        sourceLink.setAttribute('data-tooltip-top-right', c.source_url);
       } else {
         sourceLink.classList.add('hidden');
       }
@@ -468,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.value = '';
     clearSearchButton.classList.add('hidden');
     searchInput.focus();
-    updateDisplay(); // Odśwież wyniki po wyczyszczeniu
+    updateDisplay();
   }
 
   async function fetchContainerData() {
@@ -541,7 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updatedContainers.forEach(container => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${container.name}</strong> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
+      li.innerHTML = `<strong>${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
       updatesList.appendChild(li);
     });
 

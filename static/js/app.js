@@ -142,11 +142,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Stack column - make clickable if stack exists
       const stackCell = clone.querySelector('[data-content="stack"]');
-if (c.stack) {
-  stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 hover:underline cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
-} else {
-  stackCell.textContent = '';
-}
+      if (c.stack) {
+        stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 hover:underline cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
+      } else {
+        stackCell.textContent = '';
+      }
 
 
 
@@ -343,6 +343,7 @@ if (c.stack) {
         button.addEventListener('click', () => {
           currentServerFilter = button.dataset.server;
           updateDisplay();
+          clearSearch();
         });
       });
     } else {
@@ -370,57 +371,37 @@ if (c.stack) {
     }
 
     const searchTerm = searchInput.value.toLowerCase().trim();
-if (searchTerm) {
-  if (searchTerm.startsWith(':')) {
-    const portTerm = searchTerm.substring(1);
-    workingData = workingData.filter(c =>
-      c.ports.some(p => p.host_port.includes(portTerm))
-    );
-  } else {
-    // Check for stack: and server: patterns
-    const hasStack = searchTerm.includes('stack:');
-    const hasServer = searchTerm.includes('server:');
-    
-    if (hasStack || hasServer) {
-      let stackFilter = null;
-      let serverFilter = null;
-      
-      if (hasStack) {
-        const stackMatch = searchTerm.match(/stack:([^\s]+)/);
-        stackFilter = stackMatch ? stackMatch[1] : null;
-      }
-      
-      if (hasServer) {
-        const serverMatch = searchTerm.match(/server:([^\s]+)/);
-        serverFilter = serverMatch ? serverMatch[1] : null;
-      }
-      
-      workingData = workingData.filter(c => {
-        let matchesStack = true;
-        let matchesServer = true;
-        
+
+    if (searchTerm) {
+      if (searchTerm.startsWith(':')) {
+        // wyszukiwanie po porcie hosta
+        const portTerm = searchTerm.substring(1);
+        workingData = workingData.filter(c =>
+          c.ports.some(p => p.host_port.includes(portTerm))
+        );
+      } else {
+        // obsługa stack: z opcjonalnymi cudzysłowami
+        const stackMatch = searchTerm.match(/stack:"([^"]+)"|stack:([^\s]+)/);
+        const stackFilter = stackMatch ? (stackMatch[1] || stackMatch[2]).trim() : null;
+
         if (stackFilter) {
-          matchesStack = c.stack && c.stack.toLowerCase() === stackFilter;
+          workingData = workingData.filter(c =>
+            c.stack && c.stack.toLowerCase().includes(stackFilter)
+          );
+        } else {
+          // zwykłe wyszukiwanie
+          workingData = workingData.filter(c =>
+            c.name.toLowerCase().includes(searchTerm) ||
+            c.image.toLowerCase().includes(searchTerm) ||
+            (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
+            c.ports.some(p =>
+              p.host_port.includes(searchTerm) ||
+              p.container_port.includes(searchTerm)
+            )
+          );
         }
-        
-        if (serverFilter) {
-          matchesServer = c.server.toLowerCase() === serverFilter;
-        }
-        
-        return matchesStack && matchesServer;
-      });
-    } else {
-      workingData = workingData.filter(c =>
-        c.name.toLowerCase().includes(searchTerm) ||
-        c.image.toLowerCase().includes(searchTerm) ||
-        (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
-        c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
-      );
+      }
     }
-  }
-}
-
-
 
 
     workingData.sort((a, b) => {
@@ -466,16 +447,14 @@ if (searchTerm) {
   }
 
   function filterByStackAndServer(stack, server) {
-  const searchTerm = `stack:${stack} server:${server}`;
-  searchInput.value = searchTerm;
-  toggleClearButton();
-  updateDisplay();
-  searchInput.focus();
-}
-
-
-
-
+    let stackTerm = stack.includes(" ") ? `"${stack}"` : stack;
+    currentServerFilter = server;
+    updateActiveButton();
+    searchInput.value = `stack:${stackTerm}`;
+    toggleClearButton();
+    updateDisplay();
+    searchInput.focus();
+  }
 
   function toggleClearButton() {
     if (searchInput.value.trim() !== '') {

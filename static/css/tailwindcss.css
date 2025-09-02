@@ -794,6 +794,15 @@ input[type="text"] {
   outline: none;
   box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
 }
+.source-link {
+  color: #cbcccd !important;
+}
+body.dark-mode .source-link {
+  color: #343a45 !important;
+}
+.source-link:hover {
+  color: #2563eb !important;
+}
 .container-name-cell a {
   color: #3e71e9 !important;
 }

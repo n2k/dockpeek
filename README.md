@@ -164,7 +164,7 @@ You can connect and manage multiple Docker instances from a single dashboard.
 
 ## Labels
 
-Dockpeek supports special Docker labels to customize behavior for individual containers. Add these labels in the `labels` section of your `docker-compose.yml`
+Dockpeek supports labels to customize behavior for individual containers. Add these labels in the `labels` section of your `docker-compose.yml`
 
 | Label                        | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|

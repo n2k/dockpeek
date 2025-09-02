@@ -486,8 +486,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       handleServerFilterReset();
       setupServerUI();
-      updateDisplay();
+      clearSearch();
       toggleClearButton();
+      updateDisplay();
 
     } catch (error) {
       handleFetchError(error);
@@ -619,6 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyTheme(localStorage.getItem("theme") || "dark");
 
   refreshButton.addEventListener("click", fetchContainerData);
+
   document.getElementById("theme-switcher").addEventListener("click", () => {
     applyTheme(body.classList.contains("dark-mode") ? "light" : "dark");
   });

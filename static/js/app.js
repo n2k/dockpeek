@@ -342,8 +342,9 @@ document.addEventListener("DOMContentLoaded", () => {
       serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
         button.addEventListener('click', () => {
           currentServerFilter = button.dataset.server;
-          updateDisplay();
+          filterUpdatesCheckbox.checked = false;
           clearSearch();
+          updateDisplay();
         });
       });
     } else {

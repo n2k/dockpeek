@@ -815,6 +815,18 @@ body.dark-mode .container-name-cell a {
 body.dark-mode .container-name-cell a:hover {
   color: #4573bd !important;
 }
+.table-cell-stack a {
+  color: #586069 !important;
+}
+.table-cell-stack a:hover {
+  color: #2151c3 !important;
+}
+body.dark-mode .table-cell-stack a {
+  color: #737b85 !important;
+}
+body.dark-mode .table-cell-stack a:hover {
+  color: #4573bd !important;
+}
 .text-red-500 {
   color: #cb2431;
 }
@@ -1293,25 +1305,6 @@ body.dark-mode input:checked+.slider {
 button:focus {
   outline: none !important;
   box-shadow: none !important;
-}
-#container-table-wrapper {
-  overflow: visible !important;
-}
-#main-table {
-  overflow: visible;
-}
-[data-tooltip]::after, [data-tooltip]::before, [data-tooltip-left]::after, [data-tooltip-left]::before, [data-tooltip-right]::after, [data-tooltip-right]::before {
-  z-index: 1050;
-}
-.table-container-scroll {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-@media (max-width: 768px) {
-  #container-table-wrapper {
-    overflow-x: auto !important;
-    overflow-y: visible;
-  }
 }
 [data-tooltip] {
   position: relative;

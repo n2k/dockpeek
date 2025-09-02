@@ -140,8 +140,15 @@ document.addEventListener("DOMContentLoaded", () => {
         serverNameSpan.setAttribute('data-tooltip', serverData.url);
       }
 
-      // Stack column
-      clone.querySelector('[data-content="stack"]').textContent = c.stack || '';
+      // Stack column - make clickable if stack exists
+      const stackCell = clone.querySelector('[data-content="stack"]');
+if (c.stack) {
+  stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 hover:underline cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
+} else {
+  stackCell.textContent = '';
+}
+
+
 
       clone.querySelector('[data-content="image"]').textContent = c.image;
 
@@ -363,21 +370,58 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const searchTerm = searchInput.value.toLowerCase().trim();
-    if (searchTerm) {
-      if (searchTerm.startsWith(':')) {
-        const portTerm = searchTerm.substring(1);
-        workingData = workingData.filter(c =>
-          c.ports.some(p => p.host_port.includes(portTerm))
-        );
-      } else {
-        workingData = workingData.filter(c =>
-          c.name.toLowerCase().includes(searchTerm) ||
-          c.image.toLowerCase().includes(searchTerm) ||
-          (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
-          c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
-        );
+if (searchTerm) {
+  if (searchTerm.startsWith(':')) {
+    const portTerm = searchTerm.substring(1);
+    workingData = workingData.filter(c =>
+      c.ports.some(p => p.host_port.includes(portTerm))
+    );
+  } else {
+    // Check for stack: and server: patterns
+    const hasStack = searchTerm.includes('stack:');
+    const hasServer = searchTerm.includes('server:');
+    
+    if (hasStack || hasServer) {
+      let stackFilter = null;
+      let serverFilter = null;
+      
+      if (hasStack) {
+        const stackMatch = searchTerm.match(/stack:([^\s]+)/);
+        stackFilter = stackMatch ? stackMatch[1] : null;
       }
+      
+      if (hasServer) {
+        const serverMatch = searchTerm.match(/server:([^\s]+)/);
+        serverFilter = serverMatch ? serverMatch[1] : null;
+      }
+      
+      workingData = workingData.filter(c => {
+        let matchesStack = true;
+        let matchesServer = true;
+        
+        if (stackFilter) {
+          matchesStack = c.stack && c.stack.toLowerCase() === stackFilter;
+        }
+        
+        if (serverFilter) {
+          matchesServer = c.server.toLowerCase() === serverFilter;
+        }
+        
+        return matchesStack && matchesServer;
+      });
+    } else {
+      workingData = workingData.filter(c =>
+        c.name.toLowerCase().includes(searchTerm) ||
+        c.image.toLowerCase().includes(searchTerm) ||
+        (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
+        c.ports.some(p => p.host_port.includes(searchTerm) || p.container_port.includes(searchTerm))
+      );
     }
+  }
+}
+
+
+
 
     workingData.sort((a, b) => {
       let valA = a[currentSortColumn];
@@ -420,6 +464,17 @@ document.addEventListener("DOMContentLoaded", () => {
     updateActiveButton();
     updateExportLink();
   }
+
+  function filterByStackAndServer(stack, server) {
+  const searchTerm = `stack:${stack} server:${server}`;
+  searchInput.value = searchTerm;
+  toggleClearButton();
+  updateDisplay();
+  searchInput.focus();
+}
+
+
+
 
 
   function toggleClearButton() {
@@ -610,5 +665,14 @@ document.addEventListener("DOMContentLoaded", () => {
       header.classList.add(currentSortDirection);
       updateDisplay();
     });
+  });
+  // Event delegation for stack links
+  containerRowsBody.addEventListener('click', function (e) {
+    if (e.target.classList.contains('stack-link')) {
+      e.preventDefault();
+      const stack = e.target.dataset.stack;
+      const server = e.target.dataset.server;
+      filterByStackAndServer(stack, server);
+    }
   });
 });

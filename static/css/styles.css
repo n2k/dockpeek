@@ -250,6 +250,22 @@ body.dark-mode .container-name-cell a:hover {
   color: #4573bd !important;
 }
 
+.table-cell-stack a {
+  color: #586069 !important;
+}
+
+.table-cell-stack a:hover {
+  color: #2151c3 !important;
+}
+
+/* Dark mode version */
+body.dark-mode .table-cell-stack a {
+  color: #737b85 !important;
+}
+
+body.dark-mode .table-cell-stack a:hover {
+  color: #4573bd !important;
+}
 /*
 #refresh-button.loading svg {
   animation: spin 0.8s linear infinite;
@@ -865,40 +881,6 @@ body.dark-mode input:checked+.slider {
 button:focus {
   outline: none !important;
   box-shadow: none !important;
-}
-
-/* Fix for tooltips being cut off in table */
-#container-table-wrapper {
-  overflow: visible !important;
-}
-
-#main-table {
-  overflow: visible;
-}
-
-/* Ensure tooltips appear above table content */
-[data-tooltip]::after,
-[data-tooltip]::before,
-[data-tooltip-left]::after,
-[data-tooltip-left]::before,
-[data-tooltip-right]::after,
-[data-tooltip-right]::before {
-  z-index: 1050;
-  /* Higher than modal z-index */
-}
-
-/* Alternative: make table container handle overflow differently */
-.table-container-scroll {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-/* For mobile responsiveness, still allow horizontal scroll */
-@media (max-width: 768px) {
-  #container-table-wrapper {
-    overflow-x: auto !important;
-    overflow-y: visible;
-  }
 }
 
 /* ======================================== */

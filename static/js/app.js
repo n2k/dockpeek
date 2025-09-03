@@ -269,8 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
       serverFilterContainer.querySelectorAll('.filter-button:not(:disabled)').forEach(button => {
         button.addEventListener('click', () => {
           currentServerFilter = button.dataset.server;
-          filterUpdatesCheckbox.checked = false;
-          clearSearch();
           updateDisplay();
         });
       });

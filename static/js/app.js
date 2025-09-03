@@ -562,13 +562,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showNoUpdatesModal() {
-    const updatesList = document.getElementById("updates-list");
-    updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
-    updatesModal.classList.remove('hidden');
-    const okHandler = () => updatesModal.classList.add('hidden');
-    updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
-    updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
-  }
+  const updatesModalTitle = document.getElementById("updates-modal-title");
+  const updatesList = document.getElementById("updates-list");
+  
+  updatesModalTitle.textContent = "No Updates Available";
+  updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
+  updatesModal.classList.remove('hidden');
+  
+  const okHandler = () => {
+    updatesModal.classList.add('hidden');
+    updatesModalTitle.textContent = "Updates Found";
+  };
+  
+  updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
+  updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
+}
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {

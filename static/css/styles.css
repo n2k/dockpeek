@@ -1362,6 +1362,10 @@ body.dark-mode [data-tooltip-right]::before {
     padding: 0.5em;
   }
 
+  #search-input::placeholder {
+    opacity: 0;
+  }
+
   .container {
     padding: 1rem;
   }
@@ -1415,23 +1419,27 @@ body.dark-mode [data-tooltip-right]::before {
     min-width: 100%;
   }
 }
+
 @media (max-width: 1023px) {
+
   th[data-sort-column="image"],
   td.table-cell-image {
     display: none;
-  }  
+  }
+
   .server-column {
     display: none;
   }
 }
+
 @media (max-width: 1279px) {
-.table-cell-image code {
-  max-width: 150px;  
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  direction: rtl;
-  text-align: left;
-  min-width: 0;
-}
+  .table-cell-image code {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+    min-width: 0;
   }
+}

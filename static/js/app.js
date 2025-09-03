@@ -38,79 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
-  async function checkForUpdates() {
-    if (!isDataLoaded) {
-      return;
-    }
-    const activeServers = allServersData.filter(s => s.status === 'active');
-    const serversToCheck = currentServerFilter === 'all'
-      ? activeServers
-      : activeServers.filter(s => s.name === currentServerFilter);
-
-    if (serversToCheck.length > 1) {
-      try {
-        await showConfirmationModal(
-          'Check Updates on Multiple Servers',
-          `You are about to check for updates on ${serversToCheck.length} servers:\n\n${serversToCheck.map(s => `• ${s.name}`).join('\n')}\n\nThis operation may take longer and will pull images from registries. Do you want to continue?`,
-          'Check Updates'
-        );
-      } catch (error) {
-        console.log('Multi-server update check cancelled by user');
-        return;
-      }
-    }
-
-    checkUpdatesButton.classList.add('loading');
-    checkUpdatesButton.disabled = true;
-
-    try {
-      const requestData = {
-        server_filter: currentServerFilter
-      };
-
-      const response = await fetch("/check-updates", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const { updates } = await response.json();
-      const updatedContainers = [];
-
-      allContainersData.forEach(container => {
-        const key = `${container.server}:${container.name}`;
-        if (updates.hasOwnProperty(key)) {
-          container.update_available = updates[key];
-          if (updates[key]) {
-            updatedContainers.push(container);
-          }
-        }
-      });
-
-      updateDisplay();
-
-      if (updatedContainers.length > 0) {
-        showUpdatesModal(updatedContainers);
-      } else {
-        showNoUpdatesModal();
-      }
-
-    } catch (error) {
-      console.error("Update check failed:", error);
-      alert("Failed to check for updates. Please try again.");
-    } finally {
-      checkUpdatesButton.classList.remove('loading');
-      checkUpdatesButton.disabled = false;
-    }
-  }
-
-  checkUpdatesButton.addEventListener("click", checkForUpdates);
 
   function renderTable() {
     containerRowsBody.innerHTML = "";
@@ -488,6 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setupServerUI();
       clearSearch();
       toggleClearButton();
+      filterUpdatesCheckbox.checked = false;
       updateDisplay();
 
     } catch (error) {
@@ -537,26 +465,101 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("theme", theme);
   }
 
+  async function checkForUpdates() {
+    if (!isDataLoaded) {
+      return;
+    }
+    const activeServers = allServersData.filter(s => s.status === 'active');
+    const serversToCheck = currentServerFilter === 'all'
+      ? activeServers
+      : activeServers.filter(s => s.name === currentServerFilter);
+
+    if (serversToCheck.length > 1) {
+      try {
+        await showConfirmationModal(
+          'Check Updates on Multiple Servers',
+          `You are about to check for updates on ${serversToCheck.length} servers:\n\n${serversToCheck.map(s => `• ${s.name}`).join('\n')}\n\nThis operation may take longer and will pull images from registries. Do you want to continue?`,
+          'Check Updates'
+        );
+      } catch (error) {
+        console.log('Multi-server update check cancelled by user');
+        return;
+      }
+    }
+
+    checkUpdatesButton.classList.add('loading');
+    checkUpdatesButton.disabled = true;
+
+    try {
+      const requestData = {
+        server_filter: currentServerFilter
+      };
+
+      const response = await fetch("/check-updates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const { updates } = await response.json();
+      const updatedContainers = [];
+
+      allContainersData.forEach(container => {
+        const key = `${container.server}:${container.name}`;
+        if (updates.hasOwnProperty(key)) {
+          container.update_available = updates[key];
+          if (updates[key]) {
+            updatedContainers.push(container);
+          }
+        }
+      });
+
+      updateDisplay();
+
+      if (updatedContainers.length > 0) {
+        showUpdatesModal(updatedContainers);
+      } else {
+        showNoUpdatesModal();
+      }
+
+    } catch (error) {
+      console.error("Update check failed:", error);
+      alert("Failed to check for updates. Please try again.");
+    } finally {
+      checkUpdatesButton.classList.remove('loading');
+      checkUpdatesButton.disabled = false;
+    }
+  }
+
+  checkUpdatesButton.addEventListener("click", checkForUpdates);
+
+
   function showUpdatesModal(updatedContainers) {
     const updatesList = document.getElementById("updates-list");
     updatesList.innerHTML = "";
 
     updatedContainers.forEach(container => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
+      li.innerHTML = `<strong class="container-name">${container.name}</strong> <span class="stack-name">[${container.stack}]</span> <span class="server-name">(${container.server})</span> <span class="image-name">${container.image}</span>`;
       updatesList.appendChild(li);
     });
 
     updatesModal.classList.remove('hidden');
 
     const okHandler = () => {
-        updatesModal.classList.add('hidden');
-        updateDisplay();
+      updatesModal.classList.add('hidden');
+      updateDisplay();
     };
 
     updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
     updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
-}
+  }
 
   function showNoUpdatesModal() {
     const updatesList = document.getElementById("updates-list");
@@ -639,6 +642,7 @@ document.addEventListener("DOMContentLoaded", () => {
       clearSearch();
     }
   });
+
   document.querySelectorAll(".sortable-header").forEach((header) => {
     header.addEventListener("click", () => {
       const column = header.dataset.sortColumn;
@@ -653,6 +657,14 @@ document.addEventListener("DOMContentLoaded", () => {
       updateDisplay();
     });
   });
+
+  document.querySelector('.logo-title').addEventListener('click', () => {
+  currentServerFilter = 'all';
+  filterUpdatesCheckbox.checked = false;
+  clearSearch();
+  updateDisplay();
+
+});
   // Event delegation for stack links
   containerRowsBody.addEventListener('click', function (e) {
     if (e.target.classList.contains('stack-link')) {

@@ -665,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.querySelector('.logo-title').addEventListener('click', () => {
-  currentServerFilter = 'all';
+  // currentServerFilter = 'all';
   filterUpdatesCheckbox.checked = false;
   clearSearch();
   updateDisplay();

@@ -222,3 +222,9 @@ Yes, using the new label:
     labels:
       - "dockpeek.link=https://example.com"
 ```
+
+<br>
+
+**Q: How can I clear the search when clicking on a stack?**
+
+Just click on Dockpeek! :wink: – this will reset the search and `Update available` filter.

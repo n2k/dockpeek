@@ -585,15 +585,17 @@ def export_json():
         enhanced_container = {
             "name": container.get("name"),
             "server": container.get("server"),
-            "status": container.get("status"),
-            "exit_code": container.get("exit_code"),
-            "image": container.get("image"),
             "stack": container.get("stack"),
-            "ports": container.get("ports", []),
+            "image": container.get("image"),
             "port_summary": [
                 f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}" 
                 for p in container.get("ports", [])
-            ] if container.get("ports") else []
+            ] if container.get("ports") else [],
+            "ports": container.get("ports", []),
+            "ports": container.get("ports", []),
+            "status": container.get("status"),
+            "exit_code": container.get("exit_code"),
+            "custom_url": container.get("custom_url"),
         }
         export_data["containers"].append(enhanced_container)
     

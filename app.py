@@ -618,22 +618,43 @@ def export_json():
     }
     
     for container in filtered_containers:
+        ports_all = container.get("ports", [])
+        ports_normalized = []
+
+        for p in ports_all:
+            if p.get("is_custom", False):
+                ports_normalized.append({
+                    "container_port": "",
+                    "custom_ports": p.get("host_port"),
+                    "link": p.get("link"),
+                })
+            else:
+                ports_normalized.append({
+                    "container_port": p.get("container_port"),
+                    "host_port": p.get("host_port"),
+                    "link": p.get("link"),
+                })
+
         enhanced_container = {
             "name": container.get("name"),
             "server": container.get("server"),
             "stack": container.get("stack"),
             "image": container.get("image"),
             "port_summary": [
-                f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}" 
-                for p in container.get("ports", [])
-            ] if container.get("ports") else [],
-            "ports": container.get("ports", []),
-            "ports": container.get("ports", []),
+                f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}"
+                for p in ports_all if not p.get("is_custom", False)
+            ],
+            "ports": ports_normalized,
             "status": container.get("status"),
-            "exit_code": container.get("exit_code"),
-            "custom_url": container.get("custom_url"),
         }
+    
+        if container.get("custom_url"):
+            enhanced_container["custom_url"] = container.get("custom_url")
+        if container.get("exit_code") is not None:
+            enhanced_container["exit_code"] = container.get("exit_code")
+
         export_data["containers"].append(enhanced_container)
+
     
     import json
     

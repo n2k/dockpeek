@@ -227,6 +227,9 @@
   }
 }
 @layer utilities {
+  .invisible {
+    visibility: hidden;
+  }
   .absolute {
     position: absolute;
   }
@@ -748,6 +751,12 @@ body.dark-mode [data-content="ports"] .badge {
   background-color: #21262d;
   color: #2188ff;
 }
+[data-content="ports"] .custom-port .badge {
+  color: #959595 !important;
+}
+body.dark-mode [data-content="ports"] .custom-port .badge {
+  color: #6d7789 !important;
+}
 .sortable-header {
   cursor: pointer;
   position: relative;
@@ -805,6 +814,13 @@ body.dark-mode #search-input:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
 }
+.source-link[data-tooltip-top-right]::after {
+  max-width: 600px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
 .source-link {
   color: #99a1af !important;
 }
@@ -822,6 +838,13 @@ body.dark-mode .source-link:hover {
 }
 body.dark-mode .server-column [data-content="server-name"] {
   color: #5a626b;
+}
+.container-name-cell [data-tooltip-right]::after {
+  max-width: 600px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 .container-name-cell {
   color: #4e5051 !important;

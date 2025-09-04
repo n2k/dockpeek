@@ -437,6 +437,7 @@ def get_all_data():
                     # Get custom dockpeek labels
                     https_ports = labels.get('dockpeek.https', '')
                     custom_url = labels.get('dockpeek.link', '')
+                    custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')
                     
                     # Parse HTTPS ports
                     https_ports_list = []
@@ -449,7 +450,16 @@ def get_all_data():
                     # Port information with HTTPS detection
                     ports = container.attrs['NetworkSettings']['Ports']
                     port_map = []
-                    
+
+                    # Parse custom ports for any container with dockpeek.ports label
+                    custom_ports_list = []
+                    if custom_ports:
+                        try:
+                            custom_ports_list = [str(port.strip()) for port in custom_ports.split(',') if port.strip()]
+                        except:
+                            custom_ports_list = []
+
+                    # First, add standard mapped ports (only if no custom ports or for additional ports)
                     if ports:
                         for container_port, mappings in ports.items():
                             if mappings:
@@ -457,7 +467,7 @@ def get_all_data():
                                 host_port = m['HostPort']
                                 host_ip = m.get('HostIp', '0.0.0.0')
                                 link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
-                                
+
                                 # Check if this port should use HTTPS
                                 is_https_port = (
                                     container_port == "443/tcp" or 
@@ -466,17 +476,43 @@ def get_all_data():
                                     str(host_port) in https_ports_list
                                 )
                                 protocol = "https" if is_https_port else "http"
-                    
+
                                 if host_port == "443":
                                     link = f"{protocol}://{link_hostname}"
                                 else:
                                     link = f"{protocol}://{link_hostname}:{host_port}"
-                    
+
                                 port_map.append({
                                     'container_port': container_port,
                                     'host_port': host_port,
-                                    'link': link
+                                    'link': link,
+                                    'is_custom': False
                                 })
+
+                    # Then, add custom ports if label is present
+                    if custom_ports_list:
+                        link_hostname = _get_link_hostname(public_hostname, None, is_docker_host)
+
+                        for port in custom_ports_list:
+                            # Check if this port should use HTTPS
+                            is_https_port = (
+                                port == "443" or 
+                                port.endswith("443") or
+                                port in https_ports_list
+                            )
+                            protocol = "https" if is_https_port else "http"
+
+                            if port == "443":
+                                link = f"{protocol}://{link_hostname}"
+                            else:
+                                link = f"{protocol}://{link_hostname}:{port}"
+
+                            port_map.append({
+                                'container_port': '',
+                                'host_port': port,
+                                'link': link,
+                                'is_custom': True
+                            })
                     
                     # Get status with health check information and exit codes
                     container_status, exit_code = get_container_status_with_exit_code(container)

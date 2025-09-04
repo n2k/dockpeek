@@ -222,16 +222,24 @@ document.addEventListener("DOMContentLoaded", () => {
       if (c.ports.length > 0) {
         const arrowSvg =
           `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle">
-         <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-         </svg>`;
+           <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>`;
 
-        portsCell.innerHTML = c.ports.map(p =>
-          `<div class="flex items-center mb-1">
-          <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
-          ${arrowSvg}
-          <small class="text-secondary">${p.container_port}</small>
-        </div>`
-        ).join('');
+        portsCell.innerHTML = c.ports.map(p => {
+          // Custom ports (from dockpeek.ports label)
+          if (p.is_custom || (!p.container_port || p.container_port === '')) {
+            return `<div class="custom-port flex items-center mb-1">
+              <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
+            </div>`;
+          } else {
+            // Standard ports with mapping
+            return `<div class="flex items-center mb-1">
+              <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
+              ${arrowSvg}
+              <small class="text-secondary">${p.container_port}</small>
+            </div>`;
+          }
+        }).join('');
       } else {
         portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
       }

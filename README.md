@@ -20,7 +20,7 @@
 - **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
 - **Zero Configuration** – Automatically detects running containers with no setup required.
 - **Image Update Checking** – Monitor available updates for your container images.
-- **Custom Labels Support** – Use `dockpeek.https` to force ports to open as HTTPS and `dockpeek.link` to make container names clickable links.
+- **Custom Labels Support** – Use `dockpeek.https` to force ports to open as HTTPS, `dockpeek.link` to make container names clickable links, and `dockpeek.ports` to manually specify ports for containers using `--net=host` or when you want to display additional ports.
 
 
 <br>
@@ -168,6 +168,7 @@ Dockpeek supports labels to customize behavior for individual containers. Add th
 
 | Label                        | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|
+| `dockpeek.ports=PORTS`        | Comma-separated list of **extra ports** to show in Dockpeek, in addition to those detected automatically. Useful for containers running with `--net=host`, `macvlan`, or setups where some ports are not exposed via Docker. Example: `dockpeek.ports=8080,9090`. |
 | `dockpeek.https=PORTS`        | Comma-separated list of ports that should always open as HTTPS. Example: `dockpeek.https=3001,3002`. Must be added to the container exposing these ports. |
 | `dockpeek.link=URL`           | Makes the container name a clickable link pointing to the specified URL. Example: `dockpeek.link=https://example.com`. Useful for reverse proxy setups. Must be added to the container. |
 
@@ -181,7 +182,8 @@ services:
       - 3001:9000/tcp
       - 3002:9001/tcp
     labels:
-      - "dockpeek.https=3001,3002" # Ports 3001 and 3002 will open as HTTPS
+      - "dockpeek.ports=8000" # Adds extra port 8000 to Dockpeek
+      - "dockpeek.https=3001,8000" # Ports 3001 and 8000 will open as HTTPS
       - "dockpeek.link=https://example.com" # Container name becomes a clickable link to this URL
 ```
 
@@ -207,7 +209,7 @@ services:
  > Make sure to add the `dockpeek.https` label in the `labels` section of the container in `docker-compose.yml` where these ports are exposed.  
 ```yaml
     labels:
-      - "dockpeek.https=3001,3002"
+      - "dockpeek.https=3001,3002" 
 ```
 
 <br>
@@ -220,7 +222,24 @@ Yes, using the new label:
   > This is especially useful if you use a reverse proxy and want to open your application via its public address.  
 ```yaml
     labels:
-      - "dockpeek.link=https://example.com"
+      - "dockpeek.link=https://example.com" 
+```
+
+<br>
+
+**Q: Why don't I see ports for containers using `--net=host`? (e.g. Jellyfin)**
+
+When using `--net=host`, containers share the host's network stack directly, which means:
+* There's no port mapping (no concept of 8080:80)
+* Docker doesn't track which ports the application actually uses
+* Ports are invisible to Docker API since the app binds directly to host interfaces
+
+> Because of this, Dockpeek can’t automatically detect them.
+
+**Solution**: Use labels to manually specify port information
+```yaml
+    labels:
+      - "dockpeek.ports=80,443,8096" 
 ```
 
 <br>

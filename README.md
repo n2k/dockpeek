@@ -168,7 +168,7 @@ Dockpeek supports labels to customize behavior for individual containers. Add th
 
 | Label                        | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|
-| `dockpeek.ports=PORTS`        | Comma-separated list of **extra ports** to show in Dockpeek, in addition to those detected automatically. Useful for containers running with `--net=host`, `macvlan`, or setups where some ports are not exposed via Docker. Example: `dockpeek.ports=8080,9090`. |
+| `dockpeek.ports=PORTS`        | Comma-separated list of **extra ports** to show in Dockpeek, in addition to those detected automatically. Useful for containers running with `--net=host`, `macvlan`, or setups where some ports are not exposed via Docker.<br /> Example: `dockpeek.ports=8080,9090`. |
 | `dockpeek.https=PORTS`        | Comma-separated list of ports that should always open as HTTPS. Example: `dockpeek.https=3001,3002`. Must be added to the container exposing these ports. |
 | `dockpeek.link=URL`           | Makes the container name a clickable link pointing to the specified URL. Example: `dockpeek.link=https://example.com`. Useful for reverse proxy setups. Must be added to the container. |
 

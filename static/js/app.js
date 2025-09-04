@@ -55,7 +55,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameCell = clone.querySelector('[data-content="name"]');
       if (c.custom_url) {
-        nameCell.innerHTML = `<a href="${c.custom_url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${c.custom_url}">${c.name}</a>`;
+        function normalizeUrl(url) {
+          if (url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
+            return url;
+          }
+          return `https://${url}`;
+        }
+
+        const url = normalizeUrl(c.custom_url);
+        const tooltipUrl = url.replace(/^https:\/\//, '');
+
+        nameCell.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
       } else {
         nameCell.textContent = c.name;
       }
@@ -560,21 +570,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showNoUpdatesModal() {
-  const updatesModalTitle = document.getElementById("updates-modal-title");
-  const updatesList = document.getElementById("updates-list");
-  
-  updatesModalTitle.textContent = "No Updates Available";
-  updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
-  updatesModal.classList.remove('hidden');
-  
-  const okHandler = () => {
-    updatesModal.classList.add('hidden');
-    updatesModalTitle.textContent = "Updates Found";
-  };
-  
-  updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
-  updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
-}
+    const updatesModalTitle = document.getElementById("updates-modal-title");
+    const updatesList = document.getElementById("updates-list");
+
+    updatesModalTitle.textContent = "No Updates Available";
+    updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
+    updatesModal.classList.remove('hidden');
+
+    const okHandler = () => {
+      updatesModal.classList.add('hidden');
+      updatesModalTitle.textContent = "Updates Found";
+    };
+
+    updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
+    updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
+  }
 
   function showConfirmationModal(title, message, confirmText = 'Confirm') {
     return new Promise((resolve, reject) => {
@@ -665,12 +675,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.querySelector('.logo-title').addEventListener('click', () => {
-  // currentServerFilter = 'all';
-  filterUpdatesCheckbox.checked = false;
-  clearSearch();
-  updateDisplay();
+    // currentServerFilter = 'all';
+    filterUpdatesCheckbox.checked = false;
+    clearSearch();
+    updateDisplay();
 
-});
+  });
   // Event delegation for stack links
   containerRowsBody.addEventListener('click', function (e) {
     if (e.target.classList.contains('stack-link')) {

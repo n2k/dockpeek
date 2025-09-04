@@ -21,13 +21,14 @@
 - **Zero Configuration** – Automatically detects running containers with no setup required.
 - **Image Update Checking** – Monitor available updates for your container images.
 - **Custom Labels Support** – Use `dockpeek.https` to force ports to open as HTTPS, `dockpeek.link` to make container names clickable links, and `dockpeek.ports` to manually specify ports for containers using `--net=host` or when you want to display additional ports.
+- **Mobile-Friendly (Responsive)** – Fully usable and accessible on smartphones and tablets.
 
 
 <br>
 
 <div align="center">
 
-![Dockpeek Night mode screenshot](screenshot_v1.5.7.png)
+![Dockpeek Night mode screenshot](screenshot_v1.5.8.png)
 
 </div>
 

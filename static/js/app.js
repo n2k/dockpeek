@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    containerRowsBody.innerHTML = `<tr><td colspan="6"><div class="loader"></div></td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="7"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -35,23 +35,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    containerRowsBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
-
 
   function renderTable() {
     containerRowsBody.innerHTML = "";
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      const colspan = mainTable.classList.contains('table-single-server') ? 5 : 6;
-      containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
+
 
     const fragment = document.createDocumentFragment();
     for (const c of pageItems) {
       const clone = rowTemplate.content.cloneNode(true);
+
 
       const nameCell = clone.querySelector('[data-content="name"]');
       if (c.custom_url) {
@@ -243,7 +243,33 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
       }
+
+      // Check if Traefik is enabled globally and if any container has routes
+      const isTraefikGloballyEnabled = window.traefikEnabled !== false;
+      const hasTraefikRoutes = isTraefikGloballyEnabled && pageItems.some(c => c.traefik_routes && c.traefik_routes.length > 0);
+
+      // Traefik routes handling
+      const traefikCell = clone.querySelector('[data-content="traefik-routes"]');
+      if (hasTraefikRoutes) {
+        traefikCell.classList.remove('hidden');
+
+        if (c.traefik_routes && c.traefik_routes.length > 0) {
+          traefikCell.innerHTML = c.traefik_routes.map(route => {
+            const displayUrl = route.url.replace(/^https?:\/\//, '');
+            return `<div class="traefik-route mb-1">
+            <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm" data-tooltip="${route.rule}">
+              ${displayUrl}
+            </a>
+          </div>`;
+          }).join('');
+        } else {
+          traefikCell.innerHTML = `<span class="status-none text-sm">none</span>`;
+        }
+      } else {
+        traefikCell.classList.add('hidden');
+      }
       fragment.appendChild(clone);
+
     }
     containerRowsBody.appendChild(fragment);
   }
@@ -383,6 +409,22 @@ document.addEventListener("DOMContentLoaded", () => {
       return 0;
     });
 
+
+
+    // Check if Traefik is enabled globally and if any container has Traefik routes
+    const isTraefikGloballyEnabled = window.traefikEnabled !== false; // Default true if not set
+    const hasTraefikRoutes = isTraefikGloballyEnabled && workingData.some(c => c.traefik_routes && c.traefik_routes.length > 0);
+
+    // Show/hide Traefik column
+    const traefikHeaders = document.querySelectorAll('.traefik-column');
+    traefikHeaders.forEach(header => {
+      if (hasTraefikRoutes) {
+        header.classList.remove('hidden');
+      } else {
+        header.classList.add('hidden');
+      }
+    });
+
     filteredAndSortedContainers = workingData;
     hideLoadingIndicator();
     renderTable();
@@ -421,8 +463,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/data");
       if (!response.ok) throw createResponseError(response);
 
-      const { servers = [], containers = [] } = await response.json();
+      const { servers = [], containers = [], traefik_enabled = true } = await response.json();
       [allServersData, allContainersData] = [servers, containers];
+      window.traefikEnabled = traefik_enabled;
 
       isDataLoaded = true;
       checkUpdatesButton.disabled = false;

@@ -153,6 +153,7 @@ login_manager.login_view = 'login'
 # === User credentials from environment ===
 ADMIN_USERNAME = os.environ.get("USERNAME")
 ADMIN_PASSWORD = os.environ.get("PASSWORD")
+TRAEFIK_ENABLE = os.environ.get("DOCKPEEK_TRAEFIK_ENABLE", "true").lower() == "true" 
 
 if not ADMIN_USERNAME or not ADMIN_PASSWORD:
     raise RuntimeError("USERNAME and PASSWORD environment variables must be set.")
@@ -442,7 +443,7 @@ def get_all_data():
 
                     # Extract Traefik routes
                     traefik_routes = []
-                    if labels.get('traefik.enable', '').lower() == 'true':
+                    if TRAEFIK_ENABLE and labels.get('traefik.enable', '').lower() == 'true':
                         for key, value in labels.items():
                             if key.startswith('traefik.http.routers.') and key.endswith('.rule'):
                                 # Extract Host from rule
@@ -473,7 +474,7 @@ def get_all_data():
                                         'url': url,
                                         'rule': value
                                     })
-                   # Parse HTTPS ports
+                    # Parse HTTPS ports
                     https_ports_list = []
                     if https_ports:
                         try:
@@ -586,7 +587,12 @@ def get_all_data():
                     break
             continue
 
-    return {"servers": server_list_for_json, "containers": all_container_data}
+    return {
+        "servers": server_list_for_json, 
+        "containers": all_container_data,
+        "traefik_enabled": TRAEFIK_ENABLE
+    }
+
 
 # === Routes ===
 @app.route("/")

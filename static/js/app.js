@@ -26,8 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
-    containerRowsBody.innerHTML = `<tr><td colspan="${colspan}"><div class="loader"></div></td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="7"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -36,8 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
-    containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
   function renderTable() {
@@ -45,8 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
-      containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
 

@@ -439,7 +439,41 @@ def get_all_data():
                     custom_url = labels.get('dockpeek.link', '')
                     custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')
                     
-                    # Parse HTTPS ports
+
+                    # Extract Traefik routes
+                    traefik_routes = []
+                    if labels.get('traefik.enable', '').lower() == 'true':
+                        for key, value in labels.items():
+                            if key.startswith('traefik.http.routers.') and key.endswith('.rule'):
+                                # Extract Host from rule
+                                import re
+                                host_match = re.search(r'Host\(`([^`]+)`\)', value)
+                                if host_match:
+                                    host = host_match.group(1)
+                                    router_name = key.split('.')[3]  # Extract router name
+
+                                    # Check if this router has TLS enabled
+                                    tls_key = f'traefik.http.routers.{router_name}.tls'
+                                    is_tls = labels.get(tls_key, '').lower() == 'true'
+
+                                    # Check entrypoints to determine protocol
+                                    entrypoints_key = f'traefik.http.routers.{router_name}.entrypoints'
+                                    entrypoints = labels.get(entrypoints_key, '')
+
+                                    protocol = 'https' if is_tls or 'websecure' in entrypoints else 'http'
+                                    url = f"{protocol}://{host}"
+
+                                    # Check for PathPrefix
+                                    path_match = re.search(r'PathPrefix\(`([^`]+)`\)', value)
+                                    if path_match:
+                                        url += path_match.group(1)
+
+                                    traefik_routes.append({
+                                        'router': router_name,
+                                        'url': url,
+                                        'rule': value
+                                    })
+                   # Parse HTTPS ports
                     https_ports_list = []
                     if https_ports:
                         try:
@@ -526,7 +560,8 @@ def get_all_data():
                          'stack': stack_name,
                          'source_url': source_url,
                          'custom_url': custom_url,
-                         'ports': port_map
+                         'ports': port_map,
+                         'traefik_routes': traefik_routes
                     }
                     
                     if cached_update is not None and is_cache_valid:

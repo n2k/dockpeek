@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    containerRowsBody.innerHTML = `<tr><td colspan="6"><div class="loader"></div></td></tr>`;
+    const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
+    containerRowsBody.innerHTML = `<tr><td colspan="${colspan}"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -35,19 +36,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    containerRowsBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
+    containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
-
 
   function renderTable() {
     containerRowsBody.innerHTML = "";
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      const colspan = mainTable.classList.contains('table-single-server') ? 5 : 6;
+      const colspan = mainTable.classList.contains('table-single-server') ? 6 : 7;
       containerRowsBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
+
 
     const fragment = document.createDocumentFragment();
     for (const c of pageItems) {
@@ -242,6 +244,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join('');
       } else {
         portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
+      }
+      // traefik
+      const traefikCell = clone.querySelector('[data-content="traefik-routes"]');
+      if (c.traefik_routes && c.traefik_routes.length > 0) {
+        traefikCell.innerHTML = c.traefik_routes.map(route => {
+          const displayUrl = route.url.replace(/^https?:\/\//, '');
+          return `<div class="traefik-route mb-1">
+            <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm" data-tooltip="${route.rule}">
+              ${displayUrl}
+            </a>
+          </div>`;
+        }).join('');
+      } else {
+        traefikCell.innerHTML = `<span class="status-none text-sm">none</span>`;
       }
       fragment.appendChild(clone);
     }

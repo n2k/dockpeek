@@ -15,7 +15,7 @@
 
 ## Key Features
 
-- **Port Mapping Overview** – Quickly see all running containers and their exposed ports.
+- **Port Mapping Overview** – Quickly see all running containers and their published ports.
 - **Click-to-Access URLs** – Open containerized web apps instantly with a single click.
 - **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
 - **Zero Configuration** – Automatically detects running containers with no setup required.
@@ -192,7 +192,7 @@ services:
 
 ## FAQ
 
-**Q: Can I search for containers by exposed port only?**
+**Q: Can I search for containers by host port only?**
 
  Yes. Dockpeek supports searching using `:port`.
 
@@ -205,7 +205,7 @@ services:
  Dockpeek automatically treats the following as HTTPS:
 
 * Container port `443/tcp`
-* Any exposed port ending with `443` (e.g., `8443`, `9443`)
+* Any host port ending with `443` (e.g., `8443`, `9443`)
 * Any ports specified via label `dockpeek.https` (e.g., `dockpeek.https=3001,3002`).  
  > Make sure to add the `dockpeek.https` label in the `labels` section of the container in `docker-compose.yml` where these ports are exposed.  
 ```yaml
@@ -248,3 +248,9 @@ When using `--net=host`, containers share the host's network stack directly, whi
 **Q: How can I clear the search when clicking on a stack?**
 
 Just click on Dockpeek! :wink: – this will reset the search and `Update available` filter.
+
+<br>
+
+**Q: What feature will be added next?**
+
+The next planned feature is **Traefik labels as clickable links** - Dockpeek will automatically detect `traefik.http.routers.*.rule` labels and turn them into links.

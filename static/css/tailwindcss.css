@@ -1660,8 +1660,8 @@ body.dark-mode [data-tooltip-right]::before {
   padding-right: 0.3em;
 }
 .column-menu-svg {
-  height: 34px;
-  width: 34px;
+  height: 32px;
+  width: 32px;
   color: #c0c4c9;
   cursor: pointer;
   padding: 0;
@@ -1823,9 +1823,6 @@ body.dark-mode .column-menu-item span {
   .server-column {
     display: none;
   }
-  .logo-title {
-    display: none;
-  }
 }
 @media (max-width: 1279px) {
   .table-cell-image code {
@@ -1883,6 +1880,24 @@ body.dark-mode .column-menu-item span {
 @media (min-width: 1280px) {
   .traefik-route a svg {
     display: none;
+  }
+}
+label[for="filter-running-checkbox"] {
+  display: inline;
+}
+@media (max-width: 1023px) {
+  label[for="filter-running-checkbox"] {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
+  }
+}
+@media (min-width: 1024px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
   }
 }
 @property --tw-space-x-reverse {

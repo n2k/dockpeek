@@ -1410,8 +1410,8 @@ body.dark-mode [data-tooltip-right]::before {
 }
 
 .column-menu-svg {
-  height: 34px;
-  width: 34px;
+  height: 32px;
+  width: 32px;
   color: #c0c4c9;
   cursor: pointer;
   padding: 0;
@@ -1566,6 +1566,7 @@ body.dark-mode .column-menu-item span {
     padding: 1rem;
   }
 
+
   .flex.justify-between.items-center.mb-6 {
     flex-direction: column;
     align-items: flex-start;
@@ -1625,11 +1626,6 @@ body.dark-mode .column-menu-item span {
   .server-column {
     display: none;
   }
-  
-  .logo-title{    
-    display: none;
-  }
-
 }
 
 @media (max-width: 1279px) {
@@ -1703,5 +1699,29 @@ body.dark-mode .column-menu-item span {
 @media (min-width: 1280px) {
   .traefik-route a svg {
     display: none;
+  }
+}/* domyślnie (dla dużych ekranów) */
+label[for="filter-running-checkbox"] {
+  display: inline;
+}
+
+/* ukryj dla ekranów <= 1023px */
+@media (max-width: 1023px) {
+  label[for="filter-running-checkbox"] {
+    display: none;
+  }
+}
+
+/* przywróć widoczność dla ekranów <= 768px (nadpisze regułę powyżej) */
+@media (max-width: 768px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
+  }
+}
+
+/* jawne ustawienie dla >= 1024px (opcjonalne, domyślne już to daje) */
+@media (min-width: 1024px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
   }
 }

@@ -942,7 +942,7 @@ label[for="filter-running-checkbox"] {
 }
 
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #474d55;
+  color: #525559;
 }
 
 #modal-message {
@@ -1391,6 +1391,7 @@ body.dark-mode [data-tooltip-right]::before {
 
 /* Column Menu Styles */
 .column-menu-container {
+  margin-left: 16px;
   position: relative;
   display: inline-block;
 }
@@ -1411,7 +1412,7 @@ body.dark-mode [data-tooltip-right]::before {
 .column-menu-svg {
   height: 34px;
   width: 34px;
-  color: #9ba0a9;
+  color: #c0c4c9;
   cursor: pointer;
   padding: 0;
   border-radius: 0.375rem;
@@ -1422,7 +1423,7 @@ body.dark-mode [data-tooltip-right]::before {
 }
 
 .column-menu-svg:hover {
-  color: #898e96;
+  color: #a2a6aa;
   /* Ciemniejszy niebieski przy hover */
 }
 

@@ -666,6 +666,7 @@ button svg {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 .logo-title {
+  margin-right: 1em;
   color: #e1e4e8;
   cursor: pointer;
 }
@@ -1369,6 +1370,18 @@ body.dark-mode .slider:before {
 body.dark-mode input:checked+.slider {
   background-color: #b9711f;
 }
+#filter-running-checkbox:checked+.slider {
+  background-color: #3f88fe;
+}
+body.dark-mode #filter-running-checkbox:checked+.slider {
+  background-color: #3f88fe;
+}
+label[for="filter-running-checkbox"] {
+  color: #babdc1;
+}
+body.dark-mode label[for="filter-running-checkbox"] {
+  color: #596069;
+}
 #modal-message {
   white-space: pre-line;
   line-height: 1.6;
@@ -1376,6 +1389,18 @@ body.dark-mode input:checked+.slider {
 button:focus {
   outline: none !important;
   box-shadow: none !important;
+}
+.traefik-route a {
+  color: #3e71e9 !important;
+}
+.traefik-route a:hover {
+  color: #2b7fff !important;
+}
+body.dark-mode .traefik-route a {
+  color: #2572cb !important;
+}
+body.dark-mode .traefik-route a:hover {
+  color: #2b7fff !important;
 }
 [data-tooltip] {
   position: relative;
@@ -1682,6 +1707,15 @@ body.dark-mode [data-tooltip-right]::before {
   }
   .server-column {
     display: none;
+  }
+  .flex.items-center.space-x-4 label {
+    font-size: 0.75rem;
+  }
+  .flex.items-center.space-x-4 label::after {
+    content: "Running only";
+  }
+  .flex.items-center.space-x-4 label {
+    text-indent: -9999px;
   }
 }
 @media (max-width: 1279px) {

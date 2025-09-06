@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalConfirmBtn = document.getElementById("modal-confirm-button");
   const modalCancelBtn = document.getElementById("modal-cancel-button");
   const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
+  const filterRunningCheckbox = document.getElementById("filter-running-checkbox");
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
@@ -334,6 +335,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (currentServerFilter !== "all") {
       workingData = workingData.filter(c => c.server === currentServerFilter);
+    }
+
+    if (filterRunningCheckbox.checked) {
+      workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
     }
 
     if (filterUpdatesCheckbox.checked) {
@@ -696,6 +701,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   filterUpdatesCheckbox.addEventListener("change", updateDisplay);
+  filterRunningCheckbox.addEventListener("change", updateDisplay);
 
   searchInput.addEventListener("input", function () {
     toggleClearButton();
@@ -727,6 +733,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelector('.logo-title').addEventListener('click', () => {
     // currentServerFilter = 'all';
+    // filterRunningCheckbox.checked = false;
     filterUpdatesCheckbox.checked = false;
     clearSearch();
     updateDisplay();

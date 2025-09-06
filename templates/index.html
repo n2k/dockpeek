@@ -12,7 +12,19 @@
 <body class="p-6 dark-mode">
   <div class="container mx-auto bg-white rounded-lg shadow-xl p-8">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="logo-title text-3xl font-bold">dockpeek</h1>
+      <div class="flex items-center space-x-4">
+        <h1 class="logo-title text-3xl font-bold">dockpeek</h1>
+        <div class="flex items-center space-x-2">
+          <label for="filter-running-checkbox"
+            class="text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+            Show running only
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="filter-running-checkbox" class="hidden">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
       <div class="flex space-x-4 items-center text-sm controls-container">
         <button id="refresh-button" data-tooltip="Refresh Data"
           class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">

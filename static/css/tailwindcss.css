@@ -1408,6 +1408,16 @@ body.dark-mode .traefik-route a {
 body.dark-mode .traefik-route a:hover {
   color: #2b7fff !important;
 }
+.traefik-column {
+  max-width: 200px;
+}
+.traefik-route a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 [data-tooltip] {
   position: relative;
 }
@@ -1733,6 +1743,53 @@ body.dark-mode [data-tooltip-right]::before {
     direction: rtl;
     text-align: left;
     min-width: 0;
+  }
+}
+.traefik-column {
+  max-width: 200px;
+}
+.traefik-route a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.traefik-route a .traefik-text {
+  display: inline;
+}
+.traefik-route a svg {
+  display: none;
+}
+@media (max-width: 1279px) {
+  .traefik-column {
+    max-width: 64px;
+    text-align: center;
+  }
+  .traefik-route a {
+    font-size: 0;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .traefik-route a .traefik-text {
+    display: none;
+  }
+  .traefik-route a svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    stroke: #3e71e9;
+  }
+  body.dark-mode .traefik-route a svg {
+    stroke: #2572cb;
+  }
+}
+@media (min-width: 1280px) {
+  .traefik-route a svg {
+    display: none;
   }
 }
 @property --tw-space-x-reverse {

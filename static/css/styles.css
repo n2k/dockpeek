@@ -1512,4 +1512,63 @@ body.dark-mode [data-tooltip-right]::before {
     text-align: left;
     min-width: 0;
   }
+}/* Maksymalna szerokość dla kolumny Traefik */
+.traefik-column {
+  max-width: 200px;
+}
+
+/* Link – zachowanie bazowe */
+.traefik-route a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traefik-route a .traefik-text {
+  display: inline;
+}
+
+.traefik-route a svg {
+  display: none;
+}
+
+/* Responsive: małe ekrany */
+@media (max-width: 1279px) {
+  .traefik-column {
+    max-width: 64px;
+    text-align: center;
+  }
+  
+  .traefik-route a {
+    font-size: 0; /* ukrywa tekst, ale zachowuje hover */
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .traefik-route a .traefik-text {
+    display: none;
+  }
+  
+  .traefik-route a svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    stroke: #3e71e9;
+  }
+
+  body.dark-mode .traefik-route a svg {
+    stroke: #2572cb;
+  }
+}
+
+/* Duże ekrany */
+@media (min-width: 1280px) {
+  .traefik-route a svg {
+    display: none;
+  }
 }

@@ -401,9 +401,23 @@ document.addEventListener("DOMContentLoaded", () => {
         valA = statusOrder[valA] || 99;
         valB = statusOrder[valB] || 99;
       } else if (currentSortColumn === "ports") {
-        const getFirstPort = (container) => container.ports.length > 0 ? parseInt(container.ports[0].host_port, 10) : 0;
+        const getFirstPort = (container) => {
+          if (container.ports.length === 0) {
+            return currentSortDirection === "asc" ? Number.MAX_SAFE_INTEGER : -1;
+          }
+          return parseInt(container.ports[0].host_port, 10);
+        };
         valA = getFirstPort(a);
         valB = getFirstPort(b);
+      } else if (currentSortColumn === "traefik") {
+        const getTraefikRoutes = (container) => {
+          if (!container.traefik_routes || container.traefik_routes.length === 0) {
+            return currentSortDirection === "asc" ? "zzz_none" : "";
+          }
+          return container.traefik_routes[0].url.toLowerCase();
+        };
+        valA = getTraefikRoutes(a);
+        valB = getTraefikRoutes(b);
       } else if (typeof valA === "string" && typeof valB === "string") {
         valA = valA.toLowerCase();
         valB = valB.toLowerCase();

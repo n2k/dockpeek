@@ -153,7 +153,7 @@ login_manager.login_view = 'login'
 # === User credentials from environment ===
 ADMIN_USERNAME = os.environ.get("USERNAME")
 ADMIN_PASSWORD = os.environ.get("PASSWORD")
-TRAEFIK_ENABLE = os.environ.get("TRAEFIK_ENABLE", "true").lower() == "true" 
+TRAEFIK_ENABLE = os.environ.get("TRAEFIK_LABELS", "true").lower() == "true" 
 
 if not ADMIN_USERNAME or not ADMIN_PASSWORD:
     raise RuntimeError("USERNAME and PASSWORD environment variables must be set.")

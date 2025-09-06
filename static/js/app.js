@@ -430,6 +430,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    // Hide server column if only one server is visible after filtering
+    const uniqueServers = [...new Set(workingData.map(c => c.server))];
+    const serverHeaders = document.querySelectorAll('.server-column');
+    serverHeaders.forEach(header => {
+      if (uniqueServers.length <= 1) {
+        header.classList.add('hidden');
+      } else {
+        header.classList.remove('hidden');
+      }
+    });
+
+    // Update table class for single server styling
+    if (uniqueServers.length <= 1) {
+      mainTable.classList.add('table-single-server');
+    } else {
+      mainTable.classList.remove('table-single-server');
+    }
+
     filteredAndSortedContainers = workingData;
     hideLoadingIndicator();
     renderTable();

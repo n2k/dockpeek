@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Column visibility functionality (CORRECTED VERSION)
   const columnMenuButton = document.getElementById('column-menu-button');
   const columnMenu = document.getElementById('column-menu');
-  
+
   // Reset columns button functionality
   const resetColumnsButton = document.getElementById('reset-columns-button');
   if (resetColumnsButton) {
@@ -651,8 +651,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function fetchContainerData() {
-    
+
     showLoadingIndicator();
+    loadFilterStates();
     try {
       const response = await fetch("/data");
       if (!response.ok) throw createResponseError(response);
@@ -890,7 +891,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   filterUpdatesCheckbox.addEventListener("change", updateDisplay);
-  filterRunningCheckbox.addEventListener("change", updateDisplay);
+
+  function loadFilterStates() {
+    const savedRunningFilter = localStorage.getItem('filterRunningChecked');
+    if (savedRunningFilter !== null) {
+      filterRunningCheckbox.checked = JSON.parse(savedRunningFilter);
+    }
+  }
+
+  function saveFilterStates() {
+    localStorage.setItem('filterRunningChecked', JSON.stringify(filterRunningCheckbox.checked));
+  }
+
+  filterRunningCheckbox.addEventListener("change", () => {
+    saveFilterStates();
+    updateDisplay();
+  });
 
   searchInput.addEventListener("input", function () {
     toggleClearButton();

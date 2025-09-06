@@ -6,6 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSortDirection = "asc";
   let currentServerFilter = "all";
   let isDataLoaded = false;
+  let columnVisibility = {
+    name: true,
+    server: true,
+    stack: true,
+    image: true,
+    status: true,
+    ports: true,
+    traefik: true
+  };
 
   const searchInput = document.getElementById("search-input");
   const clearSearchButton = document.getElementById("clear-search-button");
@@ -55,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
       const nameCell = clone.querySelector('[data-content="name"]');
+      nameCell.classList.add('table-cell-name');
       if (c.custom_url) {
         function normalizeUrl(url) {
           if (url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
@@ -72,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const serverNameSpan = clone.querySelector('[data-content="server-name"]');
+      serverNameSpan.closest('td').classList.add('table-cell-server');
       serverNameSpan.textContent = c.server;
       const serverData = allServersData.find(s => s.name === c.server);
       if (serverData && serverData.url) {
@@ -80,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Stack column - make clickable if stack exists
       const stackCell = clone.querySelector('[data-content="stack"]');
+      stackCell.classList.add('table-cell-stack');
       if (c.stack) {
         stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
       } else {
@@ -89,6 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
       clone.querySelector('[data-content="image"]').textContent = c.image;
+      clone.querySelector('[data-content="image"]').closest('td').classList.add('table-cell-image');
 
       // Source link handling
       const sourceLink = clone.querySelector('[data-content="source-link"]');
@@ -109,7 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const statusCell = clone.querySelector('[data-content="status"]');
-
       const statusSpan = document.createElement('span');
       statusSpan.textContent = c.status;
 
@@ -220,6 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
       statusCell.appendChild(statusSpan);
 
       const portsCell = clone.querySelector('[data-content="ports"]');
+      portsCell.classList.add('table-cell-ports');
       if (c.ports.length > 0) {
         const arrowSvg =
           `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle">
@@ -251,6 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Traefik routes handling
       const traefikCell = clone.querySelector('[data-content="traefik-routes"]');
+      traefikCell.classList.add('table-cell-traefik');
       if (hasTraefikRoutes) {
         traefikCell.classList.remove('hidden');
 
@@ -276,7 +290,146 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
     containerRowsBody.appendChild(fragment);
+    updateColumnVisibility();
+
   }
+
+  // Column visibility functionality (CORRECTED VERSION)
+  const columnMenuButton = document.getElementById('column-menu-button');
+  const columnMenu = document.getElementById('column-menu');
+  
+  // Reset columns button functionality
+  const resetColumnsButton = document.getElementById('reset-columns-button');
+  if (resetColumnsButton) {
+    resetColumnsButton.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent menu from closing
+
+      console.log('Resetting all columns to visible');
+
+      // Reset all columns to visible (true)
+      Object.keys(columnVisibility).forEach(column => {
+        columnVisibility[column] = true;
+
+        // Update the toggle switches
+        const toggle = document.getElementById(`toggle-${column}`);
+        if (toggle) {
+          toggle.checked = true;
+        }
+      });
+
+      // Save to localStorage
+      localStorage.setItem('columnVisibility', JSON.stringify(columnVisibility));
+
+      // Apply changes
+      updateColumnVisibility();
+
+      console.log('Columns reset complete:', columnVisibility);
+    });
+  }
+  // Load column visibility from localStorage
+  const savedVisibility = localStorage.getItem('columnVisibility');
+  if (savedVisibility) {
+    columnVisibility = JSON.parse(savedVisibility);
+  }
+
+  // Apply saved visibility and update toggles
+  Object.keys(columnVisibility).forEach(column => {
+    const toggle = document.getElementById(`toggle-${column}`);
+    if (toggle) {
+      toggle.checked = columnVisibility[column];
+    }
+  });
+
+  // Toggle menu visibility
+  columnMenuButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    columnMenu.classList.toggle('hidden');
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', () => {
+    columnMenu.classList.add('hidden');
+  });
+
+  columnMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // Handle column toggle changes - FIXED VERSION
+  Object.keys(columnVisibility).forEach(column => {
+    const toggle = document.getElementById(`toggle-${column}`);
+    if (toggle) {
+      toggle.addEventListener('change', () => {
+        columnVisibility[column] = toggle.checked;
+        localStorage.setItem('columnVisibility', JSON.stringify(columnVisibility));
+        updateColumnVisibility();
+      });
+    }
+  });
+
+  function updateColumnVisibility() {
+    // Update table headers
+    document.querySelectorAll(`[data-sort-column="name"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.name);
+    });
+
+    // Fix server column selector - use class instead of data attribute
+    document.querySelectorAll('.server-column').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.server);
+    });
+
+    document.querySelectorAll(`[data-sort-column="stack"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.stack);
+    });
+
+    document.querySelectorAll(`[data-sort-column="image"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.image);
+    });
+
+    document.querySelectorAll(`[data-sort-column="status"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.status);
+    });
+
+    document.querySelectorAll(`[data-sort-column="ports"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.ports);
+    });
+
+    document.querySelectorAll('.traefik-column').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.traefik);
+    });
+
+    // Update table cells - FIXED selectors
+    document.querySelectorAll('.table-cell-name').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.name);
+    });
+
+    document.querySelectorAll('.table-cell-server').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.server);
+    });
+
+    document.querySelectorAll('.table-cell-stack').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.stack);
+    });
+
+    document.querySelectorAll('.table-cell-image').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.image);
+    });
+
+    document.querySelectorAll('.table-cell-status').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.status);
+    });
+
+    document.querySelectorAll('.table-cell-ports').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.ports);
+    });
+
+    document.querySelectorAll('.table-cell-traefik').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.traefik);
+    });
+  }
+
+  // Apply initial visibility
+  updateColumnVisibility();
 
   function setupServerUI() {
     serverFilterContainer.innerHTML = '';
@@ -498,6 +651,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function fetchContainerData() {
+    
     showLoadingIndicator();
     try {
       const response = await fetch("/data");
@@ -783,4 +937,7 @@ document.addEventListener("DOMContentLoaded", () => {
       filterByStackAndServer(stack, server);
     }
   });
+  // Replace the existing column visibility functionality in app.js with this corrected version:
+  updateColumnVisibility();
+
 });

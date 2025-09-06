@@ -1076,6 +1076,9 @@ body.dark-mode code {
   .min-w-full {
     min-width: 100%;
   }
+  .flex.items-center.space-x-2 label[for="filter-running-checkbox"] {
+    display: block !important;
+  }
 }
 .modal-overlay:not(.hidden) {
   position: fixed;
@@ -1386,7 +1389,7 @@ label[for="filter-running-checkbox"] {
   color: #babdc1;
 }
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #596069;
+  color: #474d55;
 }
 #modal-message {
   white-space: pre-line;
@@ -1407,16 +1410,6 @@ body.dark-mode .traefik-route a {
 }
 body.dark-mode .traefik-route a:hover {
   color: #2b7fff !important;
-}
-.traefik-column {
-  max-width: 200px;
-}
-.traefik-route a {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 [data-tooltip] {
   position: relative;
@@ -1724,14 +1717,8 @@ body.dark-mode [data-tooltip-right]::before {
   .server-column {
     display: none;
   }
-  .flex.items-center.space-x-4 label {
-    font-size: 0.75rem;
-  }
-  .flex.items-center.space-x-4 label::after {
-    content: "Running only";
-  }
-  .flex.items-center.space-x-4 label {
-    text-indent: -9999px;
+  .flex.items-center.space-x-2 label[for="filter-running-checkbox"] {
+    display: none;
   }
 }
 @media (max-width: 1279px) {

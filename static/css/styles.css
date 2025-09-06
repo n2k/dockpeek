@@ -583,6 +583,10 @@ body.dark-mode code {
   .min-w-full {
     min-width: 100%;
   }
+  
+  .flex.items-center.space-x-2 label[for="filter-running-checkbox"] {
+    display: block !important;
+  }
 }
 
 /* Confirmation Modal Styles */
@@ -967,7 +971,7 @@ label[for="filter-running-checkbox"] {
 }
 
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #596069;
+  color: #474d55;
 }
 
 #modal-message {
@@ -1476,6 +1480,7 @@ body.dark-mode [data-tooltip-right]::before {
   .min-w-full {
     min-width: 100%;
   }
+
 }
 
 @media (max-width: 1023px) {
@@ -1489,16 +1494,9 @@ body.dark-mode [data-tooltip-right]::before {
     display: none;
   }
 
-  .flex.items-center.space-x-4 label {
-    font-size: 0.75rem;
-  }
-
-  .flex.items-center.space-x-4 label::after {
-    content: "Running only";
-  }
-
-  .flex.items-center.space-x-4 label {
-    text-indent: -9999px;
+  .flex.items-center.space-x-2 label[for="filter-running-checkbox"] {
+    display: none;
+    /* lub visibility: hidden; */
   }
 }
 
@@ -1512,7 +1510,9 @@ body.dark-mode [data-tooltip-right]::before {
     text-align: left;
     min-width: 0;
   }
-}/* Maksymalna szerokość dla kolumny Traefik */
+}
+
+/* Maksymalna szerokość dla kolumny Traefik */
 .traefik-column {
   max-width: 200px;
 }
@@ -1540,9 +1540,10 @@ body.dark-mode [data-tooltip-right]::before {
     max-width: 64px;
     text-align: center;
   }
-  
+
   .traefik-route a {
-    font-size: 0; /* ukrywa tekst, ale zachowuje hover */
+    font-size: 0;
+    /* ukrywa tekst, ale zachowuje hover */
     width: 20px;
     height: 20px;
     display: inline-flex;
@@ -1553,7 +1554,7 @@ body.dark-mode [data-tooltip-right]::before {
   .traefik-route a .traefik-text {
     display: none;
   }
-  
+
   .traefik-route a svg {
     display: block;
     width: 16px;

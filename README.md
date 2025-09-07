@@ -25,7 +25,7 @@ All exposed ports are displayed in an organized table with one-click access, inc
 - **Smart Label Support** – Enhanced control with custom labels:
   - `dockpeek.https` – Force HTTPS protocol for specific ports
   - `dockpeek.link` – Make container names clickable links
-  - `dockpeek.ports` – Manually specify ports for host networking, reverse proxies, or additional port display
+  - `dockpeek.ports` – Add custom ports to display alongside detected ports
 - **Traefik Integration** – Dedicated column displaying container addresses from Traefik labels
 - **Mobile-Responsive** – Full functionality across smartphones, tablets, and desktop devices
 

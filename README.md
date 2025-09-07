@@ -126,22 +126,22 @@ Configure additional hosts using environment variables:
 ```yaml
     environment:
       # Add multiple Docker hosts using numbered environment variables
-      
+
       # Docker Host 1 (Local)
       - DOCKER_HOST_1_URL=unix:///var/run/docker.sock      # Local Docker socket
       - DOCKER_HOST_1_NAME=Local Development               # Display name in UI
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=localhost            # Optional: Override hostname
-      
-      # Docker Host 2 (Remote)
+      # DOCKER_HOST_1_PUBLIC_HOSTNAME not needed - will use container's host IP
+
+      # Docker Host 2 (Remote Server)
       - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375        # Remote socket proxy
-      - DOCKER_HOST_2_NAME=Production Server               # Display name in UI
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=prod.example.com     # Optional: Public address
-      
-      # Docker Host 3 (NAS)
-      - DOCKER_HOST_3_URL=tcp://192.168.1.200:2375        # NAS socket proxy
-      - DOCKER_HOST_3_NAME=Synology NAS                    # Display name in UI
-      - DOCKER_HOST_3_PUBLIC_HOSTNAME=nas.local            # Optional: Local address
-      
+      - DOCKER_HOST_2_NAME=Production Server               # Display name in UI  
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local         # Optional: Local network hostname
+
+      # Docker Host 3 (Tailscale)
+      - DOCKER_HOST_3_URL=tcp://100.64.1.5:2375           # Tailscale IP
+      - DOCKER_HOST_3_NAME=Remote VPS                      # Display name in UI
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=vps.tailnet.ts.net   # Optional: Tailscale hostname
+
       # Continue pattern for additional hosts (4, 5, etc.)
 ```
 
@@ -151,6 +151,7 @@ Configure additional hosts using environment variables:
 > volumes:
 >   - /var/run/docker.sock:/var/run/docker.sock
 > ```
+> - `PUBLIC_HOSTNAME` replaces only the hostname in URLs while preserving ports (useful for Tailscale, local DNS, or IP-to-hostname mapping)
 
 
 <br>

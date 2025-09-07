@@ -1,21 +1,27 @@
 services:
   dockpeek:
-    container_name: dockpeek
     image: ghcr.io/dockpeek/dockpeek:latest
+    container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key  
-      - USERNAME=admin            
-      - PASSWORD=admin   
-      
-      # Docker Host 1
-      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock
-      - DOCKER_HOST_1_NAME=MyServer1                 
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=   
+      - SECRET_KEY=your_secure_secret_key 
+      - USERNAME=admin                    
+      - PASSWORD=secure_password          
+      - TRAEFIK_LABELS=true               
 
-      # Docker Host 2
-      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375    
-      - DOCKER_HOST_2_NAME=Synology                   
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS    
+      # Docker Host 1
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    
+      - DOCKER_HOST_1_NAME=Serv1             
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=
+      
+      # Docker Host 2 
+      - DOCKER_HOST_2_URL=tcp://
+      - DOCKER_HOST_2_NAME=Serv2
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=
+      
+      # Docker Host 3
+      - DOCKER_HOST_3_URL=tcp://
+      - DOCKER_HOST_3_NAME=Serv3
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=
     ports:
       - "3420:8000"
     volumes:

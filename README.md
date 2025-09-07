@@ -10,23 +10,24 @@
 <br>
 <br>
 
-**Dockpeek** is a lightweight, self-hosted Docker dashboard that lets you quickly view and access exposed container ports through a clean, click-to-access interface.
-It supports both local Docker sockets and remote hosts via `socket-proxy`, making it simple to manage multiple Docker environments from a single place.<br/>
+**Dockpeek** is a lightweight, self-hosted Docker dashboard that provides instant visibility and access to your containerized services through a clean, intuitive interface. Supporting both local Docker sockets and remote hosts via `socket-proxy`, it simplifies management of multiple Docker environments from a single centralized location.
 
-All exposed ports are presented in an easy-to-use table with one-click access, including addresses based on Traefik labels.<br/>
-In addition, Dockpeek provides **image update checking** to see when newer versions of your container images are available.
+All exposed ports are displayed in an organized table with one-click access, including automatically detected addresses from Traefik labels. Dockpeek also features **image update monitoring** to alert you when newer versions of your container images become available, helping keep your infrastructure current and secure.
 
 
 ## Key Features
 
-- **Port Mapping Overview** – Quickly see all running containers and their published ports.
-- **Click-to-Access URLs** – Open containerized web apps instantly with a single click.
-- **Multi-Host Support** – Manage multiple Docker hosts and sockets within one dashboard.
-- **Zero Configuration** – Automatically detects running containers with no setup required.
-- **Image Update Checking** – Monitor available updates for your container images.
-- **Custom Labels Support** – Use `dockpeek.https` to force ports to open as HTTPS, `dockpeek.link` to make container names clickable links, and `dockpeek.ports` to manually specify ports for containers using `--net=host`, reverse proxy or when you want to display additional ports.
-- **Traefik Integration** – Column showing container addresses based on Traefik labels.
-- **Mobile-Friendly (Responsive)** – Fully usable and accessible on smartphones and tablets.
+- **Port Mapping Overview** – View all running containers and their published ports at a glance
+- **One-Click Access** – Launch containerized web applications instantly with direct URL links
+- **Multi-Host Management** – Monitor multiple Docker hosts and sockets from a unified dashboard
+- **Zero Configuration** – Automatic container detection with no setup required
+- **Image Update Monitoring** – Stay informed about available updates for your container images
+- **Smart Label Support** – Enhanced control with custom labels:
+  - `dockpeek.https` – Force HTTPS protocol for specific ports
+  - `dockpeek.link` – Make container names clickable links
+  - `dockpeek.ports` – Manually specify ports for host networking, reverse proxies, or additional port display
+- **Traefik Integration** – Dedicated column displaying container addresses from Traefik labels
+- **Mobile-Responsive** – Full functionality across smartphones, tablets, and desktop devices
 
 
 <br>
@@ -41,29 +42,29 @@ In addition, Dockpeek provides **image update checking** to see when newer versi
 
 ## Why Use Dockpeek?
 
-Tired of remembering IP addresses and port numbers to access your containerized apps? Dockpeek provides a clean, centralized dashboard with one-click access to any exposed container service—whether it's running locally or on a remote host.
+**Tired of juggling IP addresses and port numbers to access your containerized applications?** Dockpeek delivers a clean, centralized dashboard that provides one-click access to any exposed container service—whether running locally or on remote hosts.
 
-It's especially useful when managing many containers across different machines, keeping track of which images have updates available, and displaying Traefik-managed addresses in a dedicated column.  
-
-Dockpeek keeps your environment simple, organized, and up-to-date.
+Perfect for managing multiple containers across different machines, Dockpeek helps you stay organized by tracking available image updates and displaying Traefik-managed addresses in a dedicated view. Keep your containerized environment simple, accessible, and current with minimal effort.
 
 
 <br>
 
+
 ## 🔧 Installation
 
 ### Option 1: Direct Socket Access
+For simple setups where direct Docker socket access is acceptable:
+
 ```yaml
 services:
   dockpeek:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Set secret key
-      - USERNAME=admin             # Change default username
-      - PASSWORD=admin             # Change default password   
-      - TRAEFIK_LABELS=True        # Traefik column 
-      
+      - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
+      - USERNAME=admin                       # Required: Change default username
+      - PASSWORD=secure_password             # Required: Change default password
+      - TRAEFIK_LABELS=true                  # Optional: Enable Traefik integration
     ports:
       - "3420:8000"
     volumes:
@@ -71,10 +72,8 @@ services:
     restart: unless-stopped
 ```
 
-<br>
-
-### Option 2: Using `socket-proxy`
-
+### Option 2: Using Socket Proxy
+For enhanced security in production environments:
 
 ```yaml
 services:
@@ -82,18 +81,18 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Set secret key
-      - USERNAME=admin             # Change default username
-      - PASSWORD=admin             # Change default password
-      - TRAEFIK_LABELS=true        # Traefik column
-      - DOCKER_HOST=tcp://dockpeek-socket-proxy:2375
+      - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
+      - USERNAME=admin                       # Required: Change default username  
+      - PASSWORD=secure_password             # Required: Change default password
+      - TRAEFIK_LABELS=true                  # Optional: Enable Traefik integration
+      - DOCKER_HOST=tcp://socket-proxy:2375  # Connect via socket proxy
     ports:
       - "3420:8000"
     depends_on:
-      - dockpeek-socket-proxy
+      - socket-proxy
     restart: unless-stopped
 
-  dockpeek-socket-proxy:   # socket-proxy for Docker API
+  socket-proxy:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
@@ -101,8 +100,8 @@ services:
       - IMAGES=1     
       - PING=1       
       - VERSION=1    
-      - INFO=1
-      - POST=1       # <-- This is needed for "Check for updates" operations
+      - INFO=1       
+      - POST=1       
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
@@ -115,33 +114,43 @@ services:
 
 <br>
 
-###  Add Additional Docker Hosts
+### Adding Multiple Docker Hosts
 
-You can connect and manage multiple Docker instances from a single dashboard.
+Connect and manage multiple Docker instances from a single centralized dashboard.
 
 > [!TIP]
-> The easiest way to do this is by installing a Docker Socket Proxy on each Docker host. This exposes the Docker API via an HTTP port (e.g., 2375), allowing secure and controlled remote access to each instance.
+> The recommended approach is installing a Docker Socket Proxy on each remote host. This securely exposes the Docker API via HTTP (typically port 2375), enabling controlled remote access to each Docker instance.
+
+Configure additional hosts using environment variables:
 
 ```yaml
     environment:
-      # Optional: Add extra Docker hosts by setting these variables.
-
-      # Docker Host 1
-      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock    # Docker socket URL
-      - DOCKER_HOST_1_NAME=MyServer1                     # Name shown in the UI
-      - DOCKER_HOST_1_PUBLIC_HOSTNAME=                   # (Optional) public adress; if empty, inferred from URL
+      # Add multiple Docker hosts using numbered environment variables
       
-      # Docker Host 2
-      - DOCKER_HOST_2_URL=tcp://192.168.1.168:2375     
-      - DOCKER_HOST_2_NAME=Synology                    
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=NAS              
+      # Docker Host 1 (Local)
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock      # Local Docker socket
+      - DOCKER_HOST_1_NAME=Local Development               # Display name in UI
+      - DOCKER_HOST_1_PUBLIC_HOSTNAME=localhost            # Optional: Override hostname
       
-      # Add more Docker hosts by increasing the number (3, 4, etc.)
-
+      # Docker Host 2 (Remote)
+      - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375        # Remote socket proxy
+      - DOCKER_HOST_2_NAME=Production Server               # Display name in UI
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=prod.example.com     # Optional: Public address
+      
+      # Docker Host 3 (NAS)
+      - DOCKER_HOST_3_URL=tcp://192.168.1.200:2375        # NAS socket proxy
+      - DOCKER_HOST_3_NAME=Synology NAS                    # Display name in UI
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=nas.local            # Optional: Local address
+      
+      # Continue pattern for additional hosts (4, 5, etc.)
 ```
-  
-> [!NOTE]
-> `unix:///var/run/docker.sock`   Requires mounting the Docker socket `volumes: /var/run/docker.sock:/var/run/docker.sock`
+
+> [!IMPORTANT]
+> When using `unix:///var/run/docker.sock`, ensure the Docker socket is mounted:
+> ```yaml
+> volumes:
+>   - /var/run/docker.sock:/var/run/docker.sock
+> ```
 
 
 <br>
@@ -149,115 +158,113 @@ You can connect and manage multiple Docker instances from a single dashboard.
 
 ## Environment Variables
 
+### Core Configuration
 | Variable                      | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|
-| `SECRET_KEY`                  | A strong, unique secret.                                                    |
-| `USERNAME`                    | Username for Dockpeek login.                                                |
-| `PASSWORD`                    | Password for Dockpeek login.                                                |
-| `DOCKER_HOST`                 | URL of the Docker Socket. Can be: <br>- Local socket: `unix:///var/run/docker.sock` <br>- TCP connection: `tcp://host.docker.internal:2375` or direct IP. |
-| `DOCKER_HOST_NAME`            | Name shown in the UI (`local` is default).                                  |
-| `DOCKER_HOST_PUBLIC_HOSTNAME` | Public hostname or IP for clickable links (optional).                        |
-| `TRAEFIK_LABELS`              | Show/hide Traefik column with addresses (`true` = show, `false` = hide, default `true`). |
+| `SECRET_KEY`                  | **Required.** Strong, unique secret key for session security.              |
+| `USERNAME`                    | **Required.** Username for dashboard authentication.                  |
+| `PASSWORD`                    | **Required.** Password for dashboard authentication.                       |
+| `DOCKER_HOST`                 | Primary Docker socket URL:<br>• Local: `unix:///var/run/docker.sock`<br>• Remote: `tcp://hostname:2375` |
+| `DOCKER_HOST_NAME`            | Display name for primary host in UI (default: `local`).                    |
+| `DOCKER_HOST_PUBLIC_HOSTNAME` | Public hostname/IP for generating clickable links (optional).              |
+| `TRAEFIK_LABELS`              | Enable Traefik integration column (`true`/`false`, default: `true`).       |
 
+### Multi-Host Configuration
+| Variable                        | Description                                                               |
+|---------------------------------|---------------------------------------------------------------------------|
+| `DOCKER_HOST_N_URL`             | URL for additional Docker hosts (e.g., `tcp://192.168.1.100:2375`).<br>Must be directly reachable; `host.docker.internal` not supported.<br>`N` = numeric identifier (1, 2, 3, etc.). |
+| `DOCKER_HOST_N_NAME`            | Display name for host `N` in the dashboard UI.                           |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | Public hostname/IP for host `N` clickable links (optional).<br>If unset, automatically inferred from `DOCKER_HOST_N_URL`. |
 
-### Additional Docker Hosts
-| Variable                      | Description                                                                 |
-|-------------------------------|-----------------------------------------------------------------------------|
-| `DOCKER_HOST_N_URL`           | URL for additional Docker hosts (e.g., `tcp://192.168.1.10:2375`). Must be a directly reachable host; `host.docker.internal` does **not** work. `N` is a numeric identifier (1, 2, 3, etc.). |
-| `DOCKER_HOST_N_NAME`          | Name shown in the UI                                                        |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME`| Public hostname or IP for clickable links (optional). If unset, inferred from `DOCKER_HOST_N_URL`. |
-
-> [!NOTE]
-> - `DOCKER_HOST` supports both local and TCP connections.  
-> - Multi-host variables (`DOCKER_HOST_N_*`) require a directly reachable host; `host.docker.internal` cannot be used.  
-> - Make sure the `N` indices match for URL, name, and hostname.
-
+> [!IMPORTANT]
+> **Configuration Requirements:**
+> - `SECRET_KEY` and `PASSWORD` must be set for security
+> - Multi-host variables require matching `N` identifiers (URL, name, hostname)
+> - Remote hosts must be directly accessible; Docker internal networking won't work
+> - Ensure socket proxy is running on remote hosts when using TCP connections
 
 <br>
 
 
 ## Labels
 
-Dockpeek supports labels to customize behavior for individual containers. Add these labels in the `labels` section of your `docker-compose.yml`
+Dockpeek supports custom labels to control behavior for individual containers. Add these labels to the `labels` section of your `docker-compose.yml` or Docker run commands.
 
 | Label                        | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|
-| `dockpeek.ports=PORTS`        | Comma-separated list of **extra ports** to show in Dockpeek, in addition to those detected automatically. Useful for containers running with `--net=host`, or setups where ports are not exposed via Docker.<br /> Example: `dockpeek.ports=8080,9090`. |
-| `dockpeek.https=PORTS`        | Comma-separated list of ports that should always open as HTTPS. Example: `dockpeek.https=3001,3002`. Must be added to the container exposing these ports. |
-| `dockpeek.link=URL`           | Makes the container name a clickable link pointing to the specified URL. Example: `dockpeek.link=https://example.com`. |
+| `dockpeek.ports=PORTS`        | **Additional ports** to display beyond those automatically detected.<br/>Comma-separated list of ports. Essential for `--net=host` containers or services behind reverse proxies.<br/>Example: `dockpeek.ports=8080,9090` |
+| `dockpeek.https=PORTS`        | **Force HTTPS protocol** for specified ports instead of HTTP.<br/>Comma-separated list of ports that require secure connections.<br/>Example: `dockpeek.https=9002,3000` |
+| `dockpeek.link=URL`           | **Custom container link** - makes the container name clickable.<br/>Redirects to the specified URL when container name is clicked.<br/>Example: `dockpeek.link=https://app.example.com` |
 
-### Example in `docker-compose.yml`
+### Usage Example
 
 ```yaml
 services:
-  myapp:
-    image: myapp:latest
+  webapp:
+    image: nginx:latest
     ports:
-      - 3001:9000/tcp
-      - 3002:9001/tcp
+      - "3001:80"
     labels:
-      - "dockpeek.ports=8000" # Adds extra port 8000 to Dockpeek
-      - "dockpeek.https=3001,8000" # Ports 3001 and 8000 will open as HTTPS
-      - "dockpeek.link=https://example.com" # Container name becomes a clickable link to this URL
+      - "dockpeek.ports=8080"                    # Show additional port 8080
+      - "dockpeek.https=3001,8080"               # Force HTTPS for custom ports
+      - "dockpeek.link=https://myapp.local"      # Make container name clickable
 ```
 
 <br>
 
 ## FAQ
 
-**Q: Can I search for containers by host port only?**
+**Q: Can I search for containers by host port only? (left one)**
 
- Yes. Dockpeek supports searching using `:port`.
+Yes. Dockpeek supports searching using `:port`.
 
 > For example, typing `:8080` will show all containers exposing port `8080`.
 
 <br>
 
-**Q: How does Dockpeek know when to use HTTPS instead of HTTP?**
+**Q: How does Dockpeek determine when to use HTTPS?**
 
- Dockpeek automatically treats the following as HTTPS:
+Dockpeek automatically uses HTTPS for:
 
 * Container port `443/tcp`
-* Any host port ending with `443` (e.g., `8443`, `9443`)
-* Any ports specified via label `dockpeek.https` (e.g., `dockpeek.https=3001,3002`).  
- > Make sure to add the `dockpeek.https` label in the `labels` section of the container in `docker-compose.yml` where these ports are exposed.  
+* Host ports ending with `443` (e.g., `8443`, `9443`)
+* Ports specified with the `dockpeek.https` label
+
+> Add the label to containers where these ports are exposed:
 ```yaml
-    labels:
-      - "dockpeek.https=3001,3002" 
+labels:
+  - "dockpeek.https=3001,3002"
 ```
 
 <br>
 
-**Q: Can I make a container name a clickable link?**
+**Q: Can I make container names clickable?**
 
-Yes, using the new label:
+Yes, use the `dockpeek.link` label to create custom links:
 
-* `dockpeek.link=https://example.com` – the container name becomes a clickable link to the specified URL.  
-  > This is especially useful if you use a reverse proxy and want to open your application via its public address.  
+> Particularly useful with reverse proxies to link directly to public addresses:
 ```yaml
-    labels:
-      - "dockpeek.link=https://example.com" 
+labels:
+  - "dockpeek.link=https://myapp.example.com"
 ```
 
 <br>
 
 **Q: Why don't I see ports for containers using `--net=host`? (e.g. Jellyfin)**
 
-When using `--net=host`, containers share the host's network stack directly, which means:
-* There's no port mapping (no concept of 8080:80)
-* Docker doesn't track which ports the application actually uses
-* Ports are invisible to Docker API since the app binds directly to host interfaces
+Host networking bypasses Docker's port mapping system:
+* No port mapping occurs (no 8080:80 relationship)
+* Docker doesn't track which ports applications actually use
+* Applications bind directly to host network interfaces
 
-> Because of this, Dockpeek can’t automatically detect them.
-
-**Solution**: Use labels to manually specify port information
+> **Solution:** Manually specify ports using labels:
 ```yaml
-    labels:
-      - "dockpeek.ports=80,443,8096" 
+labels:
+  - "dockpeek.ports=8096,8920"
 ```
 
 <br>
 
 **Q: How can I clear the search when clicking on a stack?**
 
-Just click on Dockpeek! :wink: – this will reset the search and `Update available` filter.
+Just click on Dockpeek! :wink: – this will reset search and return to the full container view.

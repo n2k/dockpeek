@@ -1,12 +1,12 @@
 services:
   dockpeek:
-    container_name: dockpeek
     image: ghcr.io/dockpeek/dockpeek:latest
+    container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Change
-      - USERNAME=admin             # Change
-      - PASSWORD=admin             # Change
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SECRET_KEY=your_secure_secret_key 
+      - USERNAME=admin                    
+      - PASSWORD=secure_password          
+      - TRAEFIK_LABELS=true               
     ports:
       - "3420:8000"
     volumes:

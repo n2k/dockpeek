@@ -930,11 +930,11 @@ body.dark-mode #filter-updates-checkbox:checked+.slider {
 }
 
 #filter-running-checkbox:checked+.slider {
-  background-color: #3f88fe;
+  background-color: #3ec93c;
 }
 
 body.dark-mode #filter-running-checkbox:checked+.slider {
-  background-color: #567bd4;
+  background-color: #3b8531;
 }
 
 label[for="filter-running-checkbox"] {

@@ -1,19 +1,20 @@
 services:
   dockpeek:
-    container_name: dockpeek
     image: ghcr.io/dockpeek/dockpeek:latest
+    container_name: dockpeek
     environment:
-      - SECRET_KEY=my_secret_key   # Change
-      - USERNAME=admin             # Change
-      - PASSWORD=admin             # Change
-      - DOCKER_HOST=tcp://dockpeek-socket-proxy:2375
+      - SECRET_KEY=your_secure_secret_key   
+      - USERNAME=admin                      
+      - PASSWORD=secure_password            
+      - TRAEFIK_LABELS=true                 
+      - DOCKER_HOST=tcp://socket-proxy:2375 
     ports:
       - "3420:8000"
     depends_on:
-      - dockpeek-socket-proxy
+      - socket-proxy
     restart: unless-stopped
 
-  dockpeek-socket-proxy:
+  socket-proxy:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
@@ -21,10 +22,10 @@ services:
       - IMAGES=1     
       - PING=1       
       - VERSION=1    
-      - INFO=1
+      - INFO=1       
       - POST=1       
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     read_only: true
     tmpfs:
       - /run

@@ -34,7 +34,7 @@ All exposed ports are displayed in an organized table with one-click access, inc
 
 <div align="center">
 
-![Dockpeek Night mode screenshot](screenshot_v1.5.8.png)
+![Dockpeek Night mode screenshot](screenshot_v1.6.0.png)
 
 </div>
 

@@ -53,7 +53,6 @@ Perfect for managing multiple containers across different machines, Dockpeek hel
 ## 🔧 Installation
 
 ### Option 1: Direct Socket Access
-For simple setups where direct Docker socket access is acceptable:
 
 ```yaml
 services:
@@ -73,7 +72,6 @@ services:
 ```
 
 ### Option 2: Using Socket Proxy
-For enhanced security in production environments:
 
 ```yaml
 services:

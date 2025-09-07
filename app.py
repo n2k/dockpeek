@@ -443,7 +443,7 @@ def get_all_data():
 
                     # Extract Traefik routes
                     traefik_routes = []
-                    if TRAEFIK_ENABLE and labels.get('traefik.enable', '').lower() == 'true':
+                    if TRAEFIK_ENABLE and labels.get('traefik.enable', '').lower() != 'false':
                         for key, value in labels.items():
                             if key.startswith('traefik.http.routers.') and key.endswith('.rule'):
                                 # Extract Host from rule

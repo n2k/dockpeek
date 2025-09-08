@@ -1741,15 +1741,15 @@ label[for="filter-running-checkbox"] {
   }
 }
 
-.tag-badge {
-  display: inline-block;
-  background-color: #ededed;
-  color: #727373;
-  font-size: 0.75rem;
-  font-weight: 400;
-  padding: 0px 8px;
-  border-radius: 9999px;
-  cursor: pointer;
+.tag-badge {display: inline-block;
+background-color: #ededed;
+color: #727373;
+font-size: 0.75rem;
+font-weight: 400;
+padding: 4px 10px;    
+border-radius: 9999px;
+cursor: pointer;
+margin: 2px 4px;   
 }
 
 .tag-badge:hover {

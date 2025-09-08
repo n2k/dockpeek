@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     server: true,
     stack: true,
     image: true,
+    tags: true,
     status: true,
     ports: true,
     traefik: true
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    containerRowsBody.innerHTML = `<tr><td colspan="7"><div class="loader"></div></td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="8"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -45,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
   function renderTable() {
@@ -53,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
 
@@ -84,15 +85,14 @@ document.addEventListener("DOMContentLoaded", () => {
         nameSpan.textContent = c.name;
       }
 
-      // Add tags display
-      if (c.tags && c.tags.length > 0) {
-        tagsContainer.innerHTML = c.tags.map(tag =>
-          `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
-        ).join('');
-      } else {
-        tagsContainer.innerHTML = '';
-      }
-
+      // Add tags display (Name column)
+      // if (c.tags && c.tags.length > 0) {
+      //   tagsContainer.innerHTML = c.tags.map(tag =>
+      //     `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+      //   ).join('');
+      // } else {
+      //   tagsContainer.innerHTML = '';
+      // }
       const serverNameSpan = clone.querySelector('[data-content="server-name"]');
       serverNameSpan.closest('td').classList.add('table-cell-server');
       serverNameSpan.textContent = c.server;
@@ -131,6 +131,18 @@ document.addEventListener("DOMContentLoaded", () => {
         updateIndicator.setAttribute('data-tooltip', 'Update available');
       } else {
         updateIndicator.classList.add('hidden');
+      }
+
+
+
+      const tagsCell = clone.querySelector('[data-content="tags"]');
+      tagsCell.classList.add('table-cell-tags');
+      if (c.tags && c.tags.length > 0) {
+        tagsCell.innerHTML = c.tags.map(tag =>
+          `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+        ).join('');
+      } else {
+        tagsCell.innerHTML = '';
       }
 
       const statusCell = clone.querySelector('[data-content="status"]');
@@ -401,6 +413,10 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.image);
     });
 
+    document.querySelectorAll(`[data-sort-column="tags"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags);
+    });
+
     document.querySelectorAll(`[data-sort-column="status"]`).forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.status);
     });
@@ -429,6 +445,9 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.image);
     });
 
+    document.querySelectorAll('.table-cell-tags').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags);
+    });
     document.querySelectorAll('.table-cell-status').forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.status);
     });

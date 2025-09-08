@@ -891,17 +891,19 @@ body.dark-mode #check-updates-button.loading::before {
   bottom: 0;
   background-color: #e1e4e8;
   border-radius: 24px;
+  transition: background-color 0.1s ease-in-out;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
-  left: 4px;
-  bottom: 4px;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
   background-color: white;
   border-radius: 50%;
+  transition: transform 0.1s ease-in-out;
 }
 
 input:checked+.slider {
@@ -913,11 +915,11 @@ input:checked+.slider:before {
 }
 
 body.dark-mode .slider {
-  background-color: #30363d;
+  background-color: #33393f;
 }
 
 body.dark-mode .slider:before {
-  background-color: #0d1117;
+  background-color: #181c25;
 }
 
 body.dark-mode input:checked+.slider {
@@ -945,7 +947,7 @@ label[for="filter-running-checkbox"] {
 }
 
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #525559;
+  color: #4d525b;
 }
 
 #modal-message {
@@ -1436,7 +1438,7 @@ body.dark-mode .column-menu-svg {
 }
 
 body.dark-mode .column-menu-svg:hover {
-  color: #686f77;
+  color: #40464d;
 }
 
 .column-menu {
@@ -1466,7 +1468,7 @@ body.dark-mode .column-menu-svg:hover {
 
 .column-menu-item span {
   color: #24292e;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* Dark mode styles */
@@ -1480,13 +1482,13 @@ body.dark-mode .column-menu-button:hover {
 }
 
 body.dark-mode .column-menu {
-  background-color: #161b22;
-  border-color: #30363d;
+  background-color: #1b1e25;
+  border-color: #282d33;
   box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .column-menu-item {
-  border-bottom-color: #21262d;
+  border-bottom-color: #282d33;
 }
 
 body.dark-mode .column-menu-item span {
@@ -1757,7 +1759,7 @@ label[for="filter-running-checkbox"] {
 }
 
 .tags-container {
-  margin-left: 4px;
+  margin-left: -4px;
   margin-top: 8px;
   display: flex;
   flex-wrap: wrap;

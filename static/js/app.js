@@ -466,72 +466,129 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.traefik);
     });
   }
-  // Dodaj po setupie column menu
+
   function initColumnDragAndDrop() {
-    const columnList = document.getElementById('column-list');
-    let draggedElement = null;
+  const columnList = document.getElementById('column-list');
+  let draggedElement = null;
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let isDragging = false;
 
-    // Load saved column order
-    const savedOrder = localStorage.getItem('columnOrder');
-    if (savedOrder) {
-      columnOrder = JSON.parse(savedOrder);
-      reorderColumnMenuItems();
-    }
-
-    columnList.addEventListener('dragstart', (e) => {
-      if (e.target.classList.contains('draggable')) {
-        draggedElement = e.target;
-        e.target.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', e.target.outerHTML);
-      }
-    });
-
-    columnList.addEventListener('dragend', (e) => {
-      if (e.target.classList.contains('draggable')) {
-        e.target.classList.remove('dragging');
-        draggedElement = null;
-      }
-    });
-
-    columnList.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-
-      const afterElement = getDragAfterElement(columnList, e.clientY);
-      const dragging = columnList.querySelector('.dragging');
-
-      // Remove previous drag-over indicators
-      columnList.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-      });
-
-      if (afterElement == null) {
-        columnList.appendChild(dragging);
-      } else {
-        afterElement.classList.add('drag-over');
-        columnList.insertBefore(dragging, afterElement);
-      }
-    });
-
-    columnList.addEventListener('drop', (e) => {
-      e.preventDefault();
-      // Remove drag-over indicators
-      columnList.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-      });
-
-      // Update column order based on new DOM order
-      updateColumnOrderFromDOM();
-      saveColumnOrder();
-      updateTableColumnOrder();
-    });
-
-    // Make items draggable
-    columnList.querySelectorAll('.draggable').forEach(item => {
-      item.draggable = true;
-    });
+  // Load saved column order
+  const savedOrder = localStorage.getItem('columnOrder');
+  if (savedOrder) {
+    columnOrder = JSON.parse(savedOrder);
+    reorderColumnMenuItems();
   }
+
+  // Desktop drag events
+  columnList.addEventListener('dragstart', (e) => {
+    if (e.target.classList.contains('draggable')) {
+      draggedElement = e.target;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', e.target.outerHTML);
+    }
+  });
+
+  columnList.addEventListener('dragend', (e) => {
+    if (e.target.classList.contains('draggable')) {
+      e.target.classList.remove('dragging');
+      draggedElement = null;
+    }
+  });
+
+  columnList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const afterElement = getDragAfterElement(columnList, e.clientY);
+    const dragging = columnList.querySelector('.dragging');
+    
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    if (afterElement == null) {
+      columnList.appendChild(dragging);
+    } else {
+      afterElement.classList.add('drag-over');
+      columnList.insertBefore(dragging, afterElement);
+    }
+  });
+
+  columnList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    updateColumnOrderFromDOM();
+    saveColumnOrder();
+    updateTableColumnOrder();
+  });
+
+  // Touch events for mobile
+  columnList.addEventListener('touchstart', (e) => {
+    const target = e.target.closest('.draggable');
+    if (target) {
+      draggedElement = target;
+      touchStartY = e.touches[0].clientY;
+      isDragging = false;
+      
+      // Add a small delay to distinguish between tap and drag
+      setTimeout(() => {
+        if (draggedElement) {
+          isDragging = true;
+          draggedElement.classList.add('dragging');
+        }
+      }, 150);
+    }
+  }, { passive: false });
+
+  columnList.addEventListener('touchmove', (e) => {
+    if (!draggedElement || !isDragging) return;
+    
+    e.preventDefault();
+    touchCurrentY = e.touches[0].clientY;
+    
+    const afterElement = getDragAfterElement(columnList, touchCurrentY);
+    
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    if (afterElement == null) {
+      columnList.appendChild(draggedElement);
+    } else {
+      afterElement.classList.add('drag-over');
+      columnList.insertBefore(draggedElement, afterElement);
+    }
+  }, { passive: false });
+
+  columnList.addEventListener('touchend', (e) => {
+    if (draggedElement) {
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+      
+      if (isDragging) {
+        draggedElement.classList.remove('dragging');
+        updateColumnOrderFromDOM();
+        saveColumnOrder();
+        updateTableColumnOrder();
+      }
+      
+      draggedElement = null;
+      isDragging = false;
+    }
+  });
+
+  // Make items draggable for desktop
+  columnList.querySelectorAll('.draggable').forEach(item => {
+    item.draggable = true;
+  });
+}
 
   function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];

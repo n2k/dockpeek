@@ -500,6 +500,45 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle('active', button.dataset.server === currentServerFilter);
     });
   }
+  function parseAdvancedSearch(searchTerm) {
+    const filters = {
+      tags: [],
+      ports: [],
+      stacks: [],
+      general: []
+    };
+
+    // Split by spaces but keep quoted strings together
+    const terms = searchTerm.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+
+    terms.forEach(term => {
+      term = term.trim();
+      if (!term) return;
+
+      if (term.startsWith('#')) {
+        // Tag search
+        filters.tags.push(term.substring(1).toLowerCase());
+      } else if (term.startsWith(':')) {
+        // Port search
+        filters.ports.push(term.substring(1));
+      } else if (term.startsWith('stack:')) {
+        // Stack search - handle quoted values
+        let stackValue = term.substring(6);
+        if (stackValue.startsWith('"') && stackValue.endsWith('"')) {
+          stackValue = stackValue.slice(1, -1);
+        }
+        filters.stacks.push(stackValue.toLowerCase());
+      } else {
+        // General search term (remove quotes if present)
+        if (term.startsWith('"') && term.endsWith('"')) {
+          term = term.slice(1, -1);
+        }
+        filters.general.push(term.toLowerCase());
+      }
+    });
+
+    return filters;
+  }
 
   function updateDisplay() {
     let workingData = [...allContainersData];
@@ -516,46 +555,63 @@ document.addEventListener("DOMContentLoaded", () => {
       workingData = workingData.filter(c => c.update_available);
     }
 
-    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchTerm = searchInput.value.trim();
 
     if (searchTerm) {
-      if (searchTerm.startsWith(':')) {
-        // port search
-        const portTerm = searchTerm.substring(1);
-        workingData = workingData.filter(c =>
-          c.ports.some(p => p.host_port.includes(portTerm))
-        );
-      } else if (searchTerm.startsWith('#')) {
-        // tag search
-        const tagTerm = searchTerm.substring(1).toLowerCase();
-        workingData = workingData.filter(c =>
-          c.tags && c.tags.some(tag => tag.toLowerCase().includes(tagTerm))
-        );
-      } else {
-        // handle stack: search and regular search
-        const stackMatch = searchTerm.match(/stack:"([^"]+)"|stack:([^\s]+)/);
-        const stackFilter = stackMatch ? (stackMatch[1] || stackMatch[2]).trim() : null;
+      const filters = parseAdvancedSearch(searchTerm);
 
-        if (stackFilter) {
-          workingData = workingData.filter(c =>
-            c.stack && c.stack.toLowerCase().includes(stackFilter)
-          );
-        } else {
-          // regular search including tags
-          workingData = workingData.filter(c =>
-            c.name.toLowerCase().includes(searchTerm) ||
-            c.image.toLowerCase().includes(searchTerm) ||
-            (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
-            (c.tags && c.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
-            c.ports.some(p =>
-              p.host_port.includes(searchTerm) ||
-              p.container_port.includes(searchTerm)
+      workingData = workingData.filter(container => {
+        // All filter conditions must be met (AND logic)
+
+        // Check tags
+        if (filters.tags.length > 0) {
+          const hasAllTags = filters.tags.every(searchTag =>
+            container.tags && container.tags.some(containerTag =>
+              containerTag.toLowerCase().includes(searchTag)
             )
           );
+          if (!hasAllTags) return false;
         }
-      }
-    }
 
+        // Check ports
+        if (filters.ports.length > 0) {
+          const hasAllPorts = filters.ports.every(searchPort =>
+            container.ports.some(p =>
+              p.host_port.includes(searchPort) ||
+              p.container_port.includes(searchPort)
+            )
+          );
+          if (!hasAllPorts) return false;
+        }
+
+        // Check stacks
+        if (filters.stacks.length > 0) {
+          const hasAllStacks = filters.stacks.every(searchStack =>
+            container.stack && container.stack.toLowerCase().includes(searchStack)
+          );
+          if (!hasAllStacks) return false;
+        }
+
+        // Check general search terms
+        if (filters.general.length > 0) {
+          const hasAllGeneral = filters.general.every(searchTerm => {
+            return (
+              container.name.toLowerCase().includes(searchTerm) ||
+              container.image.toLowerCase().includes(searchTerm) ||
+              (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
+              (container.tags && container.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+              container.ports.some(p =>
+                p.host_port.includes(searchTerm) ||
+                p.container_port.includes(searchTerm)
+              )
+            );
+          });
+          if (!hasAllGeneral) return false;
+        }
+
+        return true;
+      });
+    }
 
     workingData.sort((a, b) => {
       let valA = a[currentSortColumn];
@@ -648,9 +704,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function filterByStackAndServer(stack, server) {
-    let stackTerm = stack.includes(" ") ? `"${stack}"` : stack;
     currentServerFilter = server;
     updateActiveButton();
+    let stackTerm = stack.includes(" ") ? `"${stack}"` : stack;
     searchInput.value = `stack:${stackTerm}`;
     toggleClearButton();
     updateDisplay();
@@ -965,15 +1021,43 @@ document.addEventListener("DOMContentLoaded", () => {
     clearSearch();
     updateDisplay();
 
-  });// Event delegation for tag clicks
+  });
   containerRowsBody.addEventListener('click', function (e) {
     if (e.target.classList.contains('tag-badge')) {
       e.preventDefault();
       const tag = e.target.dataset.tag;
-      searchInput.value = `#${tag}`;
-      toggleClearButton();
-      updateDisplay();
-      searchInput.focus();
+      const tagSearch = `#${tag}`;
+
+      let currentSearch = searchInput.value.trim();
+
+      // Parse current search to check for duplicates
+      const filters = parseAdvancedSearch(currentSearch);
+
+      // Check if tag already exists (case insensitive)
+      const tagAlreadyExists = filters.tags.some(existingTag =>
+        existingTag.toLowerCase() === tag.toLowerCase()
+      );
+
+      if (!tagAlreadyExists) {
+        // Add tag to existing search
+        if (currentSearch) {
+          searchInput.value = `${currentSearch} ${tagSearch}`;
+        } else {
+          searchInput.value = tagSearch;
+        }
+
+        toggleClearButton();
+        updateDisplay();
+        searchInput.focus();
+      }
+    }
+
+    if (e.target.classList.contains('stack-link')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const stack = e.target.dataset.stack;
+      const server = e.target.dataset.server;
+      filterByStackAndServer(stack, server);
     }
   });
   // Replace the existing column visibility functionality in app.js with this corrected version:

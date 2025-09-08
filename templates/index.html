@@ -54,7 +54,7 @@
     </div>
 
     <div class="mb-6 relative flex items-center">
-      <input type="text" id="search-input" placeholder="Search by name, image, stack, or :host_port, or #tag"
+      <input type="text" id="search-input" placeholder="Search: name, image, stack:name, #tag, :port - combine with spaces"
         class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
 
       <div class="absolute right-18 flex items-center space-x-3">
@@ -238,7 +238,7 @@
   <template id="container-row-template">
     <tr class="hover:bg-gray-50">
       <td class="py-3 px-4 border-b border-gray-200 font-medium container-name-cell" data-content="name">
-        <div class="flex items-center space-x-2">
+        <div class="inline-block items-center space-x-2">
           <span data-content="container-name"></span>
           <div class="tags-container" data-content="tags"></div>
         </div>

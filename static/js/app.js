@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSortDirection = "asc";
   let currentServerFilter = "all";
   let isDataLoaded = false;
+  let columnOrder = ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'];
   let columnVisibility = {
     name: true,
     server: true,
@@ -317,6 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
     containerRowsBody.appendChild(fragment);
+    updateTableColumnOrder();
     updateColumnVisibility();
 
   }
@@ -333,16 +335,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
       console.log('Resetting all columns to visible');
 
-      // Reset all columns to visible (true)
+      // Reset column visibility
       Object.keys(columnVisibility).forEach(column => {
         columnVisibility[column] = true;
-
-        // Update the toggle switches
         const toggle = document.getElementById(`toggle-${column}`);
         if (toggle) {
           toggle.checked = true;
         }
       });
+
+      // Reset column order
+      columnOrder = ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'];
+      reorderColumnMenuItems();
+      saveColumnOrder();
+      updateTableColumnOrder();
 
       // Save to localStorage
       localStorage.setItem('columnVisibility', JSON.stringify(columnVisibility));
@@ -460,7 +466,144 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.traefik);
     });
   }
+  // Dodaj po setupie column menu
+  function initColumnDragAndDrop() {
+    const columnList = document.getElementById('column-list');
+    let draggedElement = null;
 
+    // Load saved column order
+    const savedOrder = localStorage.getItem('columnOrder');
+    if (savedOrder) {
+      columnOrder = JSON.parse(savedOrder);
+      reorderColumnMenuItems();
+    }
+
+    columnList.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('draggable')) {
+        draggedElement = e.target;
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.outerHTML);
+      }
+    });
+
+    columnList.addEventListener('dragend', (e) => {
+      if (e.target.classList.contains('draggable')) {
+        e.target.classList.remove('dragging');
+        draggedElement = null;
+      }
+    });
+
+    columnList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      const afterElement = getDragAfterElement(columnList, e.clientY);
+      const dragging = columnList.querySelector('.dragging');
+
+      // Remove previous drag-over indicators
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+
+      if (afterElement == null) {
+        columnList.appendChild(dragging);
+      } else {
+        afterElement.classList.add('drag-over');
+        columnList.insertBefore(dragging, afterElement);
+      }
+    });
+
+    columnList.addEventListener('drop', (e) => {
+      e.preventDefault();
+      // Remove drag-over indicators
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+
+      // Update column order based on new DOM order
+      updateColumnOrderFromDOM();
+      saveColumnOrder();
+      updateTableColumnOrder();
+    });
+
+    // Make items draggable
+    columnList.querySelectorAll('.draggable').forEach(item => {
+      item.draggable = true;
+    });
+  }
+
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function updateColumnOrderFromDOM() {
+    const items = document.querySelectorAll('#column-list .draggable');
+    columnOrder = Array.from(items).map(item => item.dataset.column);
+  }
+
+  function reorderColumnMenuItems() {
+    const columnList = document.getElementById('column-list');
+    const items = Array.from(columnList.children);
+
+    // Sort items based on columnOrder
+    items.sort((a, b) => {
+      const aIndex = columnOrder.indexOf(a.dataset.column);
+      const bIndex = columnOrder.indexOf(b.dataset.column);
+      return aIndex - bIndex;
+    });
+
+    // Reappend in new order
+    items.forEach(item => columnList.appendChild(item));
+  }
+
+  function saveColumnOrder() {
+    localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
+  }
+
+  function updateTableColumnOrder() {
+    const thead = document.querySelector('#main-table thead tr');
+    const headers = Array.from(thead.children);
+
+    // Reorder headers
+    columnOrder.forEach(columnName => {
+      const header = headers.find(h =>
+        h.dataset.sortColumn === columnName ||
+        h.classList.contains(`${columnName}-column`) ||
+        h.classList.contains(`table-cell-${columnName}`)
+      );
+      if (header) {
+        thead.appendChild(header);
+      }
+    });
+
+    // Reorder table body cells
+    document.querySelectorAll('#container-rows tr').forEach(row => {
+      const cells = Array.from(row.children);
+      columnOrder.forEach(columnName => {
+        const cell = cells.find(c =>
+          c.classList.contains(`table-cell-${columnName}`) ||
+          c.dataset.content === columnName ||
+          (columnName === 'server' && c.classList.contains('server-column')) ||
+          (columnName === 'traefik' && c.classList.contains('traefik-column'))
+        );
+        if (cell) {
+          row.appendChild(cell);
+        }
+      });
+    });
+  }
   // Apply initial visibility
   updateColumnVisibility();
 
@@ -719,6 +862,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable();
     updateActiveButton();
     updateExportLink();
+    updateTableColumnOrder();
   }
 
   function filterByStackAndServer(stack, server) {
@@ -1080,5 +1224,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Replace the existing column visibility functionality in app.js with this corrected version:
   updateColumnVisibility();
-
+  initColumnDragAndDrop();
 });

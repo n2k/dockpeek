@@ -88,69 +88,95 @@
             fill="currentcolor"></path>
         </svg>
         <div id="column-menu" class="column-menu hidden">
-          <label class="column-menu-item" for="toggle-name">
-            <span>Name</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-name" checked>
-              <span class="slider"></span>
+          <div id="column-list" class="column-list">
+            <div class="column-menu-item draggable" data-column="name">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-name">
+                <span>Name</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-name" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-stack">
-            <span>Stack</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-stack" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="stack">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-stack">
+                <span>Stack</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-stack" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-server">
-            <span>Server</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-server" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="server">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-server">
+                <span>Server</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-server" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-ports">
-            <span>Ports</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-ports" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="ports">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-ports">
+                <span>Ports</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-ports" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-traefik">
-            <span>Traefik</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-traefik" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="traefik">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-traefik">
+                <span>Traefik</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-traefik" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-image">
-            <span>Image</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-image" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="image">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-image">
+                <span>Image</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-image" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-tags">
-            <span>Tags</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-tags" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="tags">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-tags">
+                <span>Tags</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-tags" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
 
-          <label class="column-menu-item" for="toggle-status">
-            <span>Status</span>
-            <div class="toggle-switch">
-              <input type="checkbox" id="toggle-status" checked>
-              <span class="slider"></span>
+            <div class="column-menu-item draggable" data-column="status">
+              <div class="drag-handle">⋮⋮</div>
+              <label for="toggle-status">
+                <span>Status</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-status" checked>
+                  <span class="slider"></span>
+                </div>
+              </label>
             </div>
-          </label>
+          </div>
 
           <div class="column-menu-reset text-sm">
             <a href="#" id="reset-columns-button" class="reset-columns-btn">
@@ -159,7 +185,6 @@
           </div>
         </div>
       </div>
-
     </div>
     <div id="server-filter-container" class="mb-4 ml-2 flex flex-wrap gap-2"></div>
     <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">

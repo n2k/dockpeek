@@ -65,6 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameCell = clone.querySelector('[data-content="name"]');
       nameCell.classList.add('table-cell-name');
+
+      const nameSpan = nameCell.querySelector('[data-content="container-name"]');
+      const tagsContainer = nameCell.querySelector('[data-content="tags"]');
+
       if (c.custom_url) {
         function normalizeUrl(url) {
           if (url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
@@ -75,10 +79,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const url = normalizeUrl(c.custom_url);
         const tooltipUrl = url.replace(/^https:\/\//, '');
-
-        nameCell.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
+        nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
       } else {
-        nameCell.textContent = c.name;
+        nameSpan.textContent = c.name;
+      }
+
+      // Add tags display
+      if (c.tags && c.tags.length > 0) {
+        tagsContainer.innerHTML = c.tags.map(tag =>
+          `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+        ).join('');
+      } else {
+        tagsContainer.innerHTML = '';
       }
 
       const serverNameSpan = clone.querySelector('[data-content="server-name"]');
@@ -271,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (c.traefik_routes && c.traefik_routes.length > 0) {
           traefikCell.innerHTML = c.traefik_routes.map(route => {
             const displayUrl = route.url.replace(/^https?:\/\//, '');
-          return `<div class="traefik-route mb-1">
+            return `<div class="traefik-route mb-1">
           <div data-tooltip="${displayUrl}" class="inline-block">
             <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
               <span class="traefik-text">${displayUrl}</span>
@@ -282,7 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>`;
 
-  }).join('');
+          }).join('');
         } else {
           traefikCell.innerHTML = `<span class="status-none text-sm">none</span>`;
         }
@@ -508,13 +520,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (searchTerm) {
       if (searchTerm.startsWith(':')) {
-        // wyszukiwanie po porcie hosta
+        // port search
         const portTerm = searchTerm.substring(1);
         workingData = workingData.filter(c =>
           c.ports.some(p => p.host_port.includes(portTerm))
         );
+      } else if (searchTerm.startsWith('#')) {
+        // tag search
+        const tagTerm = searchTerm.substring(1).toLowerCase();
+        workingData = workingData.filter(c =>
+          c.tags && c.tags.some(tag => tag.toLowerCase().includes(tagTerm))
+        );
       } else {
-        // obsługa stack: z opcjonalnymi cudzysłowami
+        // handle stack: search and regular search
         const stackMatch = searchTerm.match(/stack:"([^"]+)"|stack:([^\s]+)/);
         const stackFilter = stackMatch ? (stackMatch[1] || stackMatch[2]).trim() : null;
 
@@ -523,11 +541,12 @@ document.addEventListener("DOMContentLoaded", () => {
             c.stack && c.stack.toLowerCase().includes(stackFilter)
           );
         } else {
-          // zwykłe wyszukiwanie
+          // regular search including tags
           workingData = workingData.filter(c =>
             c.name.toLowerCase().includes(searchTerm) ||
             c.image.toLowerCase().includes(searchTerm) ||
             (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
+            (c.tags && c.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
             c.ports.some(p =>
               p.host_port.includes(searchTerm) ||
               p.container_port.includes(searchTerm)
@@ -946,14 +965,15 @@ document.addEventListener("DOMContentLoaded", () => {
     clearSearch();
     updateDisplay();
 
-  });
-  // Event delegation for stack links
+  });// Event delegation for tag clicks
   containerRowsBody.addEventListener('click', function (e) {
-    if (e.target.classList.contains('stack-link')) {
+    if (e.target.classList.contains('tag-badge')) {
       e.preventDefault();
-      const stack = e.target.dataset.stack;
-      const server = e.target.dataset.server;
-      filterByStackAndServer(stack, server);
+      const tag = e.target.dataset.tag;
+      searchInput.value = `#${tag}`;
+      toggleClearButton();
+      updateDisplay();
+      searchInput.focus();
     }
   });
   // Replace the existing column visibility functionality in app.js with this corrected version:

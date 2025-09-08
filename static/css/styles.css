@@ -253,8 +253,14 @@ body.dark-mode #search-input:focus {
   display: inline-block;
 }
 
-.source-link {
+.source-link:not(.hidden) {
   color: #99a1af !important;
+  align-items: center;
+  text-decoration: none;
+  display: inline-block;
+}
+.source-link svg {
+  display: block;
 }
 
 
@@ -452,7 +458,7 @@ body.dark-mode .filter-button {
 }
 
 body.dark-mode .filter-button:hover {
-  background-color: #30363d;
+  background-color: #202329;
 }
 
 body.dark-mode .filter-button.active {
@@ -787,14 +793,19 @@ body.dark-mode .update-indicator svg {
   color: #b9711f;
 }
 
-.table-cell-image div {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.image-wrapper{  
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
+.image-wrapper-inline{  
+    display: inline;
+}
+
+
 .table-cell-image code {
-  display: inline-block;
+  display: inline;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -802,8 +813,10 @@ body.dark-mode .update-indicator svg {
   color: #3e4043;
   border-radius: 0.25rem;
   padding: 0.2rem 0.4rem;
-  white-space: normal;
+  white-space: break-spaces;
   word-break: break-word;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 body.dark-mode .table-cell-image code {
@@ -1644,6 +1657,7 @@ body.dark-mode .column-menu-item span {
 
 @media (max-width: 1279px) {
   .table-cell-image code {
+    display: inline-block;
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;

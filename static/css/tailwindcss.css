@@ -963,6 +963,9 @@ code {
   cursor: pointer;
   box-shadow: 0.2s ease-in-out;
 }
+.filter-button:hover {
+  background-color: #e9eaeb;
+}
 .filter-button.active {
   background-color: #2188ff;
   color: white;
@@ -974,6 +977,9 @@ code {
 body.dark-mode .filter-button {
   background-color: #232831;
   color: #b3b9bf;
+}
+body.dark-mode .filter-button:hover {
+  background-color: #30363d;
 }
 body.dark-mode .filter-button.active {
   background-color: #2188ff;
@@ -1251,8 +1257,10 @@ body.dark-mode .update-indicator svg {
   text-overflow: ellipsis;
   background-color: #ededed;
   color: #3e4043;
-  padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  white-space: normal;
+  word-break: break-word;
 }
 body.dark-mode .table-cell-image code {
   background-color: #22262d;
@@ -1328,7 +1336,6 @@ body.dark-mode #check-updates-button.loading::before {
   bottom: 0;
   background-color: #e1e4e8;
   border-radius: 24px;
-  transition: background-color 0.1s ease-in-out;
 }
 .slider:before {
   position: absolute;
@@ -1698,6 +1705,7 @@ body.dark-mode .column-menu-svg:hover {
   z-index: 1000;
 }
 .column-menu-item {
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1914,7 +1922,6 @@ label[for="filter-running-checkbox"] {
   padding: 0px 8px;
   border-radius: 9999px;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
 .tag-badge:hover {
   background-color: #e1e4e8;

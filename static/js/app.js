@@ -413,7 +413,6 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.traefik);
     });
 
-    // Update table cells - FIXED selectors
     document.querySelectorAll('.table-cell-name').forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.name);
     });

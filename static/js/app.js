@@ -599,7 +599,7 @@ document.addEventListener("DOMContentLoaded", () => {
               container.name.toLowerCase().includes(searchTerm) ||
               container.image.toLowerCase().includes(searchTerm) ||
               (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
-              (container.tags && container.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+              //(container.tags && container.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
               container.ports.some(p =>
                 p.host_port.includes(searchTerm) ||
                 p.container_port.includes(searchTerm)

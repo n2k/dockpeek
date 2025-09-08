@@ -1700,7 +1700,9 @@ body.dark-mode .column-menu-item span {
   .traefik-route a svg {
     display: none;
   }
-}/* domyślnie (dla dużych ekranów) */
+}
+
+/* domyślnie (dla dużych ekranów) */
 label[for="filter-running-checkbox"] {
   display: inline;
 }
@@ -1725,8 +1727,8 @@ label[for="filter-running-checkbox"] {
     display: inline;
   }
 }
+
 .tag-badge {
-  margin-top: 8px;
   display: inline-block;
   background-color: #ededed;
   color: #52555b;
@@ -1743,15 +1745,17 @@ label[for="filter-running-checkbox"] {
 }
 
 .dark-mode .tag-badge {
-  background-color: #30343b;
-  color: #b0b4b9;
+  background-color: #22262d;
+  color: #90939b;
 }
 
 .dark-mode .tag-badge:hover {
-  background-color: #616369;
+  background-color: #2d3137;
 }
 
 .tags-container {
+  margin-left: 8px;
+  margin-top: 3px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

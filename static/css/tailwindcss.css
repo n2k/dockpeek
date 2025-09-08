@@ -1904,7 +1904,6 @@ label[for="filter-running-checkbox"] {
   }
 }
 .tag-badge {
-  margin-top: 8px;
   display: inline-block;
   background-color: #ededed;
   color: #52555b;
@@ -1919,13 +1918,15 @@ label[for="filter-running-checkbox"] {
   background-color: #d1d5db;
 }
 .dark-mode .tag-badge {
-  background-color: #30343b;
-  color: #b0b4b9;
+  background-color: #22262d;
+  color: #90939b;
 }
 .dark-mode .tag-badge:hover {
-  background-color: #616369;
+  background-color: #2d3137;
 }
 .tags-container {
+  margin-left: 8px;
+  margin-top: 3px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

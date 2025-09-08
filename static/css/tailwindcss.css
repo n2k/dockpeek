@@ -227,9 +227,6 @@
   }
 }
 @layer utilities {
-  .invisible {
-    visibility: hidden;
-  }
   .visible {
     visibility: visible;
   }
@@ -239,8 +236,8 @@
   .relative {
     position: relative;
   }
-  .right-19 {
-    right: calc(var(--spacing) * 19);
+  .right-18 {
+    right: calc(var(--spacing) * 18);
   }
   .container {
     width: 100%;

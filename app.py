@@ -673,8 +673,7 @@ def export_json():
         for p in ports_all:
             if p.get("is_custom", False):
                 ports_normalized.append({
-                    "container_port": "",
-                    "custom_ports": p.get("host_port"),
+                    "custom_port": p.get("host_port"),
                     "link": p.get("link"),
                 })
             else:
@@ -689,21 +688,35 @@ def export_json():
             "server": container.get("server"),
             "stack": container.get("stack"),
             "image": container.get("image"),
-            "port_summary": [
-                f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}"
-                for p in ports_all if not p.get("is_custom", False)
-            ],
-            "ports": ports_normalized,
             "status": container.get("status"),
         }
-    
+
+        if ports_normalized:
+            standard_ports = [
+                f"{p.get('host_port')}:{p.get('container_port', '').split('/')[0]}"
+                for p in ports_all if not p.get("is_custom", False)
+            ]
+            if standard_ports:
+                enhanced_container["port_summary"] = standard_ports
+            enhanced_container["ports"] = ports_normalized
+
         if container.get("custom_url"):
             enhanced_container["custom_url"] = container.get("custom_url")
+
+        traefik_routes = container.get("traefik_routes", [])
+        if traefik_routes:
+            enhanced_container["traefik_routes"] = [
+                {
+                    "router": route.get("router"),
+                    "url": route.get("url")
+                }
+                for route in traefik_routes
+            ]
+
         if container.get("exit_code") is not None:
             enhanced_container["exit_code"] = container.get("exit_code")
 
         export_data["containers"].append(enhanced_container)
-
     
     import json
     

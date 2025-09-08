@@ -6,11 +6,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSortDirection = "asc";
   let currentServerFilter = "all";
   let isDataLoaded = false;
+  let columnOrder = ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'];
   let columnVisibility = {
     name: true,
     server: true,
     stack: true,
     image: true,
+    tags: true,
     status: true,
     ports: true,
     traefik: true
@@ -36,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showLoadingIndicator() {
     refreshButton.classList.add('loading');
-    containerRowsBody.innerHTML = `<tr><td colspan="7"><div class="loader"></div></td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="8"><div class="loader"></div></td></tr>`;
   }
 
   function hideLoadingIndicator() {
@@ -45,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayError(message) {
     hideLoadingIndicator();
-    containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">${message}</td></tr>`;
+    containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
   function renderTable() {
@@ -53,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageItems = filteredAndSortedContainers;
 
     if (pageItems.length === 0) {
-      containerRowsBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
 
@@ -65,6 +67,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameCell = clone.querySelector('[data-content="name"]');
       nameCell.classList.add('table-cell-name');
+
+      const nameSpan = nameCell.querySelector('[data-content="container-name"]');
+      const tagsContainer = nameCell.querySelector('[data-content="tags"]');
+
       if (c.custom_url) {
         function normalizeUrl(url) {
           if (url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
@@ -75,12 +81,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const url = normalizeUrl(c.custom_url);
         const tooltipUrl = url.replace(/^https:\/\//, '');
-
-        nameCell.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
+        nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
       } else {
-        nameCell.textContent = c.name;
+        nameSpan.textContent = c.name;
       }
 
+      // Add tags display (Name column)
+      // if (c.tags && c.tags.length > 0) {
+      //   tagsContainer.innerHTML = c.tags.map(tag =>
+      //     `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+      //   ).join('');
+      // } else {
+      //   tagsContainer.innerHTML = '';
+      // }
       const serverNameSpan = clone.querySelector('[data-content="server-name"]');
       serverNameSpan.closest('td').classList.add('table-cell-server');
       serverNameSpan.textContent = c.server;
@@ -119,6 +132,18 @@ document.addEventListener("DOMContentLoaded", () => {
         updateIndicator.setAttribute('data-tooltip', 'Update available');
       } else {
         updateIndicator.classList.add('hidden');
+      }
+
+
+
+      const tagsCell = clone.querySelector('[data-content="tags"]');
+      tagsCell.classList.add('table-cell-tags');
+      if (c.tags && c.tags.length > 0) {
+        tagsCell.innerHTML = c.tags.map(tag =>
+          `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+        ).join('');
+      } else {
+        tagsCell.innerHTML = '';
       }
 
       const statusCell = clone.querySelector('[data-content="status"]');
@@ -271,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (c.traefik_routes && c.traefik_routes.length > 0) {
           traefikCell.innerHTML = c.traefik_routes.map(route => {
             const displayUrl = route.url.replace(/^https?:\/\//, '');
-          return `<div class="traefik-route mb-1">
+            return `<div class="traefik-route mb-1">
           <div data-tooltip="${displayUrl}" class="inline-block">
             <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
               <span class="traefik-text">${displayUrl}</span>
@@ -282,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>`;
 
-  }).join('');
+          }).join('');
         } else {
           traefikCell.innerHTML = `<span class="status-none text-sm">none</span>`;
         }
@@ -293,6 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
     containerRowsBody.appendChild(fragment);
+    updateTableColumnOrder();
     updateColumnVisibility();
 
   }
@@ -309,16 +335,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
       console.log('Resetting all columns to visible');
 
-      // Reset all columns to visible (true)
+      // Reset column visibility
       Object.keys(columnVisibility).forEach(column => {
         columnVisibility[column] = true;
-
-        // Update the toggle switches
         const toggle = document.getElementById(`toggle-${column}`);
         if (toggle) {
           toggle.checked = true;
         }
       });
+
+      // Reset column order
+      columnOrder = ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'];
+      reorderColumnMenuItems();
+      saveColumnOrder();
+      updateTableColumnOrder();
 
       // Save to localStorage
       localStorage.setItem('columnVisibility', JSON.stringify(columnVisibility));
@@ -389,6 +419,10 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.image);
     });
 
+    document.querySelectorAll(`[data-sort-column="tags"]`).forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags);
+    });
+
     document.querySelectorAll(`[data-sort-column="status"]`).forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.status);
     });
@@ -401,7 +435,6 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.traefik);
     });
 
-    // Update table cells - FIXED selectors
     document.querySelectorAll('.table-cell-name').forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.name);
     });
@@ -418,6 +451,9 @@ document.addEventListener("DOMContentLoaded", () => {
       el.classList.toggle('column-hidden', !columnVisibility.image);
     });
 
+    document.querySelectorAll('.table-cell-tags').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags);
+    });
     document.querySelectorAll('.table-cell-status').forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.status);
     });
@@ -431,6 +467,200 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function initColumnDragAndDrop() {
+  const columnList = document.getElementById('column-list');
+  let draggedElement = null;
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let isDragging = false;
+
+  // Load saved column order
+  const savedOrder = localStorage.getItem('columnOrder');
+  if (savedOrder) {
+    columnOrder = JSON.parse(savedOrder);
+    reorderColumnMenuItems();
+  }
+
+  // Desktop drag events
+  columnList.addEventListener('dragstart', (e) => {
+    if (e.target.classList.contains('draggable')) {
+      draggedElement = e.target;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', e.target.outerHTML);
+    }
+  });
+
+  columnList.addEventListener('dragend', (e) => {
+    if (e.target.classList.contains('draggable')) {
+      e.target.classList.remove('dragging');
+      draggedElement = null;
+    }
+  });
+
+  columnList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const afterElement = getDragAfterElement(columnList, e.clientY);
+    const dragging = columnList.querySelector('.dragging');
+    
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    if (afterElement == null) {
+      columnList.appendChild(dragging);
+    } else {
+      afterElement.classList.add('drag-over');
+      columnList.insertBefore(dragging, afterElement);
+    }
+  });
+
+  columnList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    updateColumnOrderFromDOM();
+    saveColumnOrder();
+    updateTableColumnOrder();
+  });
+
+  // Touch events for mobile
+  columnList.addEventListener('touchstart', (e) => {
+    const target = e.target.closest('.draggable');
+    if (target) {
+      draggedElement = target;
+      touchStartY = e.touches[0].clientY;
+      isDragging = false;
+      
+      // Add a small delay to distinguish between tap and drag
+      setTimeout(() => {
+        if (draggedElement) {
+          isDragging = true;
+          draggedElement.classList.add('dragging');
+        }
+      }, 150);
+    }
+  }, { passive: false });
+
+  columnList.addEventListener('touchmove', (e) => {
+    if (!draggedElement || !isDragging) return;
+    
+    e.preventDefault();
+    touchCurrentY = e.touches[0].clientY;
+    
+    const afterElement = getDragAfterElement(columnList, touchCurrentY);
+    
+    columnList.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    
+    if (afterElement == null) {
+      columnList.appendChild(draggedElement);
+    } else {
+      afterElement.classList.add('drag-over');
+      columnList.insertBefore(draggedElement, afterElement);
+    }
+  }, { passive: false });
+
+  columnList.addEventListener('touchend', (e) => {
+    if (draggedElement) {
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+      
+      if (isDragging) {
+        draggedElement.classList.remove('dragging');
+        updateColumnOrderFromDOM();
+        saveColumnOrder();
+        updateTableColumnOrder();
+      }
+      
+      draggedElement = null;
+      isDragging = false;
+    }
+  });
+
+  // Make items draggable for desktop
+  columnList.querySelectorAll('.draggable').forEach(item => {
+    item.draggable = true;
+  });
+}
+
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function updateColumnOrderFromDOM() {
+    const items = document.querySelectorAll('#column-list .draggable');
+    columnOrder = Array.from(items).map(item => item.dataset.column);
+  }
+
+  function reorderColumnMenuItems() {
+    const columnList = document.getElementById('column-list');
+    const items = Array.from(columnList.children);
+
+    // Sort items based on columnOrder
+    items.sort((a, b) => {
+      const aIndex = columnOrder.indexOf(a.dataset.column);
+      const bIndex = columnOrder.indexOf(b.dataset.column);
+      return aIndex - bIndex;
+    });
+
+    // Reappend in new order
+    items.forEach(item => columnList.appendChild(item));
+  }
+
+  function saveColumnOrder() {
+    localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
+  }
+
+  function updateTableColumnOrder() {
+    const thead = document.querySelector('#main-table thead tr');
+    const headers = Array.from(thead.children);
+
+    // Reorder headers
+    columnOrder.forEach(columnName => {
+      const header = headers.find(h =>
+        h.dataset.sortColumn === columnName ||
+        h.classList.contains(`${columnName}-column`) ||
+        h.classList.contains(`table-cell-${columnName}`)
+      );
+      if (header) {
+        thead.appendChild(header);
+      }
+    });
+
+    // Reorder table body cells
+    document.querySelectorAll('#container-rows tr').forEach(row => {
+      const cells = Array.from(row.children);
+      columnOrder.forEach(columnName => {
+        const cell = cells.find(c =>
+          c.classList.contains(`table-cell-${columnName}`) ||
+          c.dataset.content === columnName ||
+          (columnName === 'server' && c.classList.contains('server-column')) ||
+          (columnName === 'traefik' && c.classList.contains('traefik-column'))
+        );
+        if (cell) {
+          row.appendChild(cell);
+        }
+      });
+    });
+  }
   // Apply initial visibility
   updateColumnVisibility();
 
@@ -488,6 +718,45 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle('active', button.dataset.server === currentServerFilter);
     });
   }
+  function parseAdvancedSearch(searchTerm) {
+    const filters = {
+      tags: [],
+      ports: [],
+      stacks: [],
+      general: []
+    };
+
+    // Split by spaces but keep quoted strings together
+    const terms = searchTerm.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+
+    terms.forEach(term => {
+      term = term.trim();
+      if (!term) return;
+
+      if (term.startsWith('#')) {
+        // Tag search
+        filters.tags.push(term.substring(1).toLowerCase());
+      } else if (term.startsWith(':')) {
+        // Port search
+        filters.ports.push(term.substring(1));
+      } else if (term.startsWith('stack:')) {
+        // Stack search - handle quoted values
+        let stackValue = term.substring(6);
+        if (stackValue.startsWith('"') && stackValue.endsWith('"')) {
+          stackValue = stackValue.slice(1, -1);
+        }
+        filters.stacks.push(stackValue.toLowerCase());
+      } else {
+        // General search term (remove quotes if present)
+        if (term.startsWith('"') && term.endsWith('"')) {
+          term = term.slice(1, -1);
+        }
+        filters.general.push(term.toLowerCase());
+      }
+    });
+
+    return filters;
+  }
 
   function updateDisplay() {
     let workingData = [...allContainersData];
@@ -504,39 +773,63 @@ document.addEventListener("DOMContentLoaded", () => {
       workingData = workingData.filter(c => c.update_available);
     }
 
-    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchTerm = searchInput.value.trim();
 
     if (searchTerm) {
-      if (searchTerm.startsWith(':')) {
-        // wyszukiwanie po porcie hosta
-        const portTerm = searchTerm.substring(1);
-        workingData = workingData.filter(c =>
-          c.ports.some(p => p.host_port.includes(portTerm))
-        );
-      } else {
-        // obsługa stack: z opcjonalnymi cudzysłowami
-        const stackMatch = searchTerm.match(/stack:"([^"]+)"|stack:([^\s]+)/);
-        const stackFilter = stackMatch ? (stackMatch[1] || stackMatch[2]).trim() : null;
+      const filters = parseAdvancedSearch(searchTerm);
 
-        if (stackFilter) {
-          workingData = workingData.filter(c =>
-            c.stack && c.stack.toLowerCase().includes(stackFilter)
-          );
-        } else {
-          // zwykłe wyszukiwanie
-          workingData = workingData.filter(c =>
-            c.name.toLowerCase().includes(searchTerm) ||
-            c.image.toLowerCase().includes(searchTerm) ||
-            (c.stack && c.stack.toLowerCase().includes(searchTerm)) ||
-            c.ports.some(p =>
-              p.host_port.includes(searchTerm) ||
-              p.container_port.includes(searchTerm)
+      workingData = workingData.filter(container => {
+        // All filter conditions must be met (AND logic)
+
+        // Check tags
+        if (filters.tags.length > 0) {
+          const hasAllTags = filters.tags.every(searchTag =>
+            container.tags && container.tags.some(containerTag =>
+              containerTag.toLowerCase().includes(searchTag)
             )
           );
+          if (!hasAllTags) return false;
         }
-      }
-    }
 
+        // Check ports
+        if (filters.ports.length > 0) {
+          const hasAllPorts = filters.ports.every(searchPort =>
+            container.ports.some(p =>
+              p.host_port.includes(searchPort) ||
+              p.container_port.includes(searchPort)
+            )
+          );
+          if (!hasAllPorts) return false;
+        }
+
+        // Check stacks
+        if (filters.stacks.length > 0) {
+          const hasAllStacks = filters.stacks.every(searchStack =>
+            container.stack && container.stack.toLowerCase().includes(searchStack)
+          );
+          if (!hasAllStacks) return false;
+        }
+
+        // Check general search terms
+        if (filters.general.length > 0) {
+          const hasAllGeneral = filters.general.every(searchTerm => {
+            return (
+              container.name.toLowerCase().includes(searchTerm) ||
+              container.image.toLowerCase().includes(searchTerm) ||
+              (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
+              //(container.tags && container.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+              container.ports.some(p =>
+                p.host_port.includes(searchTerm) ||
+                p.container_port.includes(searchTerm)
+              )
+            );
+          });
+          if (!hasAllGeneral) return false;
+        }
+
+        return true;
+      });
+    }
 
     workingData.sort((a, b) => {
       let valA = a[currentSortColumn];
@@ -626,12 +919,13 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable();
     updateActiveButton();
     updateExportLink();
+    updateTableColumnOrder();
   }
 
   function filterByStackAndServer(stack, server) {
-    let stackTerm = stack.includes(" ") ? `"${stack}"` : stack;
     currentServerFilter = server;
     updateActiveButton();
+    let stackTerm = stack.includes(" ") ? `"${stack}"` : stack;
     searchInput.value = `stack:${stackTerm}`;
     toggleClearButton();
     updateDisplay();
@@ -947,10 +1241,39 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDisplay();
 
   });
-  // Event delegation for stack links
   containerRowsBody.addEventListener('click', function (e) {
+    if (e.target.classList.contains('tag-badge')) {
+      e.preventDefault();
+      const tag = e.target.dataset.tag;
+      const tagSearch = `#${tag}`;
+
+      let currentSearch = searchInput.value.trim();
+
+      // Parse current search to check for duplicates
+      const filters = parseAdvancedSearch(currentSearch);
+
+      // Check if tag already exists (case insensitive)
+      const tagAlreadyExists = filters.tags.some(existingTag =>
+        existingTag.toLowerCase() === tag.toLowerCase()
+      );
+
+      if (!tagAlreadyExists) {
+        // Add tag to existing search
+        if (currentSearch) {
+          searchInput.value = `${currentSearch} ${tagSearch}`;
+        } else {
+          searchInput.value = tagSearch;
+        }
+
+        toggleClearButton();
+        updateDisplay();
+        searchInput.focus();
+      }
+    }
+
     if (e.target.classList.contains('stack-link')) {
       e.preventDefault();
+      e.stopPropagation();
       const stack = e.target.dataset.stack;
       const server = e.target.dataset.server;
       filterByStackAndServer(stack, server);
@@ -958,5 +1281,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Replace the existing column visibility functionality in app.js with this corrected version:
   updateColumnVisibility();
-
+  initColumnDragAndDrop();
 });

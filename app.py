@@ -154,6 +154,7 @@ login_manager.login_view = 'login'
 ADMIN_USERNAME = os.environ.get("USERNAME")
 ADMIN_PASSWORD = os.environ.get("PASSWORD")
 TRAEFIK_ENABLE = os.environ.get("TRAEFIK_LABELS", "true").lower() == "true" 
+TAGS_ENABLE = os.environ.get("TAGS", "true").lower() == "true"
 
 if not ADMIN_USERNAME or not ADMIN_PASSWORD:
     raise RuntimeError("USERNAME and PASSWORD environment variables must be set.")
@@ -437,8 +438,17 @@ def get_all_data():
                     # Get custom dockpeek labels
                     https_ports = labels.get('dockpeek.https', '')
                     custom_url = labels.get('dockpeek.link', '')
-                    custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')                    
-                
+                    custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')
+                    custom_tags = labels.get('dockpeek.tags', '') or labels.get('dockpeek.tag', '')     
+
+                    # Parse tags
+                    tags = []
+                    if TAGS_ENABLE and custom_tags:
+                        try:
+                            tags = [tag.strip() for tag in custom_tags.split(',') if tag.strip()]
+                        except:
+                            tags = []
+
                     # Extract Traefik routes
                     traefik_routes = []
                     if TRAEFIK_ENABLE and labels.get('traefik.enable', '').lower() != 'false':
@@ -570,8 +580,12 @@ def get_all_data():
                          'source_url': source_url,
                          'custom_url': custom_url,
                          'ports': port_map,
-                         'traefik_routes': traefik_routes
+                         'traefik_routes': traefik_routes,
+                         'tags': tags
                     }
+                    if TAGS_ENABLE:
+                        container_info['tags'] = tags
+
                     
                     if cached_update is not None and is_cache_valid:
                         container_info['update_available'] = cached_update

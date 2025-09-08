@@ -279,6 +279,9 @@ body.dark-mode .server-column [data-content="server-name"] {
   color: #5a626b;
 }
 
+.container-name-wrapper {
+}
+
 .container-name-cell [data-tooltip-right]::after {
   max-width: 600px;
   white-space: nowrap;
@@ -293,7 +296,7 @@ body.dark-mode .server-column [data-content="server-name"] {
 }
 
 body.dark-mode .container-name-cell {
-  color: #d5d5d5 !important;
+  color: #e1e1e1 !important;
 }
 
 .container-name-cell a {
@@ -1731,17 +1734,17 @@ label[for="filter-running-checkbox"] {
 .tag-badge {
   display: inline-block;
   background-color: #ededed;
-  color: #52555b;
+  color: #727373;
   font-size: 0.75rem;
-  font-weight: 500;
-  padding: 1px 6px;
+  font-weight: 400;
+  padding: 0px 8px;
   border-radius: 9999px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .tag-badge:hover {
-  background-color: #d1d5db;
+  background-color: #e1e4e8;
 }
 
 .dark-mode .tag-badge {
@@ -1754,8 +1757,8 @@ label[for="filter-running-checkbox"] {
 }
 
 .tags-container {
-  margin-left: 8px;
-  margin-top: 3px;
+  margin-left: 4px;
+  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

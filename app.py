@@ -432,27 +432,24 @@ def get_all_data():
                     
                     # Get source URL from OCI labels
                     source_url = (labels.get('org.opencontainers.image.source') or 
-                                labels.get('org.opencontainers.image.url', ''))
-                             
+                                labels.get('org.opencontainers.image.url', ''))                             
 
                     # Get custom dockpeek labels
                     https_ports = labels.get('dockpeek.https', '')
                     custom_url = labels.get('dockpeek.link', '')
-                    custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')
-                    
-
+                    custom_ports = labels.get('dockpeek.ports', '') or labels.get('dockpeek.port', '')                    
+                
                     # Extract Traefik routes
                     traefik_routes = []
                     if TRAEFIK_ENABLE and labels.get('traefik.enable', '').lower() != 'false':
                         for key, value in labels.items():
                             if key.startswith('traefik.http.routers.') and key.endswith('.rule'):
-                                # Extract Host from rule
-                                import re
-                                host_match = re.search(r'Host\(`([^`]+)`\)', value)
-                                if host_match:
-                                    host = host_match.group(1)
-                                    router_name = key.split('.')[3]  # Extract router name
+                                router_name = key.split('.')[3]
 
+                                # Find all hosts in the rule
+                                host_matches = re.findall(r'Host\(`([^`]+)`\)', value)
+
+                                for host in host_matches:
                                     # Check if this router has TLS enabled
                                     tls_key = f'traefik.http.routers.{router_name}.tls'
                                     is_tls = labels.get(tls_key, '').lower() == 'true'
@@ -461,7 +458,15 @@ def get_all_data():
                                     entrypoints_key = f'traefik.http.routers.{router_name}.entrypoints'
                                     entrypoints = labels.get(entrypoints_key, '')
 
-                                    protocol = 'https' if is_tls or 'websecure' in entrypoints else 'http'
+                                    is_https_entrypoint = False
+                                    if entrypoints:
+                                        entrypoint_list = [ep.strip().lower() for ep in entrypoints.split(',')]
+                                        is_https_entrypoint = any(
+                                            any(key in ep for key in ("https", "443", "secure", "ssl", "tls"))
+                                            for ep in entrypoint_list
+                                        )
+
+                                    protocol = 'https' if is_tls or is_https_entrypoint else 'http'
                                     url = f"{protocol}://{host}"
 
                                     # Check for PathPrefix
@@ -472,8 +477,11 @@ def get_all_data():
                                     traefik_routes.append({
                                         'router': router_name,
                                         'url': url,
-                                        'rule': value
+                                        'rule': value,
+                                        'host': host
                                     })
+
+                                    
                     # Parse HTTPS ports
                     https_ports_list = []
                     if https_ports:

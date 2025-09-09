@@ -1630,7 +1630,11 @@ label[for="filter-running-checkbox"] {
   }
 }
 .tag-badge {
+  max-width: 120px;
   display: inline-block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
   background-color: #ededed;
   color: #727373;
   font-size: 0.75rem;
@@ -1638,7 +1642,6 @@ label[for="filter-running-checkbox"] {
   padding: 2px 7px;
   border-radius: 9999px;
   cursor: pointer;
-  margin: 2px 3px;
 }
 .tag-badge:hover {
   background-color: #e1e4e8;
@@ -1651,11 +1654,10 @@ label[for="filter-running-checkbox"] {
   background-color: #2d3137;
 }
 .tags-container {
-  margin-left: -4px;
-  margin-top: 8px;
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
+  max-width: 250px;
 }
 .column-menu {
   min-width: 200px;

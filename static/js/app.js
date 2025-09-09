@@ -277,15 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
         updateIndicator.classList.add('hidden');
       }
 
-
-
       const tagsCell = clone.querySelector('[data-content="tags"]');
       tagsCell.classList.add('table-cell-tags');
       if (c.tags && c.tags.length > 0) {
         const sortedTags = [...c.tags].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-        tagsCell.innerHTML = sortedTags.map(tag =>
-          `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
-        ).join('');
+        tagsCell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
+          `<span class="tag-badge" data-tag="${tag}" data-tooltip="#${tag}">${tag}</span>`
+        ).join('')}</div>`;
       } else {
         tagsCell.innerHTML = '';
       }

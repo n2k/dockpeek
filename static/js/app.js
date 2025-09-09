@@ -604,6 +604,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.table-cell-traefik').forEach(el => {
       el.classList.toggle('column-hidden', !columnVisibility.traefik);
     });
+
+    const hasTags = filteredAndSortedContainers.some(c => c.tags && c.tags.length > 0);
+    document.querySelectorAll('.tags-column').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags || !hasTags);
+    });
+    document.querySelectorAll('.table-cell-tags').forEach(el => {
+      el.classList.toggle('column-hidden', !columnVisibility.tags || !hasTags);
+    });
   }
 
   function initColumnDragAndDrop() {
@@ -1034,6 +1042,27 @@ document.addEventListener("DOMContentLoaded", () => {
         header.classList.add('hidden');
       }
     });
+
+
+    const hasTags = workingData.some(c => c.tags && c.tags.length > 0);
+    const tagsHeaders = document.querySelectorAll('.tags-column');
+    tagsHeaders.forEach(header => {
+      if (hasTags) {
+        header.classList.remove('hidden');
+      } else {
+        header.classList.add('hidden');
+      }
+    });
+
+    // Also update table cells visibility
+    document.querySelectorAll('.table-cell-tags').forEach(cell => {
+      if (hasTags) {
+        cell.classList.remove('hidden');
+      } else {
+        cell.classList.add('hidden');
+      }
+    });
+
 
     // Hide server column if only one server is visible after filtering
     const uniqueServers = [...new Set(workingData.map(c => c.server))];

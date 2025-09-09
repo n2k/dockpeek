@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let currentTooltip = null;
-    let hideTooltipTimer = null; 
+    let hideTooltipTimer = null;
 
     function showTooltip(text, element, type) {
       clearTimeout(hideTooltipTimer);
@@ -68,12 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (currentTooltip) {
-        hideTooltip(true); 
+        hideTooltip(true);
       }
 
       const tooltipElement = document.createElement('div');
       tooltipElement.className = 'custom-tooltip';
-      tooltipElement.dataset.owner = element; 
+      tooltipElement.dataset.owner = element;
 
       const tooltipBox = document.createElement('div');
       tooltipBox.className = 'custom-tooltip-box';
@@ -282,7 +282,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const tagsCell = clone.querySelector('[data-content="tags"]');
       tagsCell.classList.add('table-cell-tags');
       if (c.tags && c.tags.length > 0) {
-        tagsCell.innerHTML = c.tags.map(tag =>
+        const sortedTags = [...c.tags].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        tagsCell.innerHTML = sortedTags.map(tag =>
           `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
         ).join('');
       } else {

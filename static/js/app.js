@@ -50,6 +50,134 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
+  // Ta funkcja zastępuje całą istniejącą funkcję initCustomTooltips w app.js
+  function initCustomTooltips() {
+    let tooltipContainer = document.getElementById('tooltip-container');
+    if (!tooltipContainer) {
+      tooltipContainer = document.createElement('div');
+      tooltipContainer.id = 'tooltip-container';
+      document.body.appendChild(tooltipContainer);
+    }
+
+    let currentTooltip = null;
+
+    function showTooltip(text, element, type) {
+      if (currentTooltip) {
+        hideTooltip();
+      }
+
+      const tooltipElement = document.createElement('div');
+      tooltipElement.className = 'custom-tooltip';
+
+      const tooltipBox = document.createElement('div');
+      tooltipBox.className = 'custom-tooltip-box';
+      tooltipBox.textContent = text;
+
+      const tooltipArrow = document.createElement('div');
+      tooltipArrow.className = 'custom-tooltip-arrow';
+
+      tooltipElement.appendChild(tooltipBox);
+      tooltipElement.appendChild(tooltipArrow);
+      tooltipContainer.appendChild(tooltipElement);
+
+      currentTooltip = tooltipElement;
+
+      // --- Dynamiczne obliczanie pozycji i orientacji strzałki ---
+      const rect = element.getBoundingClientRect();
+      const tooltipRect = tooltipElement.getBoundingClientRect();
+      let top, left;
+      const margin = 15; // Odstęp od elementu
+
+      switch (type) {
+        case 'data-tooltip-left':
+          tooltipArrow.classList.add('arrow-right');
+          top = rect.top + window.scrollY + (rect.height / 2) - (tooltipRect.height / 2);
+          left = rect.left + window.scrollX - tooltipRect.width - margin;
+          break;
+        case 'data-tooltip-right':
+          tooltipArrow.classList.add('arrow-left');
+          top = rect.top + window.scrollY + (rect.height / 2) - (tooltipRect.height / 2);
+          left = rect.right + window.scrollX + margin;
+          break;
+        case 'data-tooltip-top-right':
+          tooltipArrow.classList.add('arrow-top');
+          // Pozycjonowanie strzałki (nadal na środku elementu)
+          tooltipArrow.style.left = `${rect.width / 2}px`;
+          tooltipArrow.style.transform = 'translateX(-50%)';
+          // Pozycjonowanie dymka
+          top = rect.top + window.scrollY - tooltipRect.height - margin;
+          left = rect.right + window.scrollX - tooltipRect.width;
+          break;
+        case 'data-tooltip-top-left':
+          tooltipArrow.classList.add('arrow-top');
+          // Pozycjonowanie strzałki (nadal na środku elementu)
+          tooltipArrow.style.left = `${rect.width / 2}px`;
+          tooltipArrow.style.transform = 'translateX(-50%)';
+          // Pozycjonowanie dymka
+          top = rect.top + window.scrollY - tooltipRect.height - margin;
+          left = rect.left + window.scrollX;
+          break;
+        default: // 'data-tooltip'
+          tooltipArrow.classList.add('arrow-top');
+          top = rect.top + window.scrollY - tooltipRect.height - margin;
+          left = rect.left + window.scrollX + (rect.width / 2) - (tooltipRect.width / 2);
+          break;
+      }
+
+      tooltipElement.style.top = `${top}px`;
+      tooltipElement.style.left = `${left}px`;
+
+      requestAnimationFrame(() => {
+        tooltipElement.classList.add('is-visible');
+      });
+    }
+
+    function hideTooltip() {
+      if (currentTooltip) {
+        const tooltipToRemove = currentTooltip;
+        currentTooltip = null;
+        tooltipToRemove.classList.remove('is-visible');
+        tooltipToRemove.addEventListener('transitionend', () => {
+          if (tooltipToRemove.parentElement) {
+            tooltipToRemove.remove();
+          }
+        }, { once: true });
+      }
+    }
+
+    // Usprawniony Event Listener, który obsługuje wszystkie typy tooltipów
+    const tooltipAttributes = [
+      'data-tooltip',
+      'data-tooltip-left',
+      'data-tooltip-right',
+      'data-tooltip-top-left',
+      'data-tooltip-top-right'
+    ];
+
+    document.addEventListener('mouseover', (e) => {
+      for (const attr of tooltipAttributes) {
+        const target = e.target.closest(`[${attr}]`);
+        if (target) {
+          const tooltipText = target.getAttribute(attr);
+          if (tooltipText) {
+            showTooltip(tooltipText, target, attr);
+            return; // Znaleziono, przerwij pętlę
+          }
+        }
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const isTooltipTarget = tooltipAttributes.some(attr => e.target.closest(`[${attr}]`));
+      if (isTooltipTarget) {
+        hideTooltip();
+      }
+    });
+
+    document.addEventListener('scroll', hideTooltip, true);
+  }
+
+
   function renderTable() {
     containerRowsBody.innerHTML = "";
     const pageItems = filteredAndSortedContainers;
@@ -81,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const url = normalizeUrl(c.custom_url);
         const tooltipUrl = url.replace(/^https:\/\//, '');
-        nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip-right="${tooltipUrl}">${c.name}</a>`;
+        nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip="${tooltipUrl}">${c.name}</a>`;
       } else {
         nameSpan.textContent = c.name;
       }
@@ -168,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
           else if (c.exit_code === 134) exitCodeText += ' (SIGABRT - aborted)';
           else if (c.exit_code === 139) exitCodeText += ' (SIGSEGV - segmentation fault)';
         }
-        statusSpan.setAttribute('data-tooltip-left', exitCodeText);
+        statusSpan.setAttribute('data-tooltip', exitCodeText);
       } else {
         let tooltipText;
         switch (c.status) {
@@ -206,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
               tooltipText = `Container status: ${c.status}`;
             }
         }
-        statusSpan.setAttribute('data-tooltip-left', tooltipText);
+        statusSpan.setAttribute('data-tooltip', tooltipText);
       }
 
       let statusClass = 'status-unknown';
@@ -297,12 +425,9 @@ document.addEventListener("DOMContentLoaded", () => {
           traefikCell.innerHTML = c.traefik_routes.map(route => {
             const displayUrl = route.url.replace(/^https?:\/\//, '');
             return `<div class="traefik-route mb-1">
-          <div data-tooltip="${displayUrl}" class="inline-block">
+          <div class="inline-block">
             <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
-              <span class="traefik-text">${displayUrl}</span>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 9L21 3M21 3H15M21 3L13 11M10 5H7.8C6.11984 5 5.27976 5 4.63803 5.32698C4.07354 5.6146 3.6146 6.07354 3.32698 6.63803C3 7.27976 3 8.11984 3 9.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21H14.2C15.8802 21 16.7202 21 17.362 20.673C17.9265 20.3854 18.3854 19.9265 18.673 19.362C19 18.7202 19 17.8802 19 16.2V14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <span class="traefik-text">${displayUrl}</span>             
             </a>
           </div>
         </div>`;
@@ -468,127 +593,127 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initColumnDragAndDrop() {
-  const columnList = document.getElementById('column-list');
-  let draggedElement = null;
-  let touchStartY = 0;
-  let touchCurrentY = 0;
-  let isDragging = false;
+    const columnList = document.getElementById('column-list');
+    let draggedElement = null;
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+    let isDragging = false;
 
-  // Load saved column order
-  const savedOrder = localStorage.getItem('columnOrder');
-  if (savedOrder) {
-    columnOrder = JSON.parse(savedOrder);
-    reorderColumnMenuItems();
-  }
-
-  // Desktop drag events
-  columnList.addEventListener('dragstart', (e) => {
-    if (e.target.classList.contains('draggable')) {
-      draggedElement = e.target;
-      e.target.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', e.target.outerHTML);
+    // Load saved column order
+    const savedOrder = localStorage.getItem('columnOrder');
+    if (savedOrder) {
+      columnOrder = JSON.parse(savedOrder);
+      reorderColumnMenuItems();
     }
-  });
 
-  columnList.addEventListener('dragend', (e) => {
-    if (e.target.classList.contains('draggable')) {
-      e.target.classList.remove('dragging');
-      draggedElement = null;
-    }
-  });
-
-  columnList.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const afterElement = getDragAfterElement(columnList, e.clientY);
-    const dragging = columnList.querySelector('.dragging');
-    
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
+    // Desktop drag events
+    columnList.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('draggable')) {
+        draggedElement = e.target;
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.outerHTML);
+      }
     });
-    
-    if (afterElement == null) {
-      columnList.appendChild(dragging);
-    } else {
-      afterElement.classList.add('drag-over');
-      columnList.insertBefore(dragging, afterElement);
-    }
-  });
 
-  columnList.addEventListener('drop', (e) => {
-    e.preventDefault();
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
+    columnList.addEventListener('dragend', (e) => {
+      if (e.target.classList.contains('draggable')) {
+        e.target.classList.remove('dragging');
+        draggedElement = null;
+      }
     });
-    
-    updateColumnOrderFromDOM();
-    saveColumnOrder();
-    updateTableColumnOrder();
-  });
 
-  // Touch events for mobile
-  columnList.addEventListener('touchstart', (e) => {
-    const target = e.target.closest('.draggable');
-    if (target) {
-      draggedElement = target;
-      touchStartY = e.touches[0].clientY;
-      isDragging = false;
-      
-      // Add a small delay to distinguish between tap and drag
-      setTimeout(() => {
-        if (draggedElement) {
-          isDragging = true;
-          draggedElement.classList.add('dragging');
-        }
-      }, 150);
-    }
-  }, { passive: false });
+    columnList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
 
-  columnList.addEventListener('touchmove', (e) => {
-    if (!draggedElement || !isDragging) return;
-    
-    e.preventDefault();
-    touchCurrentY = e.touches[0].clientY;
-    
-    const afterElement = getDragAfterElement(columnList, touchCurrentY);
-    
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
-    });
-    
-    if (afterElement == null) {
-      columnList.appendChild(draggedElement);
-    } else {
-      afterElement.classList.add('drag-over');
-      columnList.insertBefore(draggedElement, afterElement);
-    }
-  }, { passive: false });
+      const afterElement = getDragAfterElement(columnList, e.clientY);
+      const dragging = columnList.querySelector('.dragging');
 
-  columnList.addEventListener('touchend', (e) => {
-    if (draggedElement) {
       columnList.querySelectorAll('.drag-over').forEach(el => {
         el.classList.remove('drag-over');
       });
-      
-      if (isDragging) {
-        draggedElement.classList.remove('dragging');
-        updateColumnOrderFromDOM();
-        saveColumnOrder();
-        updateTableColumnOrder();
-      }
-      
-      draggedElement = null;
-      isDragging = false;
-    }
-  });
 
-  // Make items draggable for desktop
-  columnList.querySelectorAll('.draggable').forEach(item => {
-    item.draggable = true;
-  });
-}
+      if (afterElement == null) {
+        columnList.appendChild(dragging);
+      } else {
+        afterElement.classList.add('drag-over');
+        columnList.insertBefore(dragging, afterElement);
+      }
+    });
+
+    columnList.addEventListener('drop', (e) => {
+      e.preventDefault();
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+
+      updateColumnOrderFromDOM();
+      saveColumnOrder();
+      updateTableColumnOrder();
+    });
+
+    // Touch events for mobile
+    columnList.addEventListener('touchstart', (e) => {
+      const target = e.target.closest('.draggable');
+      if (target) {
+        draggedElement = target;
+        touchStartY = e.touches[0].clientY;
+        isDragging = false;
+
+        // Add a small delay to distinguish between tap and drag
+        setTimeout(() => {
+          if (draggedElement) {
+            isDragging = true;
+            draggedElement.classList.add('dragging');
+          }
+        }, 150);
+      }
+    }, { passive: false });
+
+    columnList.addEventListener('touchmove', (e) => {
+      if (!draggedElement || !isDragging) return;
+
+      e.preventDefault();
+      touchCurrentY = e.touches[0].clientY;
+
+      const afterElement = getDragAfterElement(columnList, touchCurrentY);
+
+      columnList.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+
+      if (afterElement == null) {
+        columnList.appendChild(draggedElement);
+      } else {
+        afterElement.classList.add('drag-over');
+        columnList.insertBefore(draggedElement, afterElement);
+      }
+    }, { passive: false });
+
+    columnList.addEventListener('touchend', (e) => {
+      if (draggedElement) {
+        columnList.querySelectorAll('.drag-over').forEach(el => {
+          el.classList.remove('drag-over');
+        });
+
+        if (isDragging) {
+          draggedElement.classList.remove('dragging');
+          updateColumnOrderFromDOM();
+          saveColumnOrder();
+          updateTableColumnOrder();
+        }
+
+        draggedElement = null;
+        isDragging = false;
+      }
+    });
+
+    // Make items draggable for desktop
+    columnList.querySelectorAll('.draggable').forEach(item => {
+      item.draggable = true;
+    });
+  }
 
   function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
@@ -1279,7 +1404,7 @@ document.addEventListener("DOMContentLoaded", () => {
       filterByStackAndServer(stack, server);
     }
   });
-  // Replace the existing column visibility functionality in app.js with this corrected version:
   updateColumnVisibility();
   initColumnDragAndDrop();
+  initCustomTooltips();
 });

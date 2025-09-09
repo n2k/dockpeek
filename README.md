@@ -18,6 +18,7 @@ All exposed ports are displayed in an organized table with one-click access, inc
 ## Key Features
 
 - **Port Mapping Overview** – View all running containers and their published ports at a glance
+- **Traefik Integration** – Dedicated column displaying container addresses from Traefik labels
 - **One-Click Access** – Launch containerized web applications instantly with direct URL links
 - **Multi-Host Management** – Monitor multiple Docker hosts and sockets from a unified dashboard
 - **Zero Configuration** – Automatic container detection with no setup required
@@ -26,7 +27,7 @@ All exposed ports are displayed in an organized table with one-click access, inc
   - `dockpeek.https` – Force HTTPS protocol for specific ports
   - `dockpeek.link` – Make container names clickable links
   - `dockpeek.ports` – Add custom ports to display alongside detected ports
-- **Traefik Integration** – Dedicated column displaying container addresses from Traefik labels
+  - `dockpeek.tags` – Organize and categorize containers with custom tags
 - **Mobile-Responsive** – Full functionality across smartphones, tablets, and desktop devices
 
 
@@ -63,7 +64,6 @@ services:
       - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
       - USERNAME=admin                       # Required: Change default username
       - PASSWORD=secure_password             # Required: Change default password
-      - TRAEFIK_LABELS=true                  # Optional: Enable Traefik integration
     ports:
       - "3420:8000"
     volumes:
@@ -82,7 +82,6 @@ services:
       - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
       - USERNAME=admin                       # Required: Change default username  
       - PASSWORD=secure_password             # Required: Change default password
-      - TRAEFIK_LABELS=true                  # Optional: Enable Traefik integration
       - DOCKER_HOST=tcp://socket-proxy:2375  # Connect via socket proxy
     ports:
       - "3420:8000"
@@ -161,12 +160,13 @@ Configure additional hosts using environment variables:
 | Variable                      | Description                                                                 |
 |-------------------------------|-----------------------------------------------------------------------------|
 | `SECRET_KEY`                  | **Required.** Strong, unique secret key for session security.              |
-| `USERNAME`                    | **Required.** Username for dashboard authentication.                  |
+| `USERNAME`                    | **Required.** Username for dashboard authentication.                       |
 | `PASSWORD`                    | **Required.** Password for dashboard authentication.                       |
 | `DOCKER_HOST`                 | Primary Docker socket URL:<br>• Local: `unix:///var/run/docker.sock`<br>• Remote: `tcp://hostname:2375` |
 | `DOCKER_HOST_NAME`            | Display name for primary host in UI (default: `local`).                    |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Public hostname/IP for generating clickable links (optional).              |
 | `TRAEFIK_LABELS`              | Enable Traefik integration column (`true`/`false`, default: `true`).       |
+| `TAGS`                        | Enable container tagging functionality (`true`/`false`, default: `true`). |
 
 ### Multi-Host Configuration
 | Variable                        | Description                                                               |
@@ -194,6 +194,7 @@ Dockpeek supports custom labels to control behavior for individual containers. A
 | `dockpeek.ports=PORTS`        | **Additional ports** to display beyond those automatically detected.<br/>Comma-separated list of ports. Essential for `--net=host` containers or services behind reverse proxies.<br/>Example: `dockpeek.ports=8080,9090` |
 | `dockpeek.https=PORTS`        | **Force HTTPS protocol** for specified ports instead of HTTP.<br/>Comma-separated list of ports that require secure connections.<br/>Example: `dockpeek.https=9002,3000` |
 | `dockpeek.link=URL`           | **Custom container link** - makes the container name clickable.<br/>Redirects to the specified URL when container name is clicked.<br/>Example: `dockpeek.link=https://app.example.com` |
+| `dockpeek.tags=TAGS`          | **Container tags** for organization and categorization.<br/>Comma-separated list of custom tags to help organize containers in the dashboard.<br/>Example: `dockpeek.tags=production,web,critical` |
 
 ### Usage Example
 
@@ -247,14 +248,24 @@ labels:
   - "dockpeek.link=https://myapp.example.com"
 ```
 
+
 <br>
 
-**Q: Why don't I see ports for containers using `--net=host`? (e.g. Jellyfin)**
+**Q: How can I organize containers with tags?**
 
-Host networking bypasses Docker's port mapping system:
-* No port mapping occurs (no 8080:80 relationship)
-* Docker doesn't track which ports applications actually use
-* Applications bind directly to host network interfaces
+Use the `dockpeek.tags` label to categorize and organize your containers:
+
+> Add tags to your containers for better organization:
+```yaml
+labels:
+  - "dockpeek.tags=production,web,critical"
+```
+
+<br>
+
+**Q: How to add ports for containers without port mapping? (e.g. host networking, reverse proxy)**
+
+Some containers don't expose ports through Docker's standard port mapping.
 
 > **Solution:** Manually specify ports using labels:
 ```yaml

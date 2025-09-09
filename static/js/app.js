@@ -50,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">${message}</td></tr>`;
   }
 
-  // Ta funkcja zastępuje całą istniejącą funkcję initCustomTooltips w app.js
   function initCustomTooltips() {
     let tooltipContainer = document.getElementById('tooltip-container');
     if (!tooltipContainer) {
@@ -60,14 +59,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let currentTooltip = null;
+    let hideTooltipTimer = null; 
 
     function showTooltip(text, element, type) {
+      clearTimeout(hideTooltipTimer);
+      if (currentTooltip && currentTooltip.dataset.owner === element) {
+        return;
+      }
+
       if (currentTooltip) {
-        hideTooltip();
+        hideTooltip(true); 
       }
 
       const tooltipElement = document.createElement('div');
       tooltipElement.className = 'custom-tooltip';
+      tooltipElement.dataset.owner = element; 
 
       const tooltipBox = document.createElement('div');
       tooltipBox.className = 'custom-tooltip-box';
@@ -81,12 +87,14 @@ document.addEventListener("DOMContentLoaded", () => {
       tooltipContainer.appendChild(tooltipElement);
 
       currentTooltip = tooltipElement;
+      tooltipElement.addEventListener('mouseover', () => clearTimeout(hideTooltipTimer));
+      tooltipElement.addEventListener('mouseout', () => hideTooltip());
 
-      // --- Dynamiczne obliczanie pozycji i orientacji strzałki ---
+
       const rect = element.getBoundingClientRect();
       const tooltipRect = tooltipElement.getBoundingClientRect();
       let top, left;
-      const margin = 15; // Odstęp od elementu
+      const margin = 10;
 
       switch (type) {
         case 'data-tooltip-left':
@@ -101,23 +109,19 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
         case 'data-tooltip-top-right':
           tooltipArrow.classList.add('arrow-top');
-          // Pozycjonowanie strzałki (nadal na środku elementu)
           tooltipArrow.style.left = `${rect.width / 2}px`;
           tooltipArrow.style.transform = 'translateX(-50%)';
-          // Pozycjonowanie dymka
           top = rect.top + window.scrollY - tooltipRect.height - margin;
           left = rect.right + window.scrollX - tooltipRect.width;
           break;
         case 'data-tooltip-top-left':
           tooltipArrow.classList.add('arrow-top');
-          // Pozycjonowanie strzałki (nadal na środku elementu)
           tooltipArrow.style.left = `${rect.width / 2}px`;
           tooltipArrow.style.transform = 'translateX(-50%)';
-          // Pozycjonowanie dymka
           top = rect.top + window.scrollY - tooltipRect.height - margin;
           left = rect.left + window.scrollX;
           break;
-        default: // 'data-tooltip'
+        default:
           tooltipArrow.classList.add('arrow-top');
           top = rect.top + window.scrollY - tooltipRect.height - margin;
           left = rect.left + window.scrollX + (rect.width / 2) - (tooltipRect.width / 2);
@@ -132,20 +136,31 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    function hideTooltip() {
-      if (currentTooltip) {
-        const tooltipToRemove = currentTooltip;
+    // NOWOŚĆ: Funkcja przyjmuje opcjonalny argument `immediate`
+    function hideTooltip(immediate = false) {
+      clearTimeout(hideTooltipTimer); // Zawsze czyść poprzedni timer
+      if (!currentTooltip) return;
+
+      if (immediate) {
+        if (currentTooltip.parentElement) {
+          currentTooltip.remove();
+        }
         currentTooltip = null;
-        tooltipToRemove.classList.remove('is-visible');
-        tooltipToRemove.addEventListener('transitionend', () => {
-          if (tooltipToRemove.parentElement) {
-            tooltipToRemove.remove();
-          }
-        }, { once: true });
+      } else {
+        hideTooltipTimer = setTimeout(() => {
+          if (!currentTooltip) return;
+          const tooltipToRemove = currentTooltip;
+          currentTooltip = null;
+          tooltipToRemove.classList.remove('is-visible');
+          tooltipToRemove.addEventListener('transitionend', () => {
+            if (tooltipToRemove.parentElement) {
+              tooltipToRemove.remove();
+            }
+          }, { once: true });
+        }, 100); // Opóźnienie 100ms przed ukryciem
       }
     }
 
-    // Usprawniony Event Listener, który obsługuje wszystkie typy tooltipów
     const tooltipAttributes = [
       'data-tooltip',
       'data-tooltip-left',
@@ -161,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const tooltipText = target.getAttribute(attr);
           if (tooltipText) {
             showTooltip(tooltipText, target, attr);
-            return; // Znaleziono, przerwij pętlę
+            return;
           }
         }
       }
@@ -174,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    document.addEventListener('scroll', hideTooltip, true);
+    document.addEventListener('scroll', () => hideTooltip(true), true);
   }
 
 
@@ -249,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (c.source_url) {
         sourceLink.href = c.source_url;
         sourceLink.classList.remove('hidden');
-        sourceLink.setAttribute('data-tooltip-top-right', c.source_url);
+        sourceLink.setAttribute('data-tooltip', c.source_url);
       } else {
         sourceLink.classList.add('hidden');
       }

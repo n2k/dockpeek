@@ -5,9 +5,6 @@ from config import Config
 from .extensions import login_manager, cors
 
 def create_app(config_class=Config):
-    """
-    Tworzy i konfiguruje instancję aplikacji Flask.
-    """
     logging.basicConfig(level=config_class.LOG_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logging.getLogger('werkzeug').setLevel(logging.WARNING)
 

@@ -16,7 +16,6 @@ __pycache__
 .coverage
 .build
 .Releases
-static/fonts/unused
 
 # IDE / Editor
 .vscode

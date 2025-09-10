@@ -29,7 +29,6 @@ Thumbs.db
 .ideas/
 .Releases/
 node_modules/
-static/fonts/unused/
 #Added
 tailwind.config.js
 docker-compose-dev*.yml

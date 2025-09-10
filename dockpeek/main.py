@@ -6,7 +6,6 @@ from flask import (
 )
 from flask_login import login_required, current_user
 
-# Importujemy logikę Dockera z dedykowanego modułu
 from .docker_utils import get_all_data, discover_docker_clients, update_checker
 
 main_bp = Blueprint('main', __name__)
@@ -71,8 +70,7 @@ def export_json():
     filtered_containers = data.get("containers", [])
     if server_filter != 'all':
         filtered_containers = [c for c in filtered_containers if c.get("server") == server_filter]
-    
-    # ... (logika eksportu, która była w app.py, bez zmian) ...
+        
     export_data = {
         "export_info": {
             "timestamp": datetime.now().isoformat(),

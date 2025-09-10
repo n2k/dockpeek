@@ -7,7 +7,6 @@ from .extensions import login_manager
 
 auth_bp = Blueprint('auth', __name__)
 
-# Przechowywanie użytkowników (teraz pobiera dane z konfiguracji aplikacji)
 def get_users():
     return {
         current_app.config['ADMIN_USERNAME']: {

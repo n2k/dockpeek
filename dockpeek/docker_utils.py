@@ -10,14 +10,11 @@ from packaging import version
 from concurrent.futures import ThreadPoolExecutor
 from flask import request
 
-# Używamy loggera skonfigurowanego w __init__.py
 logger = logging.getLogger(__name__)
 
-# Globalny executor i klasa UpdateChecker pozostają bez zmian
 executor = ThreadPoolExecutor(max_workers=4)
 
 class UpdateChecker:
-    # ... (cała klasa UpdateChecker skopiowana z app.py bez zmian) ...
     def __init__(self):
         self.cache = {}
         self.lock = Lock()
@@ -86,10 +83,8 @@ class UpdateChecker:
             logger.error(f"❌ Error checking image updates for '{container.name}'")
             return False
 
-# Globalna instancja
 update_checker = UpdateChecker()
 
-# ... (wszystkie funkcje pomocnicze _extract_hostname_from_url, _is_likely_internal_hostname, _get_link_hostname skopiowane z app.py bez zmian) ...
 def _extract_hostname_from_url(url, is_docker_host):
     if not url: return None
     if url.startswith("unix://"): return None
@@ -123,9 +118,6 @@ def _get_link_hostname(public_hostname, host_ip, is_docker_host):
 
 
 def discover_docker_clients():
-    # ... (cała funkcja discover_docker_clients skopiowana z app.py, ale DOCKER_TIMEOUT pobieramy z config.py) ...
-    # Zamiast DOCKER_TIMEOUT użyj current_app.config['DOCKER_TIMEOUT']
-    # Jednak dla prostoty zostawmy stałą wartość, bo ta funkcja nie ma dostępu do kontekstu aplikacji
     DOCKER_TIMEOUT = 0.5 
     clients = []
     if "DOCKER_HOST" in os.environ:
@@ -165,7 +157,6 @@ def discover_docker_clients():
     return clients
 
 def get_container_status_with_exit_code(container):
-    # ... (cała funkcja get_container_status_with_exit_code skopiowana z app.py bez zmian) ...
     try:
         base_status = container.status
         state = container.attrs.get('State', {})
@@ -186,8 +177,6 @@ def get_container_status_with_exit_code(container):
         return container.status, None
         
 def get_all_data():
-    # ... (cała funkcja get_all_data skopiowana z app.py, z modyfikacją pobierania konfiguracji) ...
-    # Zamiast TRAEFIK_ENABLE i TAGS_ENABLE użyj current_app.config['TRAEFIK_ENABLE'] itd.
     from flask import current_app
     TRAEFIK_ENABLE = current_app.config['TRAEFIK_ENABLE']
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']

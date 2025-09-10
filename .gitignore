@@ -26,6 +26,7 @@ ehthumbs.db
 Thumbs.db
 #FOLDERS
 .build/
+.develop/
 .ideas/
 .Releases/
 node_modules/

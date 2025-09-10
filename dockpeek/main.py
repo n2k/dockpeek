@@ -6,7 +6,9 @@ from flask import (
 )
 from flask_login import login_required, current_user
 
-from .docker_utils import get_all_data, discover_docker_clients, update_checker
+from .get_data import get_all_data
+from .docker_utils import discover_docker_clients
+from .update import update_checker
 
 main_bp = Blueprint('main', __name__)
 
@@ -82,8 +84,13 @@ def export_json():
     }
     for c in filtered_containers:
         export_container = {k: v for k, v in c.items() if k in ['name', 'server', 'stack', 'image', 'status', 'exit_code', 'custom_url']}
-        if c.get("ports"): export_container["ports"] = c["ports"]
-        if c.get("traefik_routes"): export_container["traefik_routes"] = [{"router": r["router"], "url": r["url"]} for r in c["traefik_routes"]]
+        if c.get("ports"): 
+            export_container["ports"] = c["ports"]
+        if c.get("traefik_routes"): 
+            export_container["traefik_routes"] = [
+                {"router": r["router"], "url": r["url"]} 
+                for r in c["traefik_routes"]
+            ]
         export_data["containers"].append(export_container)
 
     formatted_json = json.dumps(export_data, indent=2, ensure_ascii=False)

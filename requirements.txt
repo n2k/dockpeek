@@ -1,6 +1,7 @@
-flask
-flask-cors
-flask-login
-docker
+Flask
+Flask-Cors
+Flask-Login
 werkzeug
-packaging 
+docker
+packaging
+gunicorn # (opcjonalnie, do wdrożeń produkcyjnych)

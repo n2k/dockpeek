@@ -148,6 +148,17 @@ export function renderTable() {
 
     let statusClass = 'status-unknown';
 
+ // Swarm: running (x/y) should be green if x==y, else default
+      const swarmRunningMatch = typeof c.status === 'string' && c.status.match(/^running \((\d+)\/(\d+)\)$/);
+      if (swarmRunningMatch) {
+        const running = parseInt(swarmRunningMatch[1], 10);
+        const desired = parseInt(swarmRunningMatch[2], 10);
+        if (running === desired) {
+          statusClass = 'status-running';
+        } else {
+          statusClass = 'status-unhealthy'; // or keep as-is for problem color
+        }
+      } else {
     switch (c.status) {
       case 'running':
         statusClass = 'status-running';
@@ -187,6 +198,7 @@ export function renderTable() {
         } else {
           statusClass = 'status-unknown';
         }
+      }
     }
 
     statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;

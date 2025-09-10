@@ -94,6 +94,10 @@ export function parseAdvancedSearch(searchTerm) {
   return filters;
 }
 
+export function isSwarmMode() {
+  // Heuristic: if any container has a status like 'running (x/y)' or 'no-tasks', it's a Swarm service
+  return state.allContainersData.some(c => typeof c.status === 'string' && (c.status.match(/^running \(\d+\/\d+\)$/) || c.status === 'no-tasks'));
+}
 export function updateDisplay() {
   const searchInput = document.getElementById("search-input");
   const filterRunningCheckbox = document.getElementById("filter-running-checkbox");
@@ -106,8 +110,39 @@ export function updateDisplay() {
     workingData = workingData.filter(c => c.server === state.currentServerFilter);
   }
 
+  // Swarm mode: repurpose toggle to "Show Problems"
+  const swarmMode = isSwarmMode();
+  const filterLabel = document.getElementById('filter-running-label');
+  if (swarmMode) {
+    filterLabel.textContent = 'Show Problems';
+    filterLabel.setAttribute('data-tooltip', 'Show only services where not all replicas are running');
+    filterRunningCheckbox.parentElement.classList.remove('hidden');
+  } else {
+    filterLabel.textContent = 'Running only';
+    filterLabel.removeAttribute('data-tooltip');
+    filterRunningCheckbox.parentElement.classList.remove('hidden');
+  }
+
+
   if (filterRunningCheckbox.checked) {
-    workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
+    if (swarmMode) {
+      // Only show services where running < desired replicas
+      workingData = workingData.filter(c => {
+        if (typeof c.status === 'string') {
+          const m = c.status.match(/^running \((\d+)\/(\d+)\)$/);
+          if (m) {
+            const running = parseInt(m[1], 10);
+            const desired = parseInt(m[2], 10);
+            return running < desired;
+          }
+          // Also show 'no-tasks' as a problem
+          if (c.status === 'no-tasks') return true;
+        }
+        return false;
+      });
+    } else {
+      workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
+    }
   }
 
   if (filterUpdatesCheckbox.checked) {

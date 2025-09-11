@@ -16,6 +16,7 @@ __pycache__
 .coverage
 .build
 .Releases
+.develop
 
 # IDE / Editor
 .vscode

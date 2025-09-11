@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/dockpeek/dockpeek">
-     <img src="static/logo_2.svg" alt="dockpeek logo" width="80" height="80"/>
+     <img src="dockpeek/static/images/logo_2.svg" alt="dockpeek logo" width="80" height="80"/>
   </a>
 </div>
 

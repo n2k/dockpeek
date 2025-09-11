@@ -354,7 +354,9 @@ body.dark-mode .table-cell-stack a:hover {
 .table-cell-status {
   text-align: center;
 }
-
+.table-cell-status span {
+  white-space: nowrap;
+}
 .table-cell-status,
 .server-column {
   cursor: default;

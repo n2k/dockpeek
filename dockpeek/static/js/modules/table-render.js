@@ -334,6 +334,8 @@ export function updateColumnVisibility() {
   document.querySelectorAll('.table-cell-tags').forEach(el => {
     el.classList.toggle('column-hidden', !state.columnVisibility.tags || !hasTags);
   });
+  
+  updateFirstAndLastVisibleColumns();
 }
 
 export function initColumnDragAndDrop() {

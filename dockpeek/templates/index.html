@@ -10,7 +10,8 @@
 </head>
 
 <body class="p-6 dark-mode">
-  <div class="container mx-auto bg-white rounded-lg shadow-xl p-8">
+  <div class="container mx-auto bg-white rounded-lg shadow-xl">
+    <div class="container-top pt-8 pr-8 pl-8 pb-0">
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center space-x-4">
         <h1 class="logo-title text-3xl font-bold">dockpeek</h1>
@@ -189,7 +190,8 @@
       </div>
     </div>
     <div id="server-filter-container" class="mb-4 ml-2 flex flex-wrap gap-2"></div>
-    <div id="container-table-wrapper" class="overflow-x-auto rounded-lg overflow-hidden">
+    </div>
+    <div id="container-table-wrapper" class="overflow-x-auto rounded-b-lg overflow-hidden pb-8">
       <table id="main-table" class="min-w-full bg-white">
         <thead class="main-table-header">
           <tr>
@@ -276,7 +278,7 @@
   </div>
 
   <template id="container-row-template">
-    <tr class="hover:bg-gray-50">
+    <tr class="single-row-template">
       <td class="py-3 px-4 border-b border-gray-200 font-medium container-name-cell" data-content="name">
         <div class="container-name-wrapper inline-block items-center space-x-2">
           <div class="name-wrapper">

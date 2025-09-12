@@ -1479,9 +1479,22 @@ body.dark-mode .custom-tooltip-arrow.arrow-right {
 }
 
 .first-visible {
-  padding-left: 2rem
+  padding-left: 3rem
 }
 
 .last-visible {
-  padding-right: 2rem
+  padding-right: 3rem
+}
+
+.single-row-template {
+    background-color: #ffffff !important;
+}
+.single-row-template:hover {
+    background-color: #f5f5f5ba !important;
+}
+body.dark-mode .single-row-template {
+    background-color: #171b22 !important;
+}
+body.dark-mode .single-row-template:hover {
+    background-color: #13181e !important;
 }

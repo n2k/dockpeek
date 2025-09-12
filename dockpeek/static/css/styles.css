@@ -48,6 +48,7 @@ button svg {
 }
 
 body.dark-mode .container {
+    border: 1px solid rgb(223 223 223 / 6%);
     box-shadow: 0 4px 6px rgb(0 0 0 / 13%), 0px 7px 16px rgb(0 0 0 / 23%);
 
 }

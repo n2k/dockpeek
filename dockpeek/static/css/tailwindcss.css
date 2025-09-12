@@ -560,6 +560,20 @@
     -webkit-user-select: none;
     user-select: none;
   }
+  .group-hover\/cup\:fill-\[\#2b7fff\] {
+    &:is(:where(.group\/cup):hover *) {
+      @media (hover: hover) {
+        fill: #2b7fff;
+      }
+    }
+  }
+  .group-hover\/cup\:fill-\[\#FFDD04\] {
+    &:is(:where(.group\/cup):hover *) {
+      @media (hover: hover) {
+        fill: #FFDD04;
+      }
+    }
+  }
   .hover\:bg-blue-600 {
     &:hover {
       @media (hover: hover) {
@@ -1782,6 +1796,9 @@ body.dark-mode .single-row-template {
 }
 body.dark-mode .single-row-template:hover {
   background-color: #13181e !important;
+}
+.buycoffe:hover {
+  color: #ddab30;
 }
 @property --tw-rotate-x {
   syntax: "*";

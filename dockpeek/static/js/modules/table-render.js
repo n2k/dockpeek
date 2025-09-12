@@ -148,56 +148,56 @@ export function renderTable() {
 
     let statusClass = 'status-unknown';
 
- // Swarm: running (x/y) should be green if x==y, else default
-      const swarmRunningMatch = typeof c.status === 'string' && c.status.match(/^running \((\d+)\/(\d+)\)$/);
-      if (swarmRunningMatch) {
-        const running = parseInt(swarmRunningMatch[1], 10);
-        const desired = parseInt(swarmRunningMatch[2], 10);
-        if (running === desired) {
-          statusClass = 'status-running';
-        } else {
-          statusClass = 'status-unhealthy'; // or keep as-is for problem color
-        }
-      } else {
-    switch (c.status) {
-      case 'running':
+    // Swarm: running (x/y) should be green if x==y, else default
+    const swarmRunningMatch = typeof c.status === 'string' && c.status.match(/^running \((\d+)\/(\d+)\)$/);
+    if (swarmRunningMatch) {
+      const running = parseInt(swarmRunningMatch[1], 10);
+      const desired = parseInt(swarmRunningMatch[2], 10);
+      if (running === desired) {
         statusClass = 'status-running';
-        break;
-      case 'healthy':
-        statusClass = 'status-healthy';
-        break;
-      case 'unhealthy':
-        statusClass = 'status-unhealthy';
-        break;
-      case 'starting':
-        statusClass = 'status-starting';
-        break;
-      case 'exited':
-        statusClass = 'status-exited';
-        break;
-      case 'paused':
-        statusClass = 'status-paused';
-        break;
-      case 'restarting':
-        statusClass = 'status-restarting';
-        break;
-      case 'removing':
-        statusClass = 'status-removing';
-        break;
-      case 'dead':
-        statusClass = 'status-dead';
-        break;
-      case 'created':
-        statusClass = 'status-created';
-        break;
-      default:
-        if (c.status.includes('exited')) {
-          statusClass = 'status-exited';
-        } else if (c.status.includes('health unknown')) {
+      } else {
+        statusClass = 'status-unhealthy'; // or keep as-is for problem color
+      }
+    } else {
+      switch (c.status) {
+        case 'running':
           statusClass = 'status-running';
-        } else {
-          statusClass = 'status-unknown';
-        }
+          break;
+        case 'healthy':
+          statusClass = 'status-healthy';
+          break;
+        case 'unhealthy':
+          statusClass = 'status-unhealthy';
+          break;
+        case 'starting':
+          statusClass = 'status-starting';
+          break;
+        case 'exited':
+          statusClass = 'status-exited';
+          break;
+        case 'paused':
+          statusClass = 'status-paused';
+          break;
+        case 'restarting':
+          statusClass = 'status-restarting';
+          break;
+        case 'removing':
+          statusClass = 'status-removing';
+          break;
+        case 'dead':
+          statusClass = 'status-dead';
+          break;
+        case 'created':
+          statusClass = 'status-created';
+          break;
+        default:
+          if (c.status.includes('exited')) {
+            statusClass = 'status-exited';
+          } else if (c.status.includes('health unknown')) {
+            statusClass = 'status-running';
+          } else {
+            statusClass = 'status-unknown';
+          }
       }
     }
 
@@ -260,6 +260,7 @@ export function renderTable() {
   containerRowsBody.appendChild(fragment);
   updateTableColumnOrder();
   updateColumnVisibility();
+  updateFirstAndLastVisibleColumns();
 }
 
 export function updateColumnVisibility() {
@@ -468,6 +469,43 @@ export function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+export function updateFirstAndLastVisibleColumns() {
+  const table = document.querySelector('#main-table');
+  const rows = Array.from(table.querySelectorAll('tr'));
+
+  // Usuń wcześniejsze klasy
+  rows.forEach(row => {
+    row.querySelectorAll('th, td').forEach(cell => {
+      cell.classList.remove('first-visible', 'last-visible');
+    });
+  });
+
+  if (rows.length === 0) return;
+
+  const columnsCount = rows[0].children.length;
+
+  // Znajdź pierwszą i ostatnią widoczną kolumnę
+  let firstIndex = -1;
+  let lastIndex = -1;
+
+  for (let i = 0; i < columnsCount; i++) {
+    // Sprawdzenie widoczności komórki
+    const cell = rows[0].children[i];
+    if (cell.offsetParent !== null) { // widoczny
+      if (firstIndex === -1) firstIndex = i;
+      lastIndex = i;
+    }
+  }
+
+  // Dodaj klasy
+  rows.forEach(row => {
+    if (firstIndex !== -1) row.children[firstIndex].classList.add('first-visible');
+    if (lastIndex !== -1) row.children[lastIndex].classList.add('last-visible');
+  });
+}
+
+
+
 export function updateColumnOrderFromDOM() {
   const items = document.querySelectorAll('#column-list .draggable');
   state.columnOrder.splice(0, state.columnOrder.length, ...Array.from(items).map(item => item.dataset.column));
@@ -519,4 +557,5 @@ export function updateTableColumnOrder() {
       }
     });
   });
+  updateFirstAndLastVisibleColumns();
 }

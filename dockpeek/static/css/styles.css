@@ -1477,3 +1477,11 @@ body.dark-mode .custom-tooltip-arrow.arrow-left {
 body.dark-mode .custom-tooltip-arrow.arrow-right {
   border-right-color: #31363d;
 }
+
+.first-visible {
+  padding-left: 2rem
+}
+
+.last-visible {
+  padding-right: 2rem
+}

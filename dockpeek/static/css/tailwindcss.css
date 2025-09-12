@@ -688,6 +688,9 @@ button svg {
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+body.dark-mode .container {
+  box-shadow: 0 4px 6px rgb(0 0 0 / 13%), 0px 7px 16px rgb(0 0 0 / 23%);
+}
 .logo-title {
   margin-right: 1em;
   color: #e1e4e8;
@@ -764,7 +767,7 @@ body.dark-mode .data-content-name {
   color: #6a737d;
 }
 [data-content="ports"] .badge {
-  background-color: #e1e4e8;
+  background-color: #e5effd;
   color: #2188ff;
   border-radius: 0.375rem;
   padding: 0.08rem 0.35em;
@@ -801,7 +804,7 @@ body.dark-mode [data-content="ports"] .custom-port .badge {
   border-bottom: none;
 }
 input[type="text"] {
-  background-color: #f6f8fa;
+  background-color: #f9f9f9;
   border: 1px solid #ebebeb;
   border-radius: 0.5rem;
   color: #54595f;
@@ -926,52 +929,23 @@ body.dark-mode .table-cell-stack a:hover {
 .table-cell-status, .server-column {
   cursor: default;
 }
-.status-running {
+.status-running, .status-healthy {
   color: #28a745;
-  font-weight: 400;
+  font-weight: 500;
 }
-.status-healthy {
-  color: #28a745;
-  font-weight: 400;
-}
-.status-exited {
+.status-exited, .status-unhealthy, .status-dead, .status-unknown {
   color: #dc3545;
-  font-weight: 400;
+  font-weight: 500;
 }
-.status-unhealthy {
-  color: #dc3545;
-  font-weight: 400;
-}
-.status-dead {
-  color: #dc3545;
-  font-weight: 400;
-}
-.status-unknown {
-  color: #dc3545;
-  font-weight: 400;
-}
-.status-starting {
-  color: #99a1af;
-  font-weight: 400;
-}
-.status-restarting {
-  color: #99a1af;
-  font-weight: 400;
-}
-.status-removing {
-  color: #99a1af;
-  font-weight: 400;
-}
-.status-paused {
+.status-starting, .status-restarting, .status-removing, .status-paused {
   color: #fd7e14;
-  font-weight: 400;
+  font-weight: 500;
 }
-.status-created {
+.status-created, .status-none {
   color: #99a1af;
-  font-weight: 400;
+  font-weight: 500;
 }
-.status-none {
-  color: #99a1af;
+body.dark-mode .status-running, body.dark-mode .status-healthy, body.dark-mode .status-exited, body.dark-mode .status-unhealthy, body.dark-mode .status-dead, body.dark-mode .status-unknown, body.dark-mode .status-starting, body.dark-mode .status-restarting, body.dark-mode .status-removing, body.dark-mode .status-paused, body.dark-mode .status-created, body.dark-mode .status-none {
   font-weight: 400;
 }
 code {
@@ -1286,7 +1260,7 @@ body.dark-mode .update-indicator svg {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  background-color: #ededed;
+  background-color: #f7f7f7;
   color: #3e4043;
   border-radius: 0.25rem;
   padding: 0.2rem 0.4rem;
@@ -1649,8 +1623,8 @@ label[for="filter-running-checkbox"] {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  background-color: #ededed;
-  color: #727373;
+  background-color: #daeaff;
+  color: #546f9f;
   font-size: 0.75rem;
   font-weight: 400;
   padding: 2px 7px;
@@ -1658,7 +1632,7 @@ label[for="filter-running-checkbox"] {
   cursor: pointer;
 }
 .tag-badge:hover {
-  background-color: #e1e4e8;
+  background-color: #cfe0fd;
 }
 .dark-mode .tag-badge {
   background-color: #22262d;
@@ -1800,7 +1774,7 @@ body.dark-mode .custom-tooltip-arrow.arrow-right {
   background-color: #ffffff !important;
 }
 .single-row-template:hover {
-  background-color: #f5f5f5ba !important;
+  background-color: #f7f7f7 !important;
 }
 body.dark-mode .single-row-template {
   background-color: #171b22 !important;

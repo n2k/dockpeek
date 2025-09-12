@@ -55,7 +55,7 @@ def check_updates():
         except Exception as e:
             current_app.logger.error(f"❌ Error accessing containers on {server['name']}: {e}")
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
         results = executor.map(check_container_update, check_args)
         for key, result in results:
             updates[key] = result

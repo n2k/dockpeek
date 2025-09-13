@@ -248,13 +248,15 @@ services:
 | Variable | Description |
 | :--- | :--- |
 | `SECRET_KEY` | **Required.** A strong, unique secret key for session security. |
-| `USERNAME` | **Required.** The username for dashboard authentication. |
-| `PASSWORD` | **Required.** The password for dashboard authentication. |
+| `USERNAME` | **Required unless `DISABLE_AUTH=true`.** The username for dashboard authentication. |
+| `PASSWORD` | **Required unless `DISABLE_AUTH=true`.** The password for dashboard authentication. |
+| `DISABLE_AUTH` | Set to `true` to disable authentication (`SECRET_KEY` is still required). Defaults to `false`. |
 | `DOCKER_HOST` | URL of the primary Docker socket. <br>• Local: `unix:///var/run/docker.sock` <br>• Remote: `tcp://hostname:2375` |
 | `DOCKER_HOST_NAME` | Display name for the primary host in the UI (defaults to `local`). |
 | `DOCKER_HOST_PUBLIC_HOSTNAME`| An optional public hostname or IP to use for generating clickable links. |
 | `TRAEFIK_LABELS` | Set to `false` to disable the Traefik integration column (defaults to `true`). |
 | `TAGS` | Set to `false` to disable the container tagging feature (defaults to `true`). |
+
 
 ### Multi-Host Configuration
 
@@ -266,10 +268,12 @@ services:
 
 > [!IMPORTANT]
 > **Configuration Requirements:**
-> - `SECRET_KEY` and `PASSWORD` must be set for security
+> - `SECRET_KEY` must always be set for session security
+> - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
 > - Remote hosts must be directly accessible; Docker internal networking won't work
->   - Ensure a socket proxy is running and accessible on remote hosts when using TCP connections.
+>   - Ensure a socket proxy is running and accessible on remote hosts when using TCP connections
+
 
 <br>
 

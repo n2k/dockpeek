@@ -10,25 +10,25 @@
 <br>
 <br>
 
-**Dockpeek** is a lightweight, self-hosted Docker dashboard that provides instant visibility and access to your containerized services through a clean, intuitive interface. Supporting both local Docker sockets and remote hosts via `socket-proxy`, it simplifies management of multiple Docker environments from a single centralized location.
+**Dockpeek** is a lightweight, self-hosted Docker dashboard that provides instant visibility and access to your containerized services through a clean, intuitive interface. Supporting both local Docker sockets and remote hosts via `socket-proxy`, it simplifies management of multiple Docker environments from a single, centralized location.
 
-All exposed ports are displayed in an organized table with one-click access, including automatically detected addresses from Traefik labels. Dockpeek also features **image update monitoring** to alert you when newer versions of your container images become available, helping keep your infrastructure current and secure.
+All exposed ports are displayed in an organized table with one-click access, including automatically detected hostnames from Traefik labels. Dockpeek also features **image update monitoring** to alert you when newer versions of your container images become available, helping you keep your infrastructure current and secure.
 
 
 ## Key Features
 
-- **Port Mapping Overview** – View all running containers and their published ports at a glance
-- **Traefik Integration** – Dedicated column displaying container addresses from Traefik labels
-- **One-Click Access** – Launch containerized web applications instantly with direct URL links
-- **Multi-Host Management** – Monitor multiple Docker hosts and sockets from a unified dashboard
-- **Zero Configuration** – Automatic container detection with no setup required
-- **Image Update Monitoring** – Stay informed about available updates for your container images
-- **Smart Label Support** – Enhanced control with custom labels:
-  - `dockpeek.https` – Force HTTPS protocol for specific ports
-  - `dockpeek.link` – Make container names clickable links
-  - `dockpeek.ports` – Add custom ports to display alongside detected ports
-  - `dockpeek.tags` – Organize and categorize containers with custom tags
-- **Mobile-Responsive** – Full functionality across smartphones, tablets, and desktop devices
+  - **Port Mapping Overview** – View all running containers and their published ports at a glance.
+  - **Traefik Integration** – See container addresses from Traefik labels in a dedicated column.
+  - **One-Click Access** – Launch containerized web applications instantly with direct URL links.
+  - **Multi-Host Management** – Monitor multiple Docker hosts from a unified dashboard.
+  - **Zero Configuration** – Detects containers automatically with no setup required.
+  - **Image Update Monitoring** – Stay informed about available updates for your container images.
+  - **Smart Label Support** – Enhance control with custom container labels:
+      - `dockpeek.https` – Force HTTPS protocol for specific ports.
+      - `dockpeek.link` – Make container names clickable links.
+      - `dockpeek.ports` – Add custom ports to display alongside detected ports
+      - `dockpeek.tags` – Organize and categorize containers with custom tags.
+  - **Mobile-Responsive** – Enjoy full functionality across smartphones, tablets, and desktops.
 
 
 <br>
@@ -111,7 +111,7 @@ services:
 
 ### Option 3: Docker Swarm/Stack Deployment (with Traefik)
 
-Dockpeek now supports native Docker Swarm mode! You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This is ideal for production clusters using Traefik as an ingress proxy.
+Dockpeek natively supports Docker Swarm, You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This configuration is ideal for production clusters using Traefik as an ingress proxy.
 
 **Example stack file (docker-compose-swarm-socket.yml):**
 
@@ -196,25 +196,37 @@ Connect and manage multiple Docker instances from a single centralized dashboard
 Configure additional hosts using environment variables:
 
 ```yaml
+services:
+  dockpeek:
+    image: ghcr.io/dockpeek/dockpeek:latest
+    container_name: dockpeek
+    restart: unless-stopped
+    ports:
+      - "3420:8000"
     environment:
-      # Add multiple Docker hosts using numbered environment variables
+      - SECRET_KEY=your_secure_secret_key
+      - USERNAME=admin
+      - PASSWORD=secure_password
+      
+      # --- Docker Host 1 (Local) ---
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock # Local Docker socket
+      - DOCKER_HOST_1_NAME=Local Development          # Display name in UI
+      # DOCKER_HOST_1_PUBLIC_HOSTNAME is optional; uses host IP by default
 
-      # Docker Host 1 (Local)
-      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock      # Local Docker socket
-      - DOCKER_HOST_1_NAME=Local Development               # Display name in UI
-      # DOCKER_HOST_1_PUBLIC_HOSTNAME not needed - will use container's host IP
+      # --- Docker Host 2 (Remote Server) ---
+      - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375    # Remote socket proxy
+      - DOCKER_HOST_2_NAME=Production Server          # Display name in UI
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local    # Optional: Custom hostname for links
 
-      # Docker Host 2 (Remote Server)
-      - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375        # Remote socket proxy
-      - DOCKER_HOST_2_NAME=Production Server               # Display name in UI  
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local         # Optional: Local network hostname
+      # --- Docker Host 3 (Tailscale) ---
+      - DOCKER_HOST_3_URL=tcp://100.64.1.5:2375       # Tailscale IP
+      - DOCKER_HOST_3_NAME=Remote VPS                 # Display name in UI
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=vps.tailnet.ts.net # Optional: Tailscale FQDN
 
-      # Docker Host 3 (Tailscale)
-      - DOCKER_HOST_3_URL=tcp://100.64.1.5:2375           # Tailscale IP
-      - DOCKER_HOST_3_NAME=Remote VPS                      # Display name in UI
-      - DOCKER_HOST_3_PUBLIC_HOSTNAME=vps.tailnet.ts.net   # Optional: Tailscale hostname
-
-      # Continue pattern for additional hosts (4, 5, etc.)
+      # --- Continue pattern for additional hosts (4, 5, etc.) ---
+    volumes:
+      # Required only if you are connecting to a local socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 ```
 
 > [!IMPORTANT]
@@ -232,30 +244,32 @@ Configure additional hosts using environment variables:
 ## Environment Variables
 
 ### Core Configuration
-| Variable                      | Description                                                                 |
-|-------------------------------|-----------------------------------------------------------------------------|
-| `SECRET_KEY`                  | **Required.** Strong, unique secret key for session security.              |
-| `USERNAME`                    | **Required.** Username for dashboard authentication.                       |
-| `PASSWORD`                    | **Required.** Password for dashboard authentication.                       |
-| `DOCKER_HOST`                 | Primary Docker socket URL:<br>• Local: `unix:///var/run/docker.sock`<br>• Remote: `tcp://hostname:2375` |
-| `DOCKER_HOST_NAME`            | Display name for primary host in UI (default: `local`).                    |
-| `DOCKER_HOST_PUBLIC_HOSTNAME` | Public hostname/IP for generating clickable links (optional).              |
-| `TRAEFIK_LABELS`              | Enable Traefik integration column (`true`/`false`, default: `true`).       |
-| `TAGS`                        | Enable container tagging functionality (`true`/`false`, default: `true`). |
+
+| Variable | Description |
+| :--- | :--- |
+| `SECRET_KEY` | **Required.** A strong, unique secret key for session security. |
+| `USERNAME` | **Required.** The username for dashboard authentication. |
+| `PASSWORD` | **Required.** The password for dashboard authentication. |
+| `DOCKER_HOST` | URL of the primary Docker socket. <br>• Local: `unix:///var/run/docker.sock` <br>• Remote: `tcp://hostname:2375` |
+| `DOCKER_HOST_NAME` | Display name for the primary host in the UI (defaults to `local`). |
+| `DOCKER_HOST_PUBLIC_HOSTNAME`| An optional public hostname or IP to use for generating clickable links. |
+| `TRAEFIK_LABELS` | Set to `false` to disable the Traefik integration column (defaults to `true`). |
+| `TAGS` | Set to `false` to disable the container tagging feature (defaults to `true`). |
 
 ### Multi-Host Configuration
-| Variable                        | Description                                                               |
-|---------------------------------|---------------------------------------------------------------------------|
-| `DOCKER_HOST_N_URL`             | URL for additional Docker hosts (e.g., `tcp://192.168.1.100:2375`).<br>Must be directly reachable; `host.docker.internal` not supported.<br>`N` = numeric identifier (1, 2, 3, etc.). |
-| `DOCKER_HOST_N_NAME`            | Display name for host `N` in the dashboard UI.                           |
-| `DOCKER_HOST_N_PUBLIC_HOSTNAME` | Public hostname/IP for host `N` clickable links (optional).<br>If unset, automatically inferred from `DOCKER_HOST_N_URL`. |
+
+| Variable | Description |
+| :--- | :--- |
+| `DOCKER_HOST_N_URL` | URL for an additional Docker host (e.g., `tcp://192.168.1.100:2375`).<br>`N` must be a numeric identifier (1, 2, 3, etc.). |
+| `DOCKER_HOST_N_NAME` | Display name for host `N` in the dashboard UI. |
+| `DOCKER_HOST_N_PUBLIC_HOSTNAME`| Optional public hostname or IP for host `N`. If unset, it is inferred from `DOCKER_HOST_N_URL`. |
 
 > [!IMPORTANT]
 > **Configuration Requirements:**
 > - `SECRET_KEY` and `PASSWORD` must be set for security
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
 > - Remote hosts must be directly accessible; Docker internal networking won't work
-> - Ensure socket proxy is running on remote hosts when using TCP connections
+>   - Ensure a socket proxy is running and accessible on remote hosts when using TCP connections.
 
 <br>
 
@@ -283,6 +297,7 @@ services:
       - "dockpeek.ports=8080"                    # Show additional port 8080
       - "dockpeek.https=3001,8080"               # Force HTTPS for custom ports
       - "dockpeek.link=https://myapp.local"      # Make container name clickable
+      - "dockpeek.tags=frontend,proxy"           # Add tags for filtering and organization
 ```
 
 <br>

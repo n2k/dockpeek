@@ -8,6 +8,8 @@ from .extensions import login_manager
 auth_bp = Blueprint('auth', __name__)
 
 def get_users():
+    if current_app.config.get('DISABLE_AUTH', False):
+        return {}
     return {
         current_app.config['ADMIN_USERNAME']: {
             "password": generate_password_hash(current_app.config['ADMIN_PASSWORD'])
@@ -20,16 +22,24 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
+    if current_app.config.get('DISABLE_AUTH', False):
+        return User('anonymous')
+    
     if user_id in get_users():
         return User(user_id)
     return None
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
+    if current_app.config.get('DISABLE_AUTH', False):
+        return redirect(url_for('main.index'))
     return redirect(url_for('auth.login'))
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if current_app.config.get('DISABLE_AUTH', False):
+        return redirect(url_for('main.index'))
+    
     error = None
     if request.method == "POST":
         username = request.form.get("username")
@@ -47,7 +57,12 @@ def login():
     return render_template("login.html", error=error)
 
 @auth_bp.route("/logout")
-@login_required
 def logout():
-    logout_user()
+    if current_app.config.get('DISABLE_AUTH', False):
+        return redirect(url_for('main.index'))
+    
+    from flask_login import current_user
+    if current_user.is_authenticated:
+        logout_user()
+    
     return redirect(url_for("auth.login"))

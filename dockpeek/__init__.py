@@ -12,6 +12,12 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     login_manager.init_app(app)
+    
+    if not app.config.get('DISABLE_AUTH', False):
+        logging.info("Authentication enabled")
+    else:
+        logging.info("Authentication disabled")
+    
     cors.init_app(app)
 
     from . import auth

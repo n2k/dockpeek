@@ -10,6 +10,15 @@
 </head>
 
 <body class="p-6 dark-mode">
+  {% if not config.DISABLE_AUTH %}
+  <style>
+    #logout-button { display: block; }
+  </style>
+  {% else %}
+  <style>
+    #logout-button { display: none; }
+  </style>
+  {% endif %}
   <div class="container mx-auto bg-white rounded-lg shadow-xl">
     <div class="container-top pt-8 pr-8 pl-8 pb-0">
       <div class="flex justify-between items-center mb-6">

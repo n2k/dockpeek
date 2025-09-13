@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from functools import wraps
 from flask import (
     Blueprint, render_template, jsonify, request, current_app, make_response
 )
@@ -12,19 +13,32 @@ from .update import update_checker
 
 main_bp = Blueprint('main', __name__)
 
+def conditional_login_required(f):
+    """Dekorator który wymaga logowania tylko gdy autoryzacja nie jest wyłączona."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_app.config.get('DISABLE_AUTH', False):
+            return f(*args, **kwargs)
+        else:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return current_app.login_manager.unauthorized()
+            return f(*args, **kwargs)
+    return decorated_function
+
 @main_bp.route("/")
-@login_required
+@conditional_login_required
 def index():
     version = current_app.config['APP_VERSION']
     return render_template("index.html", version=version)
 
 @main_bp.route("/data")
-@login_required
+@conditional_login_required
 def data():
     return jsonify(get_all_data())
 
 @main_bp.route("/check-updates", methods=["POST"])
-@login_required
+@conditional_login_required
 def check_updates():
     request_data = request.get_json() or {}
     server_filter = request_data.get('server_filter', 'all')
@@ -53,7 +67,7 @@ def check_updates():
             for container in server['client'].containers.list(all=True):
                 check_args.append((server, container))
         except Exception as e:
-            current_app.logger.error(f"❌ Error accessing containers on {server['name']}: {e}")
+            current_app.logger.error(f"⌐ Error accessing containers on {server['name']}: {e}")
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = executor.map(check_container_update, check_args)
@@ -64,7 +78,7 @@ def check_updates():
 
 
 @main_bp.route("/export/json")
-@login_required
+@conditional_login_required
 def export_json():
     server_filter = request.args.get('server', 'all')
     data = get_all_data()

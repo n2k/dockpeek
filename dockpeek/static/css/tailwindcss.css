@@ -1511,99 +1511,6 @@ body.dark-mode .column-menu-item span {
 .column-hidden {
   display: none !important;
 }
-@media (max-width: 576px) {
-  body {
-    padding: 0;
-  }
-  #search-input::placeholder {
-    opacity: 0;
-  }
-  .container {
-    padding: 0.5rem;
-  }
-  .flex.justify-between.items-center.mb-6 {
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-  .controls-container {
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    margin-top: 1rem;
-  }
-  .controls-container>* {
-    margin-bottom: 0.5rem;
-    width: 100%;
-  }
-  .py-3.px-4 {
-    padding: 0.5rem 0.75rem;
-  }
-  .min-w-full {
-    min-width: unset;
-  }
-  .update-indicator {
-    display: none;
-  }
-  .min-w-full {
-    min-width: 100%;
-  }
-}
-@media (max-width: 768px) {
-  .container {
-    padding: 0.5rem;
-  }
-  .column-menu-container {
-    margin-left: 8px;
-  }
-  .right-18 {
-    right: calc(var(--spacing) * 14);
-  }
-  [data-tooltip-left]::after, [data-tooltip-left]::before, [data-tooltip-right]::after, [data-tooltip-right]::before, [data-tooltip]::after, [data-tooltip]::before {
-    display: none !important;
-    content: none !important;
-  }
-  .flex.justify-between.items-center.mb-6 {
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-  .status-filter {
-    display: flex;
-    justify-content: right;
-    align-items: center;
-    height: 100%;
-  }
-  .column-menu-container {
-    display: flex;
-    justify-content: right;
-    align-items: center;
-    height: 100%;
-  }
-  .controls-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    margin-top: 1rem;
-  }
-  .controls-container>* {
-    margin-bottom: 0.5rem;
-    width: 100%;
-  }
-  .py-3.px-4 {
-    padding: 0.5rem 0.75rem;
-  }
-  .min-w-full {
-    min-width: unset;
-  }
-  .min-w-full {
-    min-width: 100%;
-  }
-}
 .traefik-route a {
   display: inline-block;
   max-width: 100%;
@@ -1613,24 +1520,6 @@ body.dark-mode .column-menu-item span {
 }
 .traefik-route a .traefik-text {
   display: inline;
-}
-label[for="filter-running-checkbox"] {
-  display: inline;
-}
-@media (max-width: 1023px) {
-  label[for="filter-running-checkbox"] {
-    display: none;
-  }
-}
-@media (max-width: 768px) {
-  label[for="filter-running-checkbox"] {
-    display: inline;
-  }
-}
-@media (min-width: 1024px) {
-  label[for="filter-running-checkbox"] {
-    display: inline;
-  }
 }
 .tag-badge {
   max-width: 120px;
@@ -1799,6 +1688,123 @@ body.dark-mode .single-row-template:hover {
 }
 .buycoffe:hover {
   color: #ddab30;
+}
+@media (max-width: 576px) {
+  body {
+    padding: 0;
+  }
+  #search-input::placeholder {
+    opacity: 0;
+  }
+  .container {
+    padding: 0.5rem;
+  }
+  .flex.justify-between.items-center.mb-6 {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .controls-container {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 1rem;
+  }
+  .controls-container>* {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+  .py-3.px-4 {
+    padding: 0.5rem 0.75rem;
+  }
+  .min-w-full {
+    min-width: unset;
+  }
+  .update-indicator {
+    display: none;
+  }
+  .min-w-full {
+    min-width: 100%;
+  }
+}
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+  }
+  .container-top {
+    padding: 0;
+    padding-top: 0.5rem;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+  .column-menu-container {
+    margin-left: 8px;
+  }
+  .right-18 {
+    right: calc(var(--spacing) * 14);
+  }
+  [data-tooltip-left]::after, [data-tooltip-left]::before, [data-tooltip-right]::after, [data-tooltip-right]::before, [data-tooltip]::after, [data-tooltip]::before {
+    display: none !important;
+    content: none !important;
+  }
+  .flex.justify-between.items-center.mb-6 {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .status-filter {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    height: 100%;
+  }
+  .column-menu-container {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    height: 100%;
+  }
+  .controls-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    margin-top: 1rem;
+  }
+  .controls-container>* {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+  .py-3.px-4 {
+    padding: 0.5rem 0.75rem;
+  }
+  .min-w-full {
+    min-width: unset;
+  }
+  .min-w-full {
+    min-width: 100%;
+  }
+}
+label[for="filter-running-checkbox"] {
+  display: inline;
+}
+@media (max-width: 1023px) {
+  label[for="filter-running-checkbox"] {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
+  }
+}
+@media (min-width: 1024px) {
+  label[for="filter-running-checkbox"] {
+    display: inline;
+  }
 }
 @property --tw-rotate-x {
   syntax: "*";

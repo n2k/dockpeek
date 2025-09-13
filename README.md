@@ -5,7 +5,7 @@
 </div>
 
 <h1 align="center">Dockpeek</h1>
-<h3 align="center">Docker Port Dashboard for Easy Container Access</h3>
+<h3 align="center">Docker Dashboard for Easy Container Access</h3>
 
 <br>
 <br>
@@ -113,6 +113,7 @@ services:
 
 Dockpeek natively supports Docker Swarm, You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This configuration is ideal for production clusters using Traefik as an ingress proxy.
 
+![swarm](https://i.imgur.com/ceEFBT7.png)
 **Example stack file (docker-compose-swarm-socket.yml):**
 
 ```yaml

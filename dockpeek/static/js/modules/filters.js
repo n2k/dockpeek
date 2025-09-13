@@ -167,8 +167,7 @@ export function updateDisplay() {
       if (filters.ports.length > 0) {
         const hasAllPorts = filters.ports.every(searchPort =>
           container.ports.some(p =>
-            p.host_port.includes(searchPort) ||
-            p.container_port.includes(searchPort)
+            p.host_port.includes(searchPort)
           )
         );
         if (!hasAllPorts) return false;

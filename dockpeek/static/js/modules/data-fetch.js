@@ -1,7 +1,15 @@
 import { state } from '../app.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
-import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal } from './modals.js';
+import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal } from './modals.js';
+
+let originalButtonHTML = '';
+document.addEventListener('DOMContentLoaded', () => {
+    const checkUpdatesButton = document.getElementById('check-updates-button');
+    if (checkUpdatesButton) {
+        originalButtonHTML = checkUpdatesButton.innerHTML;
+    }
+});
 
 export async function fetchContainerData() {
   showLoadingIndicator();
@@ -59,9 +67,26 @@ export function handleFetchError(error) {
 }
 
 export async function checkForUpdates() {
+  const checkUpdatesButton = document.getElementById('check-updates-button');
+
+  if (state.isCheckingForUpdates) {
+      console.log('Cancelling update check...');
+      try {
+          await fetch("/cancel-updates", { method: "POST" });
+          // Reset stanu po anulowaniu
+          state.isCheckingForUpdates = false;
+          hideProgressModal();
+          resetUpdateButton();
+      } catch (error) {
+          console.error("Failed to send cancellation request to server:", error);
+      }
+      return;
+  }
+
   if (!state.isDataLoaded) {
     return;
   }
+  
   const activeServers = state.allServersData.filter(s => s.status === 'active');
   const serversToCheck = state.currentServerFilter === 'all'
     ? activeServers
@@ -80,30 +105,111 @@ export async function checkForUpdates() {
     }
   }
 
+  // Użyj nowej metody sprawdzania pojedynczych kontenerów
+  await checkUpdatesIndividually();
+}
+
+async function checkUpdatesIndividually() {
   const checkUpdatesButton = document.getElementById('check-updates-button');
+  
+  state.isCheckingForUpdates = true;
+
+  // Zmień przycisk na "Cancel"
   checkUpdatesButton.classList.add('loading');
-  checkUpdatesButton.disabled = true;
+  checkUpdatesButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      </svg>
+      Cancel
+  `;
+  checkUpdatesButton.disabled = false;
 
   try {
-    const requestData = {
-      server_filter: state.currentServerFilter
-    };
-
-    const response = await fetch("/check-updates", {
+    // Pobierz listę kontenerów do sprawdzenia
+    console.log('Fetching containers list...');
+    const containersResponse = await fetch("/get-containers-list", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(requestData)
+      body: JSON.stringify({
+        server_filter: state.currentServerFilter
+      })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!containersResponse.ok) {
+      throw new Error(`Failed to get containers list: ${containersResponse.status}`);
     }
 
-    const { updates } = await response.json();
-    const updatedContainers = [];
+    const { containers, total } = await containersResponse.json();
+    console.log(`Found ${total} containers to check`);
 
+    if (total === 0) {
+      showNoUpdatesModal();
+      return;
+    }
+
+    // Pokaż progress modal
+    showProgressModal(total);
+
+    const updates = {};
+    const updatedContainers = [];
+    let processed = 0;
+    let cancelled = false;
+
+    // Sprawdzaj kontenery pojedynczo
+    for (const container of containers) {
+      // Sprawdź czy anulowano
+      if (!state.isCheckingForUpdates) {
+        console.log('Update check cancelled by user');
+        cancelled = true;
+        break;
+      }
+
+      console.log(`Checking ${container.key} (${processed + 1}/${total})`);
+      
+      try {
+        const response = await fetch("/check-single-update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            server_name: container.server_name,
+            container_name: container.container_name
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to check ${container.key}: ${response.status}`);
+          updates[container.key] = false;
+        } else {
+          const result = await response.json();
+          
+          if (result.cancelled) {
+            console.log('Server reported operation was cancelled');
+            cancelled = true;
+            break;
+          }
+          
+          updates[container.key] = result.update_available;
+          console.log(`${container.key}: ${result.update_available ? 'UPDATE AVAILABLE' : 'up to date'}`);
+        }
+      } catch (error) {
+        console.error(`Error checking ${container.key}:`, error);
+        updates[container.key] = false;
+      }
+
+      processed++;
+      
+      // Aktualizuj progress
+      updateProgressModal(processed, total, container.key);
+      
+      // Krótkie opóźnienie żeby dać szansę na anulowanie
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    // Aktualizuj dane kontenerów
     state.allContainersData.forEach(container => {
       const key = `${container.server}:${container.name}`;
       if (updates.hasOwnProperty(key)) {
@@ -115,20 +221,39 @@ export async function checkForUpdates() {
     });
 
     updateDisplay();
-
-    if (updatedContainers.length > 0) {
-      showUpdatesModal(updatedContainers);
+    hideProgressModal();
+    
+    if (!cancelled) {
+        if (updatedContainers.length > 0) {
+          showUpdatesModal(updatedContainers);
+        } else {
+          showNoUpdatesModal();
+        }
     } else {
-      showNoUpdatesModal();
+        console.log("Update check was cancelled");
     }
+
   } catch (error) {
     console.error("Update check failed:", error);
+    hideProgressModal();
     alert("Failed to check for updates. Please try again.");
   } finally {
-    checkUpdatesButton.classList.remove('loading');
-    checkUpdatesButton.disabled = false;
+    resetUpdateButton();
   }
 }
+
+function resetUpdateButton() {
+  const checkUpdatesButton = document.getElementById('check-updates-button');
+  if (originalButtonHTML) {
+      checkUpdatesButton.innerHTML = originalButtonHTML;
+  }
+  checkUpdatesButton.classList.remove('loading');
+  checkUpdatesButton.disabled = false;
+  state.isCheckingForUpdates = false;
+}
+
+// Funkcje dla progress modal - teraz importowane z modals.js
+// Usunięto lokalne funkcje showProgressModal, updateProgressModal, hideProgressModal
 
 export function updateExportLink() {
   const exportLink = document.getElementById('export-json-link');

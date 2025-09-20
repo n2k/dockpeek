@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from flask import (
     Blueprint, render_template, jsonify, request, current_app, make_response
@@ -40,6 +39,7 @@ def data():
 @main_bp.route("/check-updates", methods=["POST"])
 @conditional_login_required
 def check_updates():
+    update_checker.start_check()
     request_data = request.get_json() or {}
     server_filter = request_data.get('server_filter', 'all')
     
@@ -50,32 +50,170 @@ def check_updates():
         active_servers = [s for s in active_servers if s['name'] == server_filter]
     
     updates = {}
+    was_cancelled = False
+    total_containers = 0
+    processed_containers = 0
     
-    def check_container_update(args):
-        server, container = args
+    # Policz wszystkie kontenery do sprawdzenia
+    for server in active_servers:
         try:
-            update_available = update_checker.check_image_updates_async(
-                server['client'], container, server['name']
-            )
-            return f"{server['name']}:{container.name}", update_available
+            containers = server['client'].containers.list(all=True)
+            total_containers += len(containers)
         except Exception:
-            return f"{server['name']}:{container.name}", False
+            pass
+    
+    current_app.logger.info(f"Starting update check for {total_containers} containers")
+    
+    for server in active_servers:
+        if update_checker.is_cancelled:
+            current_app.logger.info("Update check cancelled at server level.")
+            was_cancelled = True
+            break
+            
+        try:
+            containers = server['client'].containers.list(all=True)
+            for container in containers:
+                # Sprawdź anulowanie przed każdym kontenerem
+                if update_checker.is_cancelled:
+                    current_app.logger.info(f"Update check cancelled at container {container.name}. Processed {processed_containers}/{total_containers}")
+                    was_cancelled = True
+                    break
+                
+                processed_containers += 1
+                key = f"{server['name']}:{container.name}"
+                
+                # Loguj postęp co 10 kontenerów lub przy pierwszym/ostatnim
+                if processed_containers == 1 or processed_containers % 10 == 0 or processed_containers == total_containers:
+                    current_app.logger.info(f"Checking updates: {processed_containers}/{total_containers} - {key}")
+                
+                try:
+                    update_available = update_checker.check_image_updates(
+                        server['client'], container, server['name']
+                    )
+                    updates[key] = update_available
+                except Exception as e:
+                    updates[key] = False
+                    current_app.logger.error(f"Error during update check for {key}: {e}")
+                
+                # Dodatkowe sprawdzenie po każdym kontenerze
+                if update_checker.is_cancelled:
+                    current_app.logger.info(f"Update check cancelled after processing {key}")
+                    was_cancelled = True
+                    break
+                    
+        except Exception as e:
+            current_app.logger.error(f"Error accessing containers on {server['name']}: {e}")
+        
+        if was_cancelled:
+            break
 
-    check_args = []
+    if was_cancelled:
+        current_app.logger.info(f"Update check cancelled. Processed {processed_containers}/{total_containers} containers")
+    else:
+        current_app.logger.info(f"Update check completed. Processed {processed_containers}/{total_containers} containers")
+
+    return jsonify({
+        "updates": updates, 
+        "cancelled": was_cancelled,
+        "progress": {
+            "processed": processed_containers,
+            "total": total_containers
+        }
+    })
+
+@main_bp.route("/check-single-update", methods=["POST"])
+@conditional_login_required
+def check_single_update():
+    """Sprawdza aktualizację dla pojedynczego kontenera."""
+    request_data = request.get_json() or {}
+    server_name = request_data.get('server_name')
+    container_name = request_data.get('container_name')
+    
+    if not server_name or not container_name:
+        return jsonify({"error": "Missing server_name or container_name"}), 400
+    
+    # Sprawdź czy operacja została anulowana
+    if update_checker.is_cancelled:
+        return jsonify({"cancelled": True}), 200
+    
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+    
+    if not server:
+        return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
+    
+    try:
+        container = server['client'].containers.get(container_name)
+        
+        # Sprawdź ponownie czy nie anulowano podczas pobierania kontenera
+        if update_checker.is_cancelled:
+            return jsonify({"cancelled": True}), 200
+            
+        update_available = update_checker.check_image_updates(
+            server['client'], container, server_name
+        )
+        
+        key = f"{server_name}:{container_name}"
+        return jsonify({
+            "key": key,
+            "update_available": update_available,
+            "server_name": server_name,
+            "container_name": container_name,
+            "cancelled": update_checker.is_cancelled
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error checking update for {server_name}:{container_name}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@main_bp.route("/get-containers-list", methods=["POST"])  
+@conditional_login_required
+def get_containers_list():
+    """Zwraca listę kontenerów do sprawdzenia bez sprawdzania aktualizacji."""
+    request_data = request.get_json() or {}
+    server_filter = request_data.get('server_filter', 'all')
+    
+    servers = discover_docker_clients()
+    active_servers = [s for s in servers if s['status'] == 'active']
+    
+    if server_filter != 'all':
+        active_servers = [s for s in active_servers if s['name'] == server_filter]
+    
+    containers_list = []
+    
     for server in active_servers:
         try:
             for container in server['client'].containers.list(all=True):
-                check_args.append((server, container))
+                containers_list.append({
+                    "server_name": server['name'],
+                    "container_name": container.name,
+                    "key": f"{server['name']}:{container.name}",
+                    "image": container.attrs.get('Config', {}).get('Image', ''),
+                    "status": container.status
+                })
         except Exception as e:
-            current_app.logger.error(f"⌐ Error accessing containers on {server['name']}: {e}")
+            current_app.logger.error(f"Error accessing containers on {server['name']}: {e}")
+    
+    return jsonify({
+        "containers": containers_list,
+        "total": len(containers_list)
+    })
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        results = executor.map(check_container_update, check_args)
-        for key, result in results:
-            updates[key] = result
-            
-    return jsonify({"updates": updates})
+@main_bp.route("/update-check-status", methods=["GET"])
+@conditional_login_required
+def get_update_check_status():
+    """Zwraca status sprawdzania aktualizacji."""
+    return jsonify({
+        "is_cancelled": update_checker.is_cancelled,
+        "cache_stats": update_checker.get_cache_stats()
+    })
 
+@main_bp.route("/cancel-updates", methods=["POST"])
+@conditional_login_required
+def cancel_updates():
+    update_checker.cancel_check()
+    current_app.logger.info("Cancellation request received.")
+    return jsonify({"status": "cancellation_requested"})
 
 @main_bp.route("/export/json")
 @conditional_login_required

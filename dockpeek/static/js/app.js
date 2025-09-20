@@ -14,6 +14,8 @@ const state = {
   currentSortDirection: "asc",
   currentServerFilter: "all",
   isDataLoaded: false,
+  isCheckingForUpdates: false,
+  updateCheckController: null,
   columnOrder: ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'],
   columnVisibility: {
     name: true,

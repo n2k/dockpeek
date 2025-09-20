@@ -125,6 +125,7 @@ def check_updates():
 @conditional_login_required
 def check_single_update():
     """Sprawdza aktualizację dla pojedynczego kontenera."""
+    update_checker.start_check()
     request_data = request.get_json() or {}
     server_name = request_data.get('server_name')
     container_name = request_data.get('container_name')

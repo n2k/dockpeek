@@ -13,9 +13,9 @@ class UpdateChecker:
     def __init__(self):
         self.cache = {}
         self.lock = Lock()
-        self.cache_duration = 300  # 5 minutes
+        self.cache_duration = 60  # 1 minutes
         self.is_cancelled = False
-        self.pull_timeout = 30  # Timeout for docker pull operations
+        self.pull_timeout = 300  # Timeout for docker pull operations
         
     def start_check(self):
         """Reset the cancellation flag before starting a new check."""

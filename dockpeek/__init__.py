@@ -6,7 +6,10 @@ from .extensions import login_manager, cors
 
 def create_app(config_class=Config):
     logging.basicConfig(level=config_class.LOG_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('werkzeug').setLevel(logging.CRITICAL)
+    logging.getLogger('gunicorn').setLevel(logging.CRITICAL)
+    logging.getLogger('gunicorn.access').setLevel(logging.CRITICAL)
+    logging.getLogger('gunicorn.error').setLevel(logging.CRITICAL)
 
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -14,7 +17,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     
     if not app.config.get('DISABLE_AUTH', False):
-        logging.info("Authentication enabled")
+        logging.debug("Authentication enabled")
     else:
         logging.info("Authentication disabled")
     

@@ -92,16 +92,16 @@ export function showProgressModal(total) {
   const progressFill = document.getElementById('progress-fill');
   const currentContainerEl = document.getElementById('current-container');
   const cancelButton = document.getElementById('progress-cancel-button');
-  
+
   // Reset initial values
   if (progressCounter) progressCounter.textContent = `0 / ${total}`;
   if (progressText) progressText.textContent = 'Starting update check...';
   if (progressFill) progressFill.style.width = '0%';
   if (currentContainerEl) currentContainerEl.textContent = 'Preparing...';
-  
+
   // Show modal
   progressModal.classList.remove('hidden');
-  
+
   // Setup cancel button handler
   const cancelHandler = () => {
     import('../app.js').then(({ state }) => {
@@ -109,79 +109,20 @@ export function showProgressModal(total) {
       hideProgressModal();
     });
   };
-  
+
   // Remove existing listeners and add new one
   cancelButton.removeEventListener('click', cancelHandler);
   cancelButton.addEventListener('click', cancelHandler);
   
-  // Add CSS styles if not present
-  if (!document.getElementById('progress-modal-styles')) {
-    const style = document.createElement('style');
-    style.id = 'progress-modal-styles';
-    style.textContent = `
-      .progress-container {
-        padding: 20px 0;
-      }
-      
-      .progress-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        font-weight: 500;
-      }
-      
-      .progress-bar {
-        width: 100%;
-        height: 20px;
-        background-color: var(--bg-secondary, #f3f4f6);
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 15px;
-        border: 1px solid var(--border-color, #d1d5db);
-      }
-      
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--accent-color, #3b82f6), var(--accent-hover, #2563eb));
-        transition: width 0.3s ease;
-        position: relative;
-      }
-      
-      .progress-fill::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255,255,255,0.2),
-          transparent
-        );
-        animation: shimmer 2s infinite;
-      }
-      
-      .current-container {
-        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-        font-size: 0.9em;
-        color: var(--text-secondary, #6b7280);
-        background: var(--bg-secondary, #f3f4f6);
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--border-color, #d1d5db);
-        word-break: break-all;
-      }
-      
-      @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+  const backdropHandler = (e) => {
+    if (e.target === progressModal) {
+      hideProgressModal();
+    }
+  };
+
+  progressModal.addEventListener('click', backdropHandler, { once: true });
 }
+
 
 export function updateProgressModal(processed, total, currentContainer) {
   const percentage = Math.round((processed / total) * 100);
@@ -189,19 +130,19 @@ export function updateProgressModal(processed, total, currentContainer) {
   const progressCounter = document.getElementById('progress-counter');
   const progressFill = document.getElementById('progress-fill');
   const currentContainerEl = document.getElementById('current-container');
-  
+
   if (progressText) {
     progressText.textContent = `Checking containers... (${percentage}%)`;
   }
-  
+
   if (progressCounter) {
     progressCounter.textContent = `${processed} / ${total}`;
   }
-  
+
   if (progressFill) {
     progressFill.style.width = `${percentage}%`;
   }
-  
+
   if (currentContainerEl) {
     if (processed < total) {
       currentContainerEl.textContent = `Current: ${currentContainer}`;

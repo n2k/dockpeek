@@ -77,7 +77,7 @@ def discover_docker_clients():
                 "order": 0
             })
         except Exception:
-            logger.error(f"Could not connect to DOCKER_HOST '{host_name}' at '{host_url}'")
+            logger.debug(f"Could not connect to DOCKER_HOST '{host_name}' at '{host_url}'")
             clients.append({
                 "name": host_name, 
                 "client": None, 
@@ -99,7 +99,7 @@ def discover_docker_clients():
             try:
                 client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
                 client.ping()
-                logger.info(f"[ {name} ]  Docker host is active")
+                logger.debug(f"[ {name} ]  Docker host is active")
                 clients.append({
                     "name": name, 
                     "client": client, 
@@ -110,7 +110,7 @@ def discover_docker_clients():
                     "order": int(num)
                 })
             except Exception:
-                logger.error(f"[ {name} ] Could not connect to Docker host at {url}")
+                logger.debug(f"[ {name} ] Could not connect to Docker host at {url}")
                 clients.append({
                     "name": name, 
                     "client": None, 

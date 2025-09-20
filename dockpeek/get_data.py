@@ -225,6 +225,8 @@ def get_all_data():
                     
                     # Get status with health check information and exit codes
                     container_status, exit_code = get_container_status_with_exit_code(container)
+                    start_time = container.attrs.get('State', {}).get('StartedAt', '')
+
 
                     # Get stack information from Docker Compose labels
                     labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
@@ -369,6 +371,7 @@ def get_all_data():
                          'server': server_name,
                          'name': container.name,
                          'status': container_status,
+                         'started_at': start_time,
                          'exit_code': exit_code,
                          'image': image_name,
                          'stack': stack_name,

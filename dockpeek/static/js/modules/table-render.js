@@ -1,5 +1,29 @@
 import { state } from '../app.js';
 
+function getUptimeText(startedAt) {
+  if (!startedAt) return '';
+  
+  const startTime = new Date(startedAt);
+  const now = new Date();
+  const uptimeMs = now - startTime;
+  const uptimeMinutes = Math.floor(uptimeMs / (1000 * 60));
+  const uptimeHours = Math.floor(uptimeMinutes / 60);
+  const uptimeDays = Math.floor(uptimeHours / 24);
+  const uptimeWeeks = Math.floor(uptimeDays / 7);
+  
+  if (uptimeWeeks > 0) {
+    return uptimeWeeks === 1 ? '1 week' : `${uptimeWeeks} weeks`;
+  } else if (uptimeDays > 0) {
+    return uptimeDays === 1 ? '1 day' : `${uptimeDays} days`;
+  } else if (uptimeHours > 0) {
+    return uptimeHours === 1 ? '1 hour' : `${uptimeHours} hours`;
+  } else if (uptimeMinutes > 0) {
+    return uptimeMinutes === 1 ? '1 minute' : `${uptimeMinutes} minutes`;
+  } else {
+    return 'less than 1 minute';
+  }
+}
+
 export function renderTable() {
   const containerRowsBody = document.getElementById("container-rows");
   const rowTemplate = document.getElementById("container-row-template");
@@ -111,9 +135,13 @@ export function renderTable() {
       switch (c.status) {
         case 'running':
           tooltipText = 'Container is running';
+          const runningUptime = getUptimeText(c.started_at);
+          if (runningUptime) tooltipText += ` (up: ${runningUptime})`;
           break;
         case 'healthy':
           tooltipText = 'Health check passed';
+          const healthyUptime = getUptimeText(c.started_at);
+          if (healthyUptime) tooltipText += ` (up: ${healthyUptime})`;
           break;
         case 'unhealthy':
           tooltipText = 'Health check failed';

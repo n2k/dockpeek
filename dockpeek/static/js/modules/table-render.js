@@ -2,7 +2,7 @@ import { state } from '../app.js';
 
 function getUptimeText(startedAt) {
   if (!startedAt) return '';
-  
+
   const startTime = new Date(startedAt);
   const now = new Date();
   const uptimeMs = now - startTime;
@@ -12,7 +12,7 @@ function getUptimeText(startedAt) {
   const uptimeWeeks = Math.floor(uptimeDays / 7);
   const uptimeMonths = Math.floor(uptimeDays / 30);
   const uptimeYears = Math.floor(uptimeDays / 365);
-  
+
   if (uptimeYears > 0) {
     return uptimeYears === 1 ? '1 year' : `${uptimeYears} years`;
   } else if (uptimeMonths > 0) {
@@ -151,12 +151,18 @@ export function renderTable() {
           break;
         case 'unhealthy':
           tooltipText = 'Health check failed';
+          const unhealthyUptime = getUptimeText(c.started_at);
+          if (unhealthyUptime) tooltipText += ` (up: ${unhealthyUptime})`;
           break;
         case 'starting':
           tooltipText = 'Container is starting up';
+          const startingUptime = getUptimeText(c.started_at);
+          if (startingUptime) tooltipText += ` (starting for: ${startingUptime})`;
           break;
         case 'paused':
           tooltipText = 'Container is paused';
+          const pausedUptime = getUptimeText(c.started_at);
+          if (pausedUptime) tooltipText += ` (was up: ${pausedUptime})`;
           break;
         case 'restarting':
           tooltipText = 'Container is restarting';
@@ -173,8 +179,12 @@ export function renderTable() {
         default:
           if (c.status.includes('health unknown')) {
             tooltipText = 'Container running, health status unknown';
+            const unknownUptime = getUptimeText(c.started_at);
+            if (unknownUptime) tooltipText += ` (up: ${unknownUptime})`;
           } else {
             tooltipText = `Container status: ${c.status}`;
+            const defaultUptime = getUptimeText(c.started_at);
+            if (defaultUptime) tooltipText += ` (up: ${defaultUptime})`;
           }
       }
       statusSpan.setAttribute('data-tooltip', tooltipText);
@@ -368,7 +378,7 @@ export function updateColumnVisibility() {
   document.querySelectorAll('.table-cell-tags').forEach(el => {
     el.classList.toggle('column-hidden', !state.columnVisibility.tags || !hasTags);
   });
-  
+
   updateFirstAndLastVisibleColumns();
 }
 

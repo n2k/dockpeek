@@ -20,7 +20,7 @@ class UpdateChecker:
     def start_check(self):
         """Reset the cancellation flag before starting a new check."""
         self.is_cancelled = False
-        logger.info("Update check started")
+        logger.debug("Update check started")
 
     def cancel_check(self):
         """Set the cancellation flag."""

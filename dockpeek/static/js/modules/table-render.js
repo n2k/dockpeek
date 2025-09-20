@@ -10,8 +10,14 @@ function getUptimeText(startedAt) {
   const uptimeHours = Math.floor(uptimeMinutes / 60);
   const uptimeDays = Math.floor(uptimeHours / 24);
   const uptimeWeeks = Math.floor(uptimeDays / 7);
+  const uptimeMonths = Math.floor(uptimeDays / 30);
+  const uptimeYears = Math.floor(uptimeDays / 365);
   
-  if (uptimeWeeks > 0) {
+  if (uptimeYears > 0) {
+    return uptimeYears === 1 ? '1 year' : `${uptimeYears} years`;
+  } else if (uptimeMonths > 0) {
+    return uptimeMonths === 1 ? '1 month' : `${uptimeMonths} months`;
+  } else if (uptimeWeeks > 0) {
     return uptimeWeeks === 1 ? '1 week' : `${uptimeWeeks} weeks`;
   } else if (uptimeDays > 0) {
     return uptimeDays === 1 ? '1 day' : `${uptimeDays} days`;

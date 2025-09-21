@@ -151,3 +151,29 @@ export function hideProgressModal() {
     progressModal.classList.add('hidden');
   }
 }
+
+/**
+ * Pokazuje modal informujący o trwającej aktualizacji kontenera.
+ * @param {string} containerName - Nazwa aktualizowanego kontenera.
+ */
+export function showUpdateInProgressModal(containerName) {
+  const modal = document.getElementById('update-in-progress-modal');
+  const messageEl = document.getElementById('update-modal-message');
+
+  if (messageEl) {
+    messageEl.textContent = `Aktualizowanie ${containerName}...`;
+  }
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
+}
+
+/**
+ * Ukrywa modal informujący o trwającej aktualizacji.
+ */
+export function hideUpdateInProgressModal() {
+  const modal = document.getElementById('update-in-progress-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}

@@ -97,10 +97,26 @@ export function renderTable() {
     const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
     if (c.update_available) {
       updateIndicator.classList.remove('hidden');
-      updateIndicator.setAttribute('data-tooltip', 'Update available');
+      // Zmień klasę z 'update-indicator' na 'update-available-indicator'
+      updateIndicator.classList.add('update-available-indicator');
+      // Dodaj potrzebne atrybuty dla funkcjonalności kliknięcia
+      updateIndicator.setAttribute('data-server', c.server);
+      updateIndicator.setAttribute('data-container', c.name);
+      updateIndicator.setAttribute('data-tooltip', `Click to update ${c.name}`);
+      // Dodaj style kursorka
+      updateIndicator.style.cursor = 'pointer';
+
+      console.log(`Update indicator configured for ${c.server}:${c.name}`);
     } else {
       updateIndicator.classList.add('hidden');
+      updateIndicator.classList.remove('update-available-indicator');
+      // Usuń atrybuty gdy aktualizacja nie jest dostępna
+      updateIndicator.removeAttribute('data-server');
+      updateIndicator.removeAttribute('data-container');
+      updateIndicator.removeAttribute('data-tooltip');
+      updateIndicator.style.cursor = '';
     }
+
 
     const tagsCell = clone.querySelector('[data-content="tags"]');
     tagsCell.classList.add('table-cell-tags');

@@ -1,4 +1,4 @@
-import { fetchContainerData, checkForUpdates, updateExportLink } from './data-fetch.js';
+import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate } from './data-fetch.js';
 import { updateDisplay, clearSearch, filterByStackAndServer } from './filters.js';
 import { applyTheme } from './ui-utils.js';
 import { state } from '../app.js';
@@ -65,6 +65,24 @@ export function initEventListeners() {
   });
 
   containerRowsBody.addEventListener('click', function (e) {
+    // Obsługa kliknięcia na wskaźnik aktualizacji
+    if (e.target.classList.contains('update-available-indicator') || e.target.closest('.update-available-indicator')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const indicator = e.target.classList.contains('update-available-indicator') ? e.target : e.target.closest('.update-available-indicator');
+      const serverName = indicator.dataset.server;
+      const containerName = indicator.dataset.container;
+      
+      if (serverName && containerName) {
+        console.log(`Initiating update for ${containerName} on ${serverName}`);
+        installUpdate(serverName, containerName);
+      } else {
+        console.error('Missing server or container name in update indicator');
+      }
+      return;
+    }
+
     if (e.target.classList.contains('tag-badge')) {
       e.preventDefault();
       const tag = e.target.dataset.tag;

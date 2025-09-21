@@ -120,7 +120,7 @@ export function showProgressModal(total) {
     }
   };
 
-  progressModal.addEventListener('click', backdropHandler, { once: true });
+  progressModal.addEventListener('click', backdropHandler);
 }
 
 

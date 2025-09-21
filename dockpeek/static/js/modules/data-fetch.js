@@ -70,16 +70,11 @@ export async function checkForUpdates() {
   const checkUpdatesButton = document.getElementById('check-updates-button');
 
   if (state.isCheckingForUpdates) {
-      console.log('Cancelling update check...');
-      try {
-          await fetch("/cancel-updates", { method: "POST" });
-          // Reset stanu po anulowaniu
-          state.isCheckingForUpdates = false;
-          hideProgressModal();
-          resetUpdateButton();
-      } catch (error) {
-          console.error("Failed to send cancellation request to server:", error);
-      }
+      console.log('Showing progress modal...');
+      
+      const progressModal = document.getElementById('progress-modal');
+      progressModal.classList.remove('hidden');
+      
       return;
   }
 
@@ -120,7 +115,7 @@ async function checkUpdatesIndividually() {
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
       </svg>
-      Cancel
+      Show Progress
   `;
   checkUpdatesButton.disabled = false;
 

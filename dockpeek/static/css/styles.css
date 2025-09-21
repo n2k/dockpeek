@@ -773,7 +773,7 @@ body.dark-mode .progress-bar {
   word-break: break-all;
 }
 body.dark-mode  .current-container {
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-secondary, #acb1b9);
   background: var(--bg-secondary, #0d1117);
   border: 1px solid var(--border-color, #22262d);
 }

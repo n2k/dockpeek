@@ -1,4 +1,3 @@
-
 import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from '../app.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
@@ -130,12 +129,8 @@ async function checkUpdatesIndividually() {
     console.log('Fetching containers list...');
     const containersResponse = await fetch("/get-containers-list", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        server_filter: state.currentServerFilter
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ server_filter: state.currentServerFilter })
     });
 
     if (!containersResponse.ok) {
@@ -155,55 +150,75 @@ async function checkUpdatesIndividually() {
     const updates = {};
     const updatedContainers = [];
     let processed = 0;
-    let cancelled = false;
+    
+    const CONCURRENCY_LIMIT = 5; // Number of parallel checks
+    const queue = [...containers];
 
-    for (const container of containers) {
-      if (!state.isCheckingForUpdates) {
-        console.log('Update check cancelled by user');
-        cancelled = true;
-        break;
-      }
+    const checkContainer = async (container) => {
+        if (!state.isCheckingForUpdates) return null;
 
-      console.log(`Checking ${container.key} (${processed + 1}/${total})`);
-      
-      try {
-        const response = await fetch("/check-single-update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            server_name: container.server_name,
-            container_name: container.container_name
-          })
-        });
+        console.log(`Checking ${container.key} (${processed + 1}/${total})`);
+        let updateResult = false;
+        let cancelled = false;
 
-        if (!response.ok) {
-          console.error(`Failed to check ${container.key}: ${response.status}`);
-          updates[container.key] = false;
-        } else {
-          const result = await response.json();
-          
-          if (result.cancelled) {
-            console.log('Server reported operation was cancelled');
-            cancelled = true;
-            break;
-          }
-          
-          updates[container.key] = result.update_available;
-          console.log(`${container.key}: ${result.update_available ? 'UPDATE AVAILABLE' : 'up to date'}`);
+        try {
+            const response = await fetch("/check-single-update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    server_name: container.server_name,
+                    container_name: container.container_name
+                })
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to check ${container.key}: ${response.status}`);
+            } else {
+                const result = await response.json();
+                if (result.cancelled) {
+                    cancelled = true;
+                } else {
+                    updateResult = result.update_available;
+                    console.log(`${container.key}: ${updateResult ? 'UPDATE AVAILABLE' : 'up to date'}`);
+                }
+            }
+        } catch (error) {
+            console.error(`Error checking ${container.key}:`, error);
         }
-      } catch (error) {
-        console.error(`Error checking ${container.key}:`, error);
-        updates[container.key] = false;
-      }
 
-      processed++;
-      
-      updateProgressModal(processed, total, container.key);
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
+        processed++;
+        updateProgressModal(processed, total, container.key);
+        
+        if (cancelled) {
+            state.isCheckingForUpdates = false; 
+        }
+
+        return { key: container.key, update_available: updateResult };
+    };
+
+    const workers = Array(CONCURRENCY_LIMIT).fill(null).map(async () => {
+        const workerResults = [];
+        while (queue.length > 0) {
+            if (!state.isCheckingForUpdates) break;
+            const container = queue.shift();
+            if (container) {
+                const result = await checkContainer(container);
+                if (result) {
+                    workerResults.push(result);
+                }
+            }
+        }
+        return workerResults;
+    });
+
+    const allWorkerResults = await Promise.all(workers);
+    const allResults = allWorkerResults.flat();
+    
+    const cancelled = !state.isCheckingForUpdates;
+
+    allResults.forEach(result => {
+      updates[result.key] = result.update_available;
+    });
 
     state.allContainersData.forEach(container => {
       const key = `${container.server}:${container.name}`;

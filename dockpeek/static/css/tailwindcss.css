@@ -381,6 +381,9 @@
   .rounded {
     border-radius: 0.25rem;
   }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
   .rounded-lg {
     border-radius: var(--radius-lg);
   }
@@ -437,6 +440,9 @@
   }
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-3 {
+    padding-inline: calc(var(--spacing) * 3);
   }
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
@@ -715,6 +721,18 @@ button svg {
 body.dark-mode .container {
   border: 1px solid rgb(223 223 223 / 6%);
   box-shadow: 0 4px 6px rgb(0 0 0 / 13%), 0px 7px 16px rgb(0 0 0 / 23%);
+}
+.swarm-indicator {
+  color: #98a1ab;
+}
+body.dark-mode .swarm-indicator {
+  color: #6e7781;
+}
+.swarm-mode #filter-running-checkbox:checked + .slider {
+  background-color: #ef323e !important;
+}
+body.dark-mode.swarm-mode #filter-running-checkbox:checked + .slider {
+  background-color: #cf313b !important;
 }
 .logo-title {
   margin-right: 1em;
@@ -1460,7 +1478,7 @@ label[for="filter-running-checkbox"] {
   color: #babdc1;
 }
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #4d525b;
+  color: #5c616b;
 }
 #modal-message {
   white-space: pre-line;

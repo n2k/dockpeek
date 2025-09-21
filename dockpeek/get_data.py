@@ -16,9 +16,11 @@ def get_all_data():
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']
     
     if not servers:
-        return {"servers": [], "containers": []}
+        return {"servers": [], "containers": [], "swarm_servers": []}
+
 
     all_container_data = []
+    swarm_servers = []
     server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"], "url": s["url"]} for s in servers]
 
     for host in servers:
@@ -39,6 +41,7 @@ def get_all_data():
                 is_swarm = False
 
             if is_swarm:
+                swarm_servers.append(server_name)
                 # Swarm mode: show services/tasks as containers
                 try:
                     services = client.services.list()
@@ -410,5 +413,6 @@ def get_all_data():
     return {
         "servers": server_list_for_json, 
         "containers": all_container_data,
-        "traefik_enabled": TRAEFIK_ENABLE
+        "traefik_enabled": TRAEFIK_ENABLE,
+         "swarm_servers": swarm_servers
     }

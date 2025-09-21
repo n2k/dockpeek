@@ -53,6 +53,20 @@ body.dark-mode .container {
 
 }
 
+.swarm-indicator {
+    color: #98a1ab;
+}
+
+body.dark-mode .swarm-indicator {
+    color: #6e7781;
+}
+.swarm-mode #filter-running-checkbox:checked + .slider {
+  background-color: #ef323e !important;
+}
+
+body.dark-mode.swarm-mode #filter-running-checkbox:checked + .slider {
+  background-color: #cf313b !important;
+}
 .logo-title {
   margin-right: 1em;
   color: #e1e4e8;
@@ -1032,8 +1046,10 @@ label[for="filter-running-checkbox"] {
 }
 
 body.dark-mode label[for="filter-running-checkbox"] {
-  color: #4d525b;
+  color: #5c616b;
 }
+
+
 
 #modal-message {
   white-space: pre-line;

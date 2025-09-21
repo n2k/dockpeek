@@ -1,3 +1,5 @@
+
+import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from '../app.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
@@ -18,9 +20,13 @@ export async function fetchContainerData() {
     const response = await fetch("/data");
     if (!response.ok) throw createResponseError(response);
 
-    const { servers = [], containers = [], traefik_enabled = true } = await response.json();
+    const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
+    
     state.allServersData.splice(0, state.allServersData.length, ...servers);
     state.allContainersData.splice(0, state.allContainersData.length, ...containers);
+    
+    state.swarmServers = swarm_servers;
+    
     window.traefikEnabled = traefik_enabled;
 
     state.isDataLoaded = true;
@@ -31,12 +37,15 @@ export async function fetchContainerData() {
     clearSearch();
     toggleClearButton();
     updateDisplay();
+    updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
+    
   } catch (error) {
     handleFetchError(error);
   } finally {
     hideLoadingIndicator();
   }
 }
+
 
 export function createResponseError(response) {
   const status = response.status;

@@ -4,12 +4,15 @@ import { fetchContainerData, checkForUpdates, updateExportLink } from './modules
 import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClearButton, clearSearch, setupServerUI, updateActiveButton } from './modules/filters.js';
 import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './modules/modals.js';
 import { initEventListeners } from './modules/events.js';
+import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
+
 
 // Centralized state object
 const state = {
   allContainersData: [],
   allServersData: [],
   filteredAndSortedContainers: [],
+  swarmServers: [],
   currentSortColumn: "name",
   currentSortDirection: "asc",
   currentServerFilter: "all",
@@ -37,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCustomTooltips();
   applyTheme(localStorage.getItem("theme") || "dark");
   initColumnDragAndDrop();
+  initSwarmIndicator();
   fetchContainerData();
   initEventListeners();
 });

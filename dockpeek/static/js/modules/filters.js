@@ -1,4 +1,5 @@
 import { state } from '../app.js';
+import { updateSwarmIndicator,  isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from './table-render.js';
 
 export function setupServerUI() {
@@ -94,10 +95,7 @@ export function parseAdvancedSearch(searchTerm) {
   return filters;
 }
 
-export function isSwarmMode() {
-  // Heuristic: if any container has a status like 'running (x/y)' or 'no-tasks', it's a Swarm service
-  return state.allContainersData.some(c => typeof c.status === 'string' && (c.status.match(/^running \(\d+\/\d+\)$/) || c.status === 'no-tasks'));
-}
+
 export function updateDisplay() {
   const searchInput = document.getElementById("search-input");
   const filterRunningCheckbox = document.getElementById("filter-running-checkbox");
@@ -113,15 +111,19 @@ export function updateDisplay() {
   // Swarm mode: repurpose toggle to "Show Problems"
   const swarmMode = isSwarmMode();
   const filterLabel = document.getElementById('filter-running-label');
+  const filterContainer = filterRunningCheckbox.parentElement; // Define filterContainer
+  
   if (swarmMode) {
     filterLabel.textContent = 'Show Problems';
     filterLabel.setAttribute('data-tooltip', 'Show only services where not all replicas are running');
-    filterRunningCheckbox.parentElement.classList.remove('hidden');
+    filterContainer.classList.add('swarm-mode');
   } else {
     filterLabel.textContent = 'Running only';
-    filterLabel.removeAttribute('data-tooltip');
-    filterRunningCheckbox.parentElement.classList.remove('hidden');
+    filterLabel.setAttribute('data-tooltip', 'Show only running and healthy containers'); // Add tooltip for regular mode
+    filterContainer.classList.remove('swarm-mode'); // Remove swarm-mode class in regular mode
   }
+
+  filterContainer.classList.remove('hidden');
 
 
   if (filterRunningCheckbox.checked) {
@@ -296,6 +298,7 @@ export function updateDisplay() {
   state.filteredAndSortedContainers.splice(0, state.filteredAndSortedContainers.length, ...workingData);
   renderTable();
   updateActiveButton();
+  updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
 }
 
 export function filterByStackAndServer(stack, server) {

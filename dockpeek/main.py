@@ -54,7 +54,6 @@ def check_updates():
     total_containers = 0
     processed_containers = 0
     
-    # Policz wszystkie kontenery do sprawdzenia
     for server in active_servers:
         try:
             containers = server['client'].containers.list(all=True)
@@ -73,7 +72,6 @@ def check_updates():
         try:
             containers = server['client'].containers.list(all=True)
             for container in containers:
-                # Sprawdź anulowanie przed każdym kontenerem
                 if update_checker.is_cancelled:
                     current_app.logger.info(f"Update check cancelled at container {container.name}. Processed {processed_containers}/{total_containers}")
                     was_cancelled = True
@@ -82,7 +80,6 @@ def check_updates():
                 processed_containers += 1
                 key = f"{server['name']}:{container.name}"
                 
-                # Loguj postęp co 10 kontenerów lub przy pierwszym/ostatnim
                 if processed_containers == 1 or processed_containers % 10 == 0 or processed_containers == total_containers:
                     current_app.logger.info(f"Checking updates: {processed_containers}/{total_containers} - {key}")
                 
@@ -95,7 +92,6 @@ def check_updates():
                     updates[key] = False
                     current_app.logger.error(f"Error during update check for {key}: {e}")
                 
-                # Dodatkowe sprawdzenie po każdym kontenerze
                 if update_checker.is_cancelled:
                     current_app.logger.info(f"Update check cancelled after processing {key}")
                     was_cancelled = True
@@ -133,7 +129,6 @@ def check_single_update():
     if not server_name or not container_name:
         return jsonify({"error": "Missing server_name or container_name"}), 400
     
-    # Sprawdź czy operacja została anulowana
     if update_checker.is_cancelled:
         return jsonify({"cancelled": True}), 200
     
@@ -146,7 +141,6 @@ def check_single_update():
     try:
         container = server['client'].containers.get(container_name)
         
-        # Sprawdź ponownie czy nie anulowano podczas pobierania kontenera
         if update_checker.is_cancelled:
             return jsonify({"cancelled": True}), 200
             
@@ -156,9 +150,9 @@ def check_single_update():
         
         key = f"{server_name}:{container_name}" 
         if update_available:
-            current_app.logger.info(f"Update available for {key}")
+            current_app.logger.info(f"⬆️ Update available for {key}")
         else:
-            current_app.logger.info(f"Container {key} is up to date")
+            current_app.logger.info(f"✅ Container {key} is up to date")
         return jsonify({
             "key": key,
             "update_available": update_available,

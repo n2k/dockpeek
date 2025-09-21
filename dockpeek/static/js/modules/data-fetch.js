@@ -100,7 +100,6 @@ export async function checkForUpdates() {
     }
   }
 
-  // Użyj nowej metody sprawdzania pojedynczych kontenerów
   await checkUpdatesIndividually();
 }
 
@@ -109,7 +108,6 @@ async function checkUpdatesIndividually() {
   
   state.isCheckingForUpdates = true;
 
-  // Zmień przycisk na "Cancel"
   checkUpdatesButton.classList.add('loading');
   checkUpdatesButton.innerHTML = `
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -120,7 +118,6 @@ async function checkUpdatesIndividually() {
   checkUpdatesButton.disabled = false;
 
   try {
-    // Pobierz listę kontenerów do sprawdzenia
     console.log('Fetching containers list...');
     const containersResponse = await fetch("/get-containers-list", {
       method: "POST",
@@ -144,7 +141,6 @@ async function checkUpdatesIndividually() {
       return;
     }
 
-    // Pokaż progress modal
     showProgressModal(total);
 
     const updates = {};
@@ -152,9 +148,7 @@ async function checkUpdatesIndividually() {
     let processed = 0;
     let cancelled = false;
 
-    // Sprawdzaj kontenery pojedynczo
     for (const container of containers) {
-      // Sprawdź czy anulowano
       if (!state.isCheckingForUpdates) {
         console.log('Update check cancelled by user');
         cancelled = true;
@@ -197,14 +191,11 @@ async function checkUpdatesIndividually() {
 
       processed++;
       
-      // Aktualizuj progress
       updateProgressModal(processed, total, container.key);
       
-      // Krótkie opóźnienie żeby dać szansę na anulowanie
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    // Aktualizuj dane kontenerów
     state.allContainersData.forEach(container => {
       const key = `${container.server}:${container.name}`;
       if (updates.hasOwnProperty(key)) {
@@ -246,9 +237,6 @@ function resetUpdateButton() {
   checkUpdatesButton.disabled = false;
   state.isCheckingForUpdates = false;
 }
-
-// Funkcje dla progress modal - teraz importowane z modals.js
-// Usunięto lokalne funkcje showProgressModal, updateProgressModal, hideProgressModal
 
 export function updateExportLink() {
   const exportLink = document.getElementById('export-json-link');

@@ -638,7 +638,6 @@ body.dark-mode #modal-cancel-button:hover {
   max-height: 500px;
   overflow-y: auto;
   flex: 1;
-  min-height: 100px;
 }
 
 #updates-list li {

@@ -1,8 +1,5 @@
 import { updateDisplay } from './filters.js';
 
-// Progress modal state
-let progressModal = null;
-
 export function showUpdatesModal(updatedContainers) {
   const updatesList = document.getElementById("updates-list");
   const updatesModal = document.getElementById("updates-modal");
@@ -93,16 +90,13 @@ export function showProgressModal(total) {
   const currentContainerEl = document.getElementById('current-container');
   const cancelButton = document.getElementById('progress-cancel-button');
 
-  // Reset initial values
   if (progressCounter) progressCounter.textContent = `0 / ${total}`;
   if (progressText) progressText.textContent = 'Starting update check...';
   if (progressFill) progressFill.style.width = '0%';
   if (currentContainerEl) currentContainerEl.textContent = 'Preparing...';
 
-  // Show modal
   progressModal.classList.remove('hidden');
 
-  // Setup cancel button handler
   const cancelHandler = () => {
     import('../app.js').then(({ state }) => {
       state.isCheckingForUpdates = false;
@@ -110,7 +104,6 @@ export function showProgressModal(total) {
     });
   };
 
-  // Remove existing listeners and add new one
   cancelButton.removeEventListener('click', cancelHandler);
   cancelButton.addEventListener('click', cancelHandler);
   
@@ -145,7 +138,7 @@ export function updateProgressModal(processed, total, currentContainer) {
 
   if (currentContainerEl) {
     if (processed < total) {
-      currentContainerEl.textContent = `Current: ${currentContainer}`;
+      currentContainerEl.textContent = `${currentContainer}`;
     } else {
       currentContainerEl.textContent = 'Finishing up...';
     }

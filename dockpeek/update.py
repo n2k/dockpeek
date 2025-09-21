@@ -13,9 +13,9 @@ class UpdateChecker:
     def __init__(self):
         self.cache = {}
         self.lock = Lock()
-        self.cache_duration = 60  # 1 minutes
+        self.cache_duration = 300
         self.is_cancelled = False
-        self.pull_timeout = 300  # Timeout for docker pull operations
+        self.pull_timeout = 300
         
     def start_check(self):
         """Reset the cancellation flag before starting a new check."""
@@ -33,14 +33,12 @@ class UpdateChecker:
         def timeout_signal_handler(signum, frame):
             raise TimeoutError(f"Operation timed out after {seconds} seconds")
         
-        # Set up the signal handler
         old_handler = signal.signal(signal.SIGALRM, timeout_signal_handler)
         signal.alarm(seconds)
         
         try:
             yield
         finally:
-            # Clean up
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old_handler)
 
@@ -86,7 +84,6 @@ class UpdateChecker:
             if not image_name: 
                 return False
                 
-            # Parse image name and tag
             if ':' in image_name: 
                 base_name, current_tag = image_name.rsplit(':', 1)
             else: 
@@ -116,34 +113,27 @@ class UpdateChecker:
             if not image_name: 
                 return False
                 
-            # Check cache first
             cache_key = self.get_cache_key(server_name, container.name, image_name)
             cached_result, is_valid = self.get_cached_result(cache_key)
             if is_valid:
                 logger.debug(f"Using cached update result for {server_name}:{container.name}")
                 return cached_result
             
-            # Parse image name and tag
             if ':' in image_name: 
                 base_name, current_tag = image_name.rsplit(':', 1)
             else: 
                 base_name, current_tag = image_name, 'latest'
                 
             try:
-                # Final cancellation check before expensive network operation
                 if self.is_cancelled:
                     logger.info(f"Update check cancelled before pulling {base_name}:{current_tag} on {server_name}")
                     return False
 
-                # Pull with timeout and cancellation checks
                 logger.debug(f"Pulling {base_name}:{current_tag} on {server_name}")
                 start_time = time.time()
                 
-                # Use timeout for the pull operation
                 try:
                     with self.timeout_handler(self.pull_timeout):
-                        # Check cancellation during pull (Docker API doesn't support easy cancellation)
-                        # We rely on timeout for now
                         client.images.pull(base_name, tag=current_tag)
                         
                 except TimeoutError:
@@ -151,7 +141,6 @@ class UpdateChecker:
                     self.set_cache_result(cache_key, False)
                     return False
                 
-                # Check if cancelled after pull
                 if self.is_cancelled:
                     logger.info(f"Update check cancelled after pulling {base_name}:{current_tag} on {server_name}")
                     return False
@@ -162,7 +151,6 @@ class UpdateChecker:
                 updated_image = client.images.get(f"{base_name}:{current_tag}")
                 result = container_image_id != updated_image.id
                 
-                # Cache the result
                 self.set_cache_result(cache_key, result)                
                 
                 if result: 
@@ -182,7 +170,7 @@ class UpdateChecker:
                 return False
                 
         except Exception as e:
-            if not self.is_cancelled:  # Don't log errors if we're cancelled
+            if not self.is_cancelled:
                 logger.error(f"Error checking image updates for '{container.name}' on {server_name}: {e}")
             return False
 
@@ -205,5 +193,4 @@ class UpdateChecker:
             }
 
 
-# Global update checker instance
 update_checker = UpdateChecker()

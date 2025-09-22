@@ -150,9 +150,9 @@ def check_single_update():
         
         key = f"{server_name}:{container_name}" 
         if update_available:
-            current_app.logger.info(f"⬆️ Update available for {key}")
+            current_app.logger.debug(f"⬆️ Update available for {key}")
         else:
-            current_app.logger.info(f"✅ Container {key} is up to date")
+            current_app.logger.debug(f"✅ Container {key} is up to date")
         return jsonify({
             "key": key,
             "update_available": update_available,

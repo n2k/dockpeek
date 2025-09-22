@@ -606,7 +606,7 @@ body.dark-mode code {
 
 .modal-content:not(.hidden) {
   background-color: #ffffff;
-  padding: 2rem;
+  padding: 1.2rem;
   border-radius: 0.5rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 90%;
@@ -646,7 +646,7 @@ body.dark-mode #modal-cancel-button:hover {
 
 #updates-list {
   background-color: #f8f9fa;
-  padding: 1rem;
+  padding: 0 1rem;
   border-radius: 0.375rem;
   border: 1px solid #e1e4e8;
   max-height: 500px;
@@ -731,7 +731,7 @@ body.dark-mode #updates-list .no-updates-message {
 
 
 .progress-container {
-  padding: 20px 0;
+  padding: 1rem 0;
 }
 
 .progress-info {

@@ -272,8 +272,6 @@ services:
 > - `SECRET_KEY` must always be set for session security
 > - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
-> - Remote hosts must be directly accessible; Docker internal networking won't work
->   - Ensure a socket proxy is running and accessible on remote hosts when using TCP connections
 
 
 <br>

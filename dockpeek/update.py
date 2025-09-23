@@ -13,7 +13,7 @@ class UpdateChecker:
     def __init__(self):
         self.cache = {}
         self.lock = Lock()
-        self.cache_duration = 300
+        self.cache_duration = 120
         self.is_cancelled = False
         self.pull_timeout = 300
         
@@ -116,7 +116,7 @@ class UpdateChecker:
             cache_key = self.get_cache_key(server_name, container.name, image_name)
             cached_result, is_valid = self.get_cached_result(cache_key)
             if is_valid:
-                logger.debug(f"Using cached update result for {server_name}:{container.name}")
+                logger.info(f"Using cached update result for {server_name}:{container.name}")
                 return cached_result
             
             if ':' in image_name: 
@@ -154,9 +154,9 @@ class UpdateChecker:
                 self.set_cache_result(cache_key, result)                
                 
                 if result: 
-                    logger.info(f"[{server_name}] Update available for {base_name}:{current_tag}")
+                    logger.info(f"[{server_name}] ⬆️ Update available for {base_name}:{current_tag}")
                 else: 
-                    logger.debug(f"[{server_name}] Image up to date: {base_name}:{current_tag}")
+                    logger.info(f"[{server_name}] ✅ Image up to date: {base_name}:{current_tag}")
                     
                 return result                
                 
@@ -165,7 +165,7 @@ class UpdateChecker:
                     logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
                     return False
                     
-                logger.debug(f"[{server_name}] Cannot pull {base_name}:{current_tag} - possibly local image: {pull_error}")
+                logger.info(f"[{server_name}] ❌ Cannot pull {base_name}:{current_tag} - built locally or private repository {pull_error}")
                 self.set_cache_result(cache_key, False)
                 return False
                 

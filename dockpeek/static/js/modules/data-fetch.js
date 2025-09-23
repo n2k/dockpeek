@@ -151,12 +151,15 @@ async function checkUpdatesIndividually() {
     const updatedContainers = [];
     let processed = 0;
     
-    const CONCURRENCY_LIMIT = 5; // Number of parallel checks
+    const CONCURRENCY_LIMIT = 2; // Number of parallel checks
     const queue = [...containers];
 
     const checkContainer = async (container) => {
         if (!state.isCheckingForUpdates) return null;
 
+        processed++;
+        updateProgressModal(processed, total, container.key);
+        
         console.log(`Checking ${container.key} (${processed + 1}/${total})`);
         let updateResult = false;
         let cancelled = false;
@@ -185,10 +188,6 @@ async function checkUpdatesIndividually() {
         } catch (error) {
             console.error(`Error checking ${container.key}:`, error);
         }
-
-        processed++;
-        updateProgressModal(processed, total, container.key);
-        
         if (cancelled) {
             state.isCheckingForUpdates = false; 
         }

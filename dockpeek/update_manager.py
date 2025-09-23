@@ -30,6 +30,12 @@ def check_image_updates_available(client: docker.DockerClient, image_name: str) 
             return True  # Assume update needed if we can't compare
             
         return remote_digest not in str(local_digest)
+    except docker.errors.APIError as e:
+        if e.response.status_code == 403:
+            logger.info(f"Registry access restricted for {image_name}, will check by pulling")
+        else:
+            logger.warning(f"Could not check for updates for {image_name}: {e}")
+        return True  # Assume update needed if check fails
     except Exception as e:
         logger.warning(f"Could not check for updates for {image_name}: {e}")
         return True  # Assume update needed if check fails
@@ -343,8 +349,11 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
     # Remove backup container
     try:
         backup_container = client.containers.get(backup_name)
+        # Use longer timeout for remove operation
         backup_container.remove()
         logger.info(f"[{server_name}] Removed backup container: {backup_name}")
+    except docker.errors.ReadTimeout:
+        logger.warning(f"[{server_name}] Timeout removing backup container {backup_name} (container may still be removed)")
     except Exception as e:
         logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
     

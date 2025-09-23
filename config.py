@@ -25,6 +25,6 @@ class Config:
     
     APP_VERSION = os.environ.get('VERSION', 'dev')
     
-    DOCKER_TIMEOUT = 0.5
+    DOCKER_TIMEOUT = 5
     
     LOG_LEVEL = "INFO"

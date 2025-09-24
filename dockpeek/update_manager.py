@@ -12,33 +12,41 @@ class ContainerUpdateError(Exception):
     """Custom exception for container update errors."""
     pass
 
-def check_image_updates_available(client: docker.DockerClient, image_name: str) -> bool:
+def check_image_updates_available(client: docker.DockerClient, image_name: str, container_image_id: str = None) -> bool:
     """
-    Check if there are updates available for the given image.
-    Returns True if remote image digest differs from local.
+    Check if there are updates available by comparing running container image with local image.
+    Returns True if local image differs from the one currently running in container.
+    
+    Args:
+        client: Docker client instance
+        image_name: Name of the image to check
+        container_image_id: Image ID of currently running container
+    
+    Returns:
+        bool: True if local image is different from container's image, False otherwise
     """
     try:
-        # Get local image
+        # Get the latest local image for this tag
         local_image = client.images.get(image_name)
-        local_digest = local_image.attrs.get('RepoDigests', [])
         
-        # Pull image info without downloading
-        registry_data = client.api.inspect_distribution(image_name)
-        remote_digest = registry_data.get('Descriptor', {}).get('digest')
-        
-        if not remote_digest or not local_digest:
-            return True  # Assume update needed if we can't compare
+        if not container_image_id:
+            logger.debug(f"No container image ID provided for comparison")
+            return True
             
-        return remote_digest not in str(local_digest)
-    except docker.errors.APIError as e:
-        if e.response.status_code == 403:
-            logger.info(f"Registry access restricted for {image_name}, will check by pulling")
-        else:
-            logger.warning(f"Could not check for updates for {image_name}: {e}")
-        return True  # Assume update needed if check fails
+        # Compare the local image ID with the container's image ID
+        has_update = container_image_id != local_image.id
+        
+        logger.debug(f"Image {image_name} - Container ID: {container_image_id[:12]}..., Local ID: {local_image.id[:12]}..., Has update: {has_update}")
+        
+        return has_update
+        
+    except docker.errors.ImageNotFound:
+        logger.info(f"Local image {image_name} not found - update needed")
+        return True  # Image not found locally, need to pull
     except Exception as e:
         logger.warning(f"Could not check for updates for {image_name}: {e}")
         return True  # Assume update needed if check fails
+
 
 def check_network_dependencies(client: docker.DockerClient, container) -> None:
     """
@@ -339,7 +347,7 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
     Raises:
         ContainerUpdateError: If update cannot be performed safely
     """
-    logger.info(f"[{server_name}] Starting update process for container: {container_name}")
+    logger.info(f"[{server_name}] Starting update process for container: {container_name} (force={force})")
     
     # Configure client timeouts for this operation
     original_timeout = getattr(client.api, 'timeout', None)
@@ -364,28 +372,31 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         # Validate container can be updated
         validate_container_for_update(client, container)
         
-        # Get image name
+        # Get image name and current container's image ID
         image_name = container.attrs.get('Config', {}).get('Image')
+        container_image_id = container.attrs.get('Image', '')
+        
         if not image_name:
             raise ContainerUpdateError("Could not determine image name for the container.")
         
         logger.info(f"[{server_name}] Container image: {image_name}")
+        logger.debug(f"[{server_name}] Current container image ID: {container_image_id[:12]}...")
         
-        # Check if update is needed (unless forced)
-        if not force and not check_image_updates_available(client, image_name):
-            logger.info(f"[{server_name}] No updates available for {image_name}")
-            return {
-                "status": "success", 
-                "message": f"Container {container_name} is already up to date."
-            }
-        
-        # Pull latest image
+        # Pull latest image first
         logger.info(f"[{server_name}] Pulling latest image: {image_name}")
         try:
             new_image = client.images.pull(image_name)
             logger.info(f"[{server_name}] Successfully pulled image: {new_image.short_id}")
         except Exception as e:
             raise ContainerUpdateError(f"Failed to pull image '{image_name}': {e}")
+        
+        # Check if update is needed after pulling (unless forced)
+        if not force and not check_image_updates_available(client, image_name, container_image_id):
+            logger.info(f"[{server_name}] No updates available for {image_name} - container is already using the latest image")
+            return {
+                "status": "success", 
+                "message": f"Container {container_name} is already up to date."
+            }
         
         # Extract configuration
         container_config = extract_container_config(container)
@@ -496,10 +507,14 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
                 logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
                 # This is not critical - the update succeeded
         
+        success_message = f"Container '{container_name}' updated successfully to latest image."
+        if force:
+            success_message += " (Forced update)"
+        
         logger.info(f"[{server_name}] Successfully updated container: {container_name}")
         return {
             "status": "success", 
-            "message": f"Container '{container_name}' updated successfully to latest image."
+            "message": success_message
         }
         
     finally:

@@ -99,7 +99,7 @@ class UpdateChecker:
             return False
     
     def check_image_updates(self, client, container, server_name):
-        """Check for updates by pulling latest image with cancellation and timeout support."""
+        """Check for updates by pulling latest image and comparing with container's current image."""
         if self.is_cancelled:
             logger.debug(f"Update check cancelled before starting for {container.name}")
             return False
@@ -128,7 +128,7 @@ class UpdateChecker:
                 if self.is_cancelled:
                     logger.info(f"Update check cancelled before pulling {base_name}:{current_tag} on {server_name}")
                     return False
-
+    
                 logger.debug(f"Pulling {base_name}:{current_tag} on {server_name}")
                 start_time = time.time()
                 
@@ -148,13 +148,16 @@ class UpdateChecker:
                 pull_time = time.time() - start_time
                 logger.debug(f"Pull completed in {pull_time:.2f}s for {base_name}:{current_tag}")
                 
+                # Get the updated local image
                 updated_image = client.images.get(f"{base_name}:{current_tag}")
+                
+                # Compare container's current image ID with the pulled image ID
                 result = container_image_id != updated_image.id
                 
                 self.set_cache_result(cache_key, result)                
                 
                 if result: 
-                    logger.info(f"[{server_name}] ⬆️ Update available for {base_name}:{current_tag}")
+                    logger.info(f"[{server_name}] ⬆️ Update available for {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
                 else: 
                     logger.info(f"[{server_name}] ✅ Image up to date: {base_name}:{current_tag}")
                     
@@ -165,7 +168,7 @@ class UpdateChecker:
                     logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
                     return False
                     
-                logger.info(f"[{server_name}] ❌ Cannot pull {base_name}:{current_tag} - built locally or private repository {pull_error}")
+                logger.info(f"[{server_name}] ❌ Cannot pull {base_name}:{current_tag} - built locally or private repository: {pull_error}")
                 self.set_cache_result(cache_key, False)
                 return False
                 

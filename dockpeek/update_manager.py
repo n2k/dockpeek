@@ -68,8 +68,7 @@ def check_network_dependencies(client: docker.DockerClient, container) -> None:
     if dependent_containers:
         raise ContainerUpdateError(
             f"Cannot update container '{container_name}' because other containers depend on its network: "
-            f"{', '.join(dependent_containers)}. Please update the dependent containers first or "
-            "update the entire stack using Docker Compose."
+            f"{', '.join(dependent_containers)}. Updating such containers must be done outside Dockpeek."
         )
 
 def validate_container_for_update(client: docker.DockerClient, container) -> None:

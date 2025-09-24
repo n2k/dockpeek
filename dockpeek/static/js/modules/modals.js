@@ -162,7 +162,7 @@ export function showUpdateInProgressModal(containerName) {
   const messageEl = document.getElementById('update-modal-message');
 
   if (messageEl) {
-    messageEl.textContent = `Aktualizowanie ${containerName}...`;
+    messageEl.textContent = `Updating ${containerName}...`;
   }
   if (modal) {
     modal.classList.remove('hidden');
@@ -177,4 +177,82 @@ export function hideUpdateInProgressModal() {
   if (modal) {
     modal.classList.add('hidden');
   }
+}
+/**
+ * Pokazuje modal o sukcesie aktualizacji.
+ * @param {string} containerName - Nazwa zaktualizowanego kontenera.
+ */
+export function showUpdateSuccessModal(containerName) {
+  const modal = document.getElementById('update-success-modal');
+  const messageEl = document.getElementById('update-success-message');
+  const okButton = document.getElementById('update-success-ok-button');
+
+  if (messageEl) {
+    messageEl.textContent = `Container "${containerName}" has been successfully updated!`;
+  }
+  
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
+
+  const okHandler = () => {
+    modal.classList.add('hidden');
+    okButton.removeEventListener('click', okHandler);
+    modal.removeEventListener('click', backdropHandler);
+  };
+
+  const backdropHandler = (e) => {
+    if (e.target === modal) {
+      okHandler();
+    }
+  };
+
+  okButton.addEventListener('click', okHandler);
+  modal.addEventListener('click', backdropHandler);
+}
+
+/**
+ * Pokazuje modal o błędzie aktualizacji.
+ * @param {string} containerName - Nazwa kontenera, który nie mógł być zaktualizowany.
+ * @param {string} errorMessage - Szczegóły błędu.
+ */
+export function showUpdateErrorModal(containerName, errorMessage) {
+  const modal = document.getElementById('update-error-modal');
+  const messageEl = document.getElementById('update-error-message');
+  const okButton = document.getElementById('update-error-ok-button');
+
+  if (messageEl) {
+    // Sprawdź czy to ContainerUpdateError z dodatkowymi szczegółami
+    const isDetailedError = errorMessage.includes('Cannot update container') || 
+                           errorMessage.includes('depends on') ||
+                           errorMessage.includes('Docker Compose') ||
+                           errorMessage.includes('critical system container');
+    
+    if (isDetailedError) {
+      // Dla szczegółowych błędów wyświetl pełną wiadomość
+      messageEl.innerHTML = `<strong>Failed to update "${containerName}"</strong><br><br>${errorMessage.replace(/\n/g, '<br>')}`;
+    } else {
+      // Dla ogólnych błędów użyj prostego formatu
+      messageEl.textContent = `Failed to update container "${containerName}".\n\nError: ${errorMessage}`;
+    }
+  }
+  
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
+
+  const okHandler = () => {
+    modal.classList.add('hidden');
+    okButton.removeEventListener('click', okHandler);
+    modal.removeEventListener('click', backdropHandler);
+  };
+
+  const backdropHandler = (e) => {
+    if (e.target === modal) {
+      okHandler();
+    }
+  };
+
+  okButton.addEventListener('click', okHandler);
+  modal.addEventListener('click', backdropHandler);
 }

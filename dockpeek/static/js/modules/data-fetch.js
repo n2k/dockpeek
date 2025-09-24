@@ -304,13 +304,16 @@ export async function installUpdate(serverName, containerName) {
       throw new Error(result.error || 'Failed to update container.');
     }
     
-    // Prosty alert o sukcesie, można go zastąpić ładniejszym modalem
-    alert(`Successfully updated ${containerName}!`);
+    // Import funkcji sukcesu
+    const { showUpdateSuccessModal } = await import('./modals.js');
+    showUpdateSuccessModal(containerName);
     await fetchContainerData(); // Odśwież dane w tabeli
 
   } catch (error) {
     console.error('Update failed:', error);
-    displayError(`Update failed for ${containerName}: ${error.message}`);
+    // Import funkcji błędu
+    const { showUpdateErrorModal } = await import('./modals.js');
+    showUpdateErrorModal(containerName, error.message);
   } finally {
     hideUpdateInProgressModal(); // Ukrywamy modal niezależnie od wyniku
   }

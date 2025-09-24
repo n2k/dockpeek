@@ -429,6 +429,53 @@
     </div>
   </div>
 
-<script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <div id="update-success-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="flex items-center justify-center text-lg font-semibold mb-4 font-medium">
+        <svg class="w-4 h-4 mr-2 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22,4 12,14.01 9,11.01"></polyline>
+        </svg>
+        Update Successful
+      </h3>
+      <div class="text-gray-600 mb-6 text-center">
+        <p id="update-success-message"></p>
+      </div>
+      <div class="flex justify-center">
+        <button id="update-success-ok-button"
+          class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="update-error-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="flex items-center justify-center text-lg font-semibold mb-4 font-medium">
+        <svg class="w-4 h-4 mr-2 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        Update Failed
+      </h3>
+      <div class="text-gray-600 mb-6">
+        <div id="update-error-message" class="text-left text-sm leading-relaxed max-h-64 overflow-y-auto"></div>
+      </div>
+      <div class="flex justify-center">
+        <button id="update-error-ok-button"
+          class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>

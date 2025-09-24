@@ -79,18 +79,87 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     # Check if other containers depend on this container's network
     check_network_dependencies(client, container)
     
-    # Check if container is part of a compose stack
+    # Get container info
+    container_name = container.name.lower()
+    image_name = container.attrs.get('Config', {}).get('Image', '').lower()
     labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
+    
+    # Critical system containers by image patterns
+    critical_images = [
+        'traefik',
+        'portainer/portainer',
+        'containrrr/watchtower',
+        'nginx:',
+        'caddy',
+        'haproxy',
+        'envoyproxy/envoy',
+        'kong',
+        'cloudflare/cloudflared'
+    ]
+    
+    # Critical system containers by name patterns
+    critical_name_patterns = [
+        'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
+        'portainer', 'watchtower', 'cloudflare', 'tunnel',
+        'reverse-proxy', 'load-balancer', 'gateway'
+    ]
+    
+    # Database containers (high risk)
+    database_images = [
+        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
+        'redis', 'elasticsearch', 'cassandra', 'influxdb',
+        'clickhouse', 'timescale', 'couchdb', 'neo4j',
+        'memcached', 'sqlite', 'cockroachdb'
+    ]
+    
+    database_name_patterns = [
+        'db', 'database', 'postgres', 'mysql', 'mariadb', 'mongo',
+        'redis', 'elastic', 'cassandra', 'influx', 'timescale'
+    ]
+    
+    # Check critical system containers
+    for pattern in critical_images:
+        if pattern in image_name:
+            raise ContainerUpdateError(
+                f"Container '{container.name}' uses a critical system image ({pattern}). "
+                f"Manual update is not recommended as it may disrupt essential services.\n\n"
+                f"Consider updating this container manually."
+            )
+    
+    for pattern in critical_name_patterns:
+        if pattern in container_name:
+            raise ContainerUpdateError(
+                f"Container '{container.name}' appears to be a critical system container. "
+                f"Manual update is not recommended as it may disrupt essential services.\n\n"
+                f"Consider updating this container manually."
+            )
+    
+    # Check database containers (warning but allow with explicit confirmation needed)
+    for pattern in database_images:
+        if pattern in image_name:
+            raise ContainerUpdateError(
+                f"Container '{container.name}' is a database container ({pattern}). "
+                f"Updating databases can cause data corruption or service interruption.\n\n"
+                f"Consider updating this container manually."
+            )
+    
+    for pattern in database_name_patterns:
+        if pattern in container_name:
+            raise ContainerUpdateError(
+                f"Container '{container.name}' appears to be a database container. "
+                f"Updating databases can cause data corruption or service interruption.\n\n"
+                f"Consider updating this container manually."
+            )
+    
+    # Check if container is part of a compose stack
     if 'com.docker.compose.project' in labels:
         project_name = labels['com.docker.compose.project']
         logger.warning(f"Container '{container.name}' is part of Docker Compose project '{project_name}'")
     
-    # Check for critical system containers
-    if container.name in ['watchtower', 'portainer', 'traefik']:
-        raise ContainerUpdateError(
-            f"Container '{container.name}' is a critical system container. "
-            "Manual update is not recommended."
-        )
+    # Check for containers with health checks (may need special handling)
+    health_config = container.attrs.get('Config', {}).get('Healthcheck')
+    if health_config and health_config.get('Test'):
+        logger.info(f"Container '{container.name}' has health check configured - will monitor during update")
 
 def extract_container_config(container) -> Dict[str, Any]:
     """

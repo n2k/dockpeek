@@ -13,6 +13,23 @@ from .update import update_checker
 
 main_bp = Blueprint('main', __name__)
 
+CRITICAL_CONTAINER_PATTERNS = {
+    'images': [
+        'traefik', 'portainer/portainer', 'containrrr/watchtower',
+        'nginx:', 'caddy', 'haproxy', 'envoyproxy/envoy',
+        'kong', 'cloudflare/cloudflared'
+    ],
+    'names': [
+        'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
+        'portainer', 'watchtower', 'cloudflare', 'tunnel',
+        'reverse-proxy', 'load-balancer', 'gateway'
+    ],
+    'databases': [
+        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
+        'redis', 'elasticsearch', 'cassandra', 'influxdb'
+    ]
+}
+
 def conditional_login_required(f):
     """Dekorator który wymaga logowania tylko gdy autoryzacja nie jest wyłączona."""
     @wraps(f)

@@ -6,10 +6,10 @@ import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgre
 
 let originalButtonHTML = '';
 document.addEventListener('DOMContentLoaded', () => {
-    const checkUpdatesButton = document.getElementById('check-updates-button');
-    if (checkUpdatesButton) {
-        originalButtonHTML = checkUpdatesButton.innerHTML;
-    }
+  const checkUpdatesButton = document.getElementById('check-updates-button');
+  if (checkUpdatesButton) {
+    originalButtonHTML = checkUpdatesButton.innerHTML;
+  }
 });
 
 export async function fetchContainerData() {
@@ -20,12 +20,12 @@ export async function fetchContainerData() {
     if (!response.ok) throw createResponseError(response);
 
     const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
-    
+
     state.allServersData.splice(0, state.allServersData.length, ...servers);
     state.allContainersData.splice(0, state.allContainersData.length, ...containers);
-    
+
     state.swarmServers = swarm_servers;
-    
+
     window.traefikEnabled = traefik_enabled;
 
     state.isDataLoaded = true;
@@ -37,7 +37,7 @@ export async function fetchContainerData() {
     toggleClearButton();
     updateDisplay();
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
-    
+
   } catch (error) {
     handleFetchError(error);
   } finally {
@@ -78,18 +78,18 @@ export async function checkForUpdates() {
   const checkUpdatesButton = document.getElementById('check-updates-button');
 
   if (state.isCheckingForUpdates) {
-      console.log('Showing progress modal...');
-      
-      const progressModal = document.getElementById('progress-modal');
-      progressModal.classList.remove('hidden');
-      
-      return;
+    console.log('Showing progress modal...');
+
+    const progressModal = document.getElementById('progress-modal');
+    progressModal.classList.remove('hidden');
+
+    return;
   }
 
   if (!state.isDataLoaded) {
     return;
   }
-  
+
   const activeServers = state.allServersData.filter(s => s.status === 'active');
   const serversToCheck = state.currentServerFilter === 'all'
     ? activeServers
@@ -113,7 +113,7 @@ export async function checkForUpdates() {
 
 async function checkUpdatesIndividually() {
   const checkUpdatesButton = document.getElementById('check-updates-button');
-  
+
   state.isCheckingForUpdates = true;
 
   checkUpdatesButton.classList.add('loading');
@@ -150,69 +150,69 @@ async function checkUpdatesIndividually() {
     const updates = {};
     const updatedContainers = [];
     let processed = 0;
-    
+
     const CONCURRENCY_LIMIT = 2; // Number of parallel checks
     const queue = [...containers];
 
     const checkContainer = async (container) => {
-        if (!state.isCheckingForUpdates) return null;
+      if (!state.isCheckingForUpdates) return null;
 
-        processed++;
-        updateProgressModal(processed, total, container.key);
-        
-        console.log(`Checking ${container.key} (${processed + 1}/${total})`);
-        let updateResult = false;
-        let cancelled = false;
+      processed++;
+      updateProgressModal(processed, total, container.key);
 
-        try {
-            const response = await fetch("/check-single-update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    server_name: container.server_name,
-                    container_name: container.container_name
-                })
-            });
+      console.log(`Checking ${container.key} (${processed + 1}/${total})`);
+      let updateResult = false;
+      let cancelled = false;
 
-            if (!response.ok) {
-                console.error(`Failed to check ${container.key}: ${response.status}`);
-            } else {
-                const result = await response.json();
-                if (result.cancelled) {
-                    cancelled = true;
-                } else {
-                    updateResult = result.update_available;
-                    console.log(`${container.key}: ${updateResult ? 'UPDATE AVAILABLE' : 'up to date'}`);
-                }
-            }
-        } catch (error) {
-            console.error(`Error checking ${container.key}:`, error);
+      try {
+        const response = await fetch("/check-single-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            server_name: container.server_name,
+            container_name: container.container_name
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to check ${container.key}: ${response.status}`);
+        } else {
+          const result = await response.json();
+          if (result.cancelled) {
+            cancelled = true;
+          } else {
+            updateResult = result.update_available;
+            console.log(`${container.key}: ${updateResult ? 'UPDATE AVAILABLE' : 'up to date'}`);
+          }
         }
-        if (cancelled) {
-            state.isCheckingForUpdates = false; 
-        }
+      } catch (error) {
+        console.error(`Error checking ${container.key}:`, error);
+      }
+      if (cancelled) {
+        state.isCheckingForUpdates = false;
+      }
 
-        return { key: container.key, update_available: updateResult };
+      return { key: container.key, update_available: updateResult };
     };
 
     const workers = Array(CONCURRENCY_LIMIT).fill(null).map(async () => {
-        const workerResults = [];
-        while (queue.length > 0) {
-            if (!state.isCheckingForUpdates) break;
-            const container = queue.shift();
-            if (container) {
-                const result = await checkContainer(container);
-                if (result) {
-                    workerResults.push(result);
-                }
-            }
+      const workerResults = [];
+      while (queue.length > 0) {
+        if (!state.isCheckingForUpdates) break;
+        const container = queue.shift();
+        if (container) {
+          const result = await checkContainer(container);
+          if (result) {
+            workerResults.push(result);
+          }
         }
-        return workerResults;
+      }
+      return workerResults;
     });
 
     const allWorkerResults = await Promise.all(workers);
     const allResults = allWorkerResults.flat();
-    
+
     const cancelled = !state.isCheckingForUpdates;
 
     allResults.forEach(result => {
@@ -231,15 +231,15 @@ async function checkUpdatesIndividually() {
 
     updateDisplay();
     hideProgressModal();
-    
+
     if (!cancelled) {
-        if (updatedContainers.length > 0) {
-          showUpdatesModal(updatedContainers);
-        } else {
-          showNoUpdatesModal();
-        }
+      if (updatedContainers.length > 0) {
+        showUpdatesModal(updatedContainers);
+      } else {
+        showNoUpdatesModal();
+      }
     } else {
-        console.log("Update check was cancelled");
+      console.log("Update check was cancelled");
     }
 
   } catch (error) {
@@ -254,7 +254,7 @@ async function checkUpdatesIndividually() {
 function resetUpdateButton() {
   const checkUpdatesButton = document.getElementById('check-updates-button');
   if (originalButtonHTML) {
-      checkUpdatesButton.innerHTML = originalButtonHTML;
+    checkUpdatesButton.innerHTML = originalButtonHTML;
   }
   checkUpdatesButton.classList.remove('loading');
   checkUpdatesButton.disabled = false;
@@ -303,10 +303,17 @@ export async function installUpdate(serverName, containerName) {
     if (!response.ok) {
       throw new Error(result.error || 'Failed to update container.');
     }
-    
+
     // Import funkcji sukcesu
     const { showUpdateSuccessModal } = await import('./modals.js');
     showUpdateSuccessModal(containerName);
+    // Clear the update indicator immediately for better UX
+    state.allContainersData.forEach(container => {
+      if (container.server === serverName && container.name === containerName) {
+        container.update_available = false;
+      }
+    });
+    updateDisplay();
     await fetchContainerData(); // Odśwież dane w tabeli
 
   } catch (error) {

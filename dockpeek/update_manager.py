@@ -353,7 +353,7 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
     original_timeout = getattr(client.api, 'timeout', None)
     try:
         # Increase timeout for container operations
-        client.api.timeout = 30
+        client.api.timeout = 300
     except AttributeError:
         logger.warning("Could not set client timeout")
     
@@ -419,7 +419,7 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         # Stop original container with longer timeout
         logger.info(f"[{server_name}] Stopping container: {container_name}")
         try:
-            container.stop(timeout=30)
+            container.stop(timeout=60)
             logger.info(f"[{server_name}] Container stopped successfully")
         except Exception as e:
             logger.warning(f"[{server_name}] Error stopping container gracefully: {e}")
@@ -459,7 +459,7 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
             
             # Wait for container to be healthy with increased timeout
             logger.info(f"[{server_name}] Waiting for container to become healthy...")
-            if not wait_for_container_health(new_container, timeout=60):
+            if not wait_for_container_health(new_container, timeout=120):
                 raise ContainerUpdateError("New container failed to start properly within 60 seconds")
             
             logger.info(f"[{server_name}] New container is running successfully")

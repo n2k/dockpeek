@@ -31,11 +31,12 @@ export function showNoUpdatesModal() {
 
   updatesModalTitle.textContent = "No Updates Available";
   updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
-  updatesModal.classList.add('no-update');
   updatesModal.classList.remove('hidden');
+  updatesModal.classList.add('no-update');
 
   const okHandler = () => {
     updatesModal.classList.add('hidden');
+    updatesModal.classList.remove('no-update');
     updatesModalTitle.textContent = "Updates Found";
   };
 

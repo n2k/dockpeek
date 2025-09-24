@@ -198,42 +198,69 @@ def connect_to_networks(client: docker.DockerClient, container, original_network
         except Exception as e:
             logger.warning(f"Failed to connect to network {network_name}: {e}")
 
-def wait_for_container_health(container, timeout: int = 30) -> bool:
+def wait_for_container_health(container, timeout: int = 60) -> bool:
     """
     Wait for container to be healthy or running.
     Returns True if container is healthy/running, False if timeout.
     """
     start_time = time.time()
+    check_interval = 2  # Check every 2 seconds
     
     while time.time() - start_time < timeout:
         try:
             container.reload()
             status = container.status
             
+            logger.debug(f"Container {container.name} status: {status}")
+            
             if status == 'running':
                 # Check health if health check is configured
                 health = container.attrs.get('State', {}).get('Health', {})
                 if health.get('Status') == 'healthy' or not health:
+                    logger.info(f"Container {container.name} is running and healthy")
                     return True
                 elif health.get('Status') == 'unhealthy':
+                    logger.warning(f"Container {container.name} is unhealthy")
                     return False
+                else:
+                    # Still starting up, continue waiting
+                    logger.debug(f"Container {container.name} health status: {health.get('Status', 'unknown')}")
             elif status in ['exited', 'dead']:
+                logger.error(f"Container {container.name} has exited or died")
                 return False
                 
-            time.sleep(1)
+            time.sleep(check_interval)
         except Exception as e:
             logger.warning(f"Error checking container health: {e}")
-            time.sleep(1)
+            time.sleep(check_interval)
     
+    logger.warning(f"Container health check timed out after {timeout} seconds")
     return False
+
+def cleanup_container_by_name(client: docker.DockerClient, container_name: str, force: bool = True) -> bool:
+    """
+    Safely remove a container by name, with proper error handling.
+    Returns True if successfully removed or didn't exist, False on error.
+    """
+    try:
+        container = client.containers.get(container_name)
+        container.remove(force=force)
+        logger.info(f"Successfully removed container: {container_name}")
+        return True
+    except docker.errors.NotFound:
+        logger.debug(f"Container {container_name} not found (already removed)")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to remove container {container_name}: {e}")
+        return False
 
 def update_container(client: docker.DockerClient, server_name: str, container_name: str, force: bool = False) -> Dict[str, Any]:
     """
     Safely stops, removes, and recreates a container with the latest image.
-    Adopts a "Watchtower" like approach with improved error handling and rollback.
+    Improved version with better timeout handling and rollback logic.
     
     Args:
-        client: Docker client instance
+        client: Docker client instance  
         server_name: Name of the server (for logging)
         container_name: Name of the container to update
         force: Force update even if no new image is available
@@ -246,119 +273,171 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
     """
     logger.info(f"[{server_name}] Starting update process for container: {container_name}")
     
-    # Get the container
+    # Configure client timeouts for this operation
+    original_timeout = getattr(client.api, 'timeout', None)
     try:
-        container = client.containers.get(container_name)
-    except docker.errors.NotFound:
-        raise ContainerUpdateError(f"Container '{container_name}' not found.")
-    except Exception as e:
-        raise ContainerUpdateError(f"Error accessing container '{container_name}': {e}")
+        # Increase timeout for container operations
+        client.api.timeout = 30
+    except AttributeError:
+        logger.warning("Could not set client timeout")
     
-    # Validate container can be updated
-    validate_container_for_update(client, container)
-    
-    # Get image name
-    image_name = container.attrs.get('Config', {}).get('Image')
-    if not image_name:
-        raise ContainerUpdateError("Could not determine image name for the container.")
-    
-    logger.info(f"[{server_name}] Container image: {image_name}")
-    
-    # Check if update is needed (unless forced)
-    if not force and not check_image_updates_available(client, image_name):
-        logger.info(f"[{server_name}] No updates available for {image_name}")
-        return {
-            "status": "success", 
-            "message": f"Container {container_name} is already up to date."
-        }
-    
-    # Pull latest image
-    logger.info(f"[{server_name}] Pulling latest image: {image_name}")
-    try:
-        new_image = client.images.pull(image_name)
-        logger.info(f"[{server_name}] Successfully pulled image: {new_image.short_id}")
-    except Exception as e:
-        raise ContainerUpdateError(f"Failed to pull image '{image_name}': {e}")
-    
-    # Extract configuration
-    container_config = extract_container_config(container)
-    original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
-    
-    # Create backup name
-    backup_name = f"{container_name}-backup-{int(time.time())}"
-    
-    # Stop and rename original container
-    logger.info(f"[{server_name}] Stopping container: {container_name}")
-    try:
-        container.stop(timeout=10)
-    except Exception as e:
-        logger.warning(f"[{server_name}] Error stopping container: {e}")
-    
-    logger.info(f"[{server_name}] Renaming container to: {backup_name}")
-    try:
-        container.rename(backup_name)
-    except Exception as e:
-        # Try to restart original container
-        try:
-            container.start()
-        except:
-            pass
-        raise ContainerUpdateError(f"Failed to rename container: {e}")
-    
-    # Create new container
+    backup_container = None
     new_container = None
+    
     try:
-        logger.info(f"[{server_name}] Creating new container: {container_name}")
-        new_container = create_new_container(client, image_name, container_config)
+        # Get the container
+        try:
+            container = client.containers.get(container_name)
+        except docker.errors.NotFound:
+            raise ContainerUpdateError(f"Container '{container_name}' not found.")
+        except Exception as e:
+            raise ContainerUpdateError(f"Error accessing container '{container_name}': {e}")
         
-        # Connect to networks
-        if original_networks:
-            connect_to_networks(client, new_container, original_networks)
+        # Validate container can be updated
+        validate_container_for_update(client, container)
         
-        # Start new container
-        logger.info(f"[{server_name}] Starting new container: {container_name}")
-        new_container.start()
+        # Get image name
+        image_name = container.attrs.get('Config', {}).get('Image')
+        if not image_name:
+            raise ContainerUpdateError("Could not determine image name for the container.")
         
-        # Wait for container to be healthy
-        if not wait_for_container_health(new_container, timeout=30):
-            raise ContainerUpdateError("New container failed to start properly")
+        logger.info(f"[{server_name}] Container image: {image_name}")
         
-        logger.info(f"[{server_name}] New container is running successfully")
+        # Check if update is needed (unless forced)
+        if not force and not check_image_updates_available(client, image_name):
+            logger.info(f"[{server_name}] No updates available for {image_name}")
+            return {
+                "status": "success", 
+                "message": f"Container {container_name} is already up to date."
+            }
         
-    except Exception as e:
-        logger.error(f"[{server_name}] Failed to create/start new container: {e}")
+        # Pull latest image
+        logger.info(f"[{server_name}] Pulling latest image: {image_name}")
+        try:
+            new_image = client.images.pull(image_name)
+            logger.info(f"[{server_name}] Successfully pulled image: {new_image.short_id}")
+        except Exception as e:
+            raise ContainerUpdateError(f"Failed to pull image '{image_name}': {e}")
         
-        # Cleanup new container if it was created
-        if new_container:
+        # Extract configuration
+        container_config = extract_container_config(container)
+        original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
+        
+        # Create backup name with timestamp
+        timestamp = int(time.time())
+        backup_name = f"{container_name}-backup-{timestamp}"
+        
+        # Ensure backup name doesn't conflict
+        backup_counter = 1
+        while True:
             try:
-                new_container.remove(force=True)
+                client.containers.get(backup_name)
+                backup_name = f"{container_name}-backup-{timestamp}-{backup_counter}"
+                backup_counter += 1
+            except docker.errors.NotFound:
+                break
+        
+        # Stop original container with longer timeout
+        logger.info(f"[{server_name}] Stopping container: {container_name}")
+        try:
+            container.stop(timeout=30)
+            logger.info(f"[{server_name}] Container stopped successfully")
+        except Exception as e:
+            logger.warning(f"[{server_name}] Error stopping container gracefully: {e}")
+            try:
+                container.kill()
+                logger.info(f"[{server_name}] Container killed successfully")
+            except Exception as kill_error:
+                logger.error(f"[{server_name}] Failed to kill container: {kill_error}")
+                raise ContainerUpdateError(f"Failed to stop container: {e}")
+        
+        # Rename original container to backup
+        logger.info(f"[{server_name}] Renaming container to: {backup_name}")
+        try:
+            container.rename(backup_name)
+            backup_container = container  # Keep reference for cleanup
+        except Exception as e:
+            # Try to restart original container
+            try:
+                container.start()
             except:
                 pass
+            raise ContainerUpdateError(f"Failed to rename container: {e}")
         
-        # Restore original container
+        # Create new container
         try:
-            backup_container = client.containers.get(backup_name)
-            backup_container.rename(container_name)
-            backup_container.start()
-            logger.info(f"[{server_name}] Restored original container")
-        except Exception as restore_error:
-            logger.error(f"[{server_name}] Failed to restore original container: {restore_error}")
+            logger.info(f"[{server_name}] Creating new container: {container_name}")
+            new_container = create_new_container(client, image_name, container_config)
+            
+            # Connect to networks before starting
+            if original_networks:
+                logger.info(f"[{server_name}] Connecting to networks")
+                connect_to_networks(client, new_container, original_networks)
+            
+            # Start new container
+            logger.info(f"[{server_name}] Starting new container: {container_name}")
+            new_container.start()
+            
+            # Wait for container to be healthy with increased timeout
+            logger.info(f"[{server_name}] Waiting for container to become healthy...")
+            if not wait_for_container_health(new_container, timeout=60):
+                raise ContainerUpdateError("New container failed to start properly within 60 seconds")
+            
+            logger.info(f"[{server_name}] New container is running successfully")
+            
+        except Exception as e:
+            logger.error(f"[{server_name}] Failed to create/start new container: {e}")
+            
+            # Cleanup new container if it exists
+            if new_container:
+                try:
+                    new_container.remove(force=True)
+                    logger.info(f"[{server_name}] Cleaned up failed new container")
+                except Exception as cleanup_error:
+                    logger.warning(f"[{server_name}] Failed to cleanup new container: {cleanup_error}")
+            
+            # Restore original container
+            if backup_container:
+                try:
+                    logger.info(f"[{server_name}] Restoring original container")
+                    
+                    # First ensure no container with original name exists
+                    cleanup_container_by_name(client, container_name, force=True)
+                    
+                    # Rename backup back to original
+                    backup_container.rename(container_name)
+                    backup_container.start()
+                    logger.info(f"[{server_name}] Successfully restored original container")
+                    
+                except Exception as restore_error:
+                    logger.error(f"[{server_name}] Failed to restore original container: {restore_error}")
+                    raise ContainerUpdateError(
+                        f"Update failed: {e}. CRITICAL: Failed to restore original container: {restore_error}. "
+                        f"Manual intervention required for container '{backup_name}'"
+                    )
+            
+            raise ContainerUpdateError(f"Update failed: {e}. Original container restored.")
         
-        raise ContainerUpdateError(f"Update failed: {e}. Original container restored.")
-    
-    # Remove backup container
-    try:
-        backup_container = client.containers.get(backup_name)
-        # Use longer timeout for remove operation
-        backup_container.remove()
-        logger.info(f"[{server_name}] Removed backup container: {backup_name}")
-    except docker.errors.ReadTimeout:
-        logger.warning(f"[{server_name}] Timeout removing backup container {backup_name} (container may still be removed)")
-    except Exception as e:
-        logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
-    
-    logger.info(f"[{server_name}] Successfully updated container: {container_name}")
-    return {
-        "status": "success", 
-        "message": f"Container '{container_name}' updated successfully to latest image."
-    }
+        # Remove backup container
+        if backup_container:
+            try:
+                logger.info(f"[{server_name}] Removing backup container: {backup_name}")
+                backup_container.remove(force=True)
+                logger.info(f"[{server_name}] Successfully removed backup container")
+            except Exception as e:
+                logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
+                # This is not critical - the update succeeded
+        
+        logger.info(f"[{server_name}] Successfully updated container: {container_name}")
+        return {
+            "status": "success", 
+            "message": f"Container '{container_name}' updated successfully to latest image."
+        }
+        
+    finally:
+        # Restore original client timeout
+        if original_timeout is not None:
+            try:
+                client.api.timeout = original_timeout
+            except AttributeError:
+                pass

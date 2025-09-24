@@ -45,6 +45,8 @@
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-red-600: oklch(57.7% 0.245 27.325);
+    --color-orange-500: oklch(70.5% 0.213 47.604);
+    --color-orange-600: oklch(64.6% 0.222 41.116);
     --color-blue-500: oklch(62.3% 0.214 259.815);
     --color-blue-600: oklch(54.6% 0.245 262.881);
     --color-blue-800: oklch(42.4% 0.199 265.638);
@@ -539,6 +541,9 @@
   .text-gray-900 {
     color: var(--color-gray-900);
   }
+  .text-orange-500 {
+    color: var(--color-orange-500);
+  }
   .text-red-500 {
     color: var(--color-red-500);
   }
@@ -633,6 +638,13 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-gray-600);
+      }
+    }
+  }
+  .hover\:text-orange-600 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-orange-600);
       }
     }
   }
@@ -1219,6 +1231,15 @@ body.dark-mode #updates-list .image-name {
 }
 body.dark-mode #updates-list .no-updates-message {
   color: #56d364;
+}
+#updates-modal.no-update .modal-content:not(.hidden) {
+  max-width: 500px !important;
+}
+#updates-modal.no-update #updates-list {
+  background-color: #f5fff5;
+}
+body.dark-mode #updates-modal.no-update #updates-list {
+  background-color: #212d23;
 }
 .progress-container {
   padding: 1rem 0;

@@ -729,6 +729,16 @@ body.dark-mode #updates-list .no-updates-message {
   color: #56d364;
 }
 
+#updates-modal.no-update .modal-content:not(.hidden) {
+  max-width: 500px !important;
+}
+
+#updates-modal.no-update #updates-list {
+  background-color: #f5fff5; 
+}
+body.dark-mode #updates-modal.no-update #updates-list {
+  background-color: #212d23; 
+}
 
 .progress-container {
   padding: 1rem 0;

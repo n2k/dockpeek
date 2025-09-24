@@ -31,6 +31,7 @@ export function showNoUpdatesModal() {
 
   updatesModalTitle.textContent = "No Updates Available";
   updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
+  updatesModal.classList.add('no-update');
   updatesModal.classList.remove('hidden');
 
   const okHandler = () => {

@@ -2,7 +2,7 @@ import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from '../app.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
-import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal } from './modals.js';
+import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 
 let originalButtonHTML = '';
 document.addEventListener('DOMContentLoaded', () => {
@@ -273,5 +273,45 @@ function loadFilterStates() {
   const savedRunningFilter = localStorage.getItem('filterRunningChecked');
   if (savedRunningFilter !== null) {
     document.getElementById('filter-running-checkbox').checked = JSON.parse(savedRunningFilter);
+  }
+}
+
+export async function installUpdate(serverName, containerName) {
+  try {
+    await showConfirmationModal(
+      'Confirm Update',
+      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.`,
+      'Update'
+    );
+  } catch (error) {
+    console.log('Update cancelled by user.');
+    return;
+  }
+
+  showUpdateInProgressModal(containerName); // Używamy nowego modala
+  try {
+    const response = await fetch('/update-container', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        server_name: serverName,
+        container_name: containerName,
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update container.');
+    }
+    
+    // Prosty alert o sukcesie, można go zastąpić ładniejszym modalem
+    alert(`Successfully updated ${containerName}!`);
+    await fetchContainerData(); // Odśwież dane w tabeli
+
+  } catch (error) {
+    console.error('Update failed:', error);
+    displayError(`Update failed for ${containerName}: ${error.message}`);
+  } finally {
+    hideUpdateInProgressModal(); // Ukrywamy modal niezależnie od wyniku
   }
 }

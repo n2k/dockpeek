@@ -7,6 +7,7 @@ from flask import (
 from flask_login import login_required, current_user
 
 from .get_data import get_all_data
+from .update_manager import update_container
 from .docker_utils import discover_docker_clients
 from .update import update_checker
 
@@ -214,6 +215,32 @@ def cancel_updates():
     current_app.logger.info("Cancellation request received.")
     return jsonify({"status": "cancellation_requested"})
 
+@main_bp.route("/update-container", methods=["POST"])
+@conditional_login_required
+def update_container_route():
+    """Uruchamia proces aktualizacji dla pojedynczego kontenera."""
+    data = request.get_json()
+    server_name = data.get('server_name')
+    container_name = data.get('container_name')
+
+    if not server_name or not container_name:
+        return jsonify({"error": "Missing server_name or container_name"}), 400
+
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+    
+    if not server:
+        return jsonify({"error": f"Server '{server_name}' not found or inactive"}), 404
+    
+    try:
+        result = update_container(server['client'], server_name, container_name)
+        return jsonify(result), 200
+    except (RuntimeError, ValueError) as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        current_app.logger.error(f"An unexpected error occurred during update of {container_name}: {e}")
+        return jsonify({"error": "An unexpected server error occurred."}), 500
+    
 @main_bp.route("/export/json")
 @conditional_login_required
 def export_json():

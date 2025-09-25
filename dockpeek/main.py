@@ -15,18 +15,16 @@ main_bp = Blueprint('main', __name__)
 
 CRITICAL_CONTAINER_PATTERNS = {
     'images': [
-        'traefik', 'portainer/portainer', 'containrrr/watchtower',
-        'nginx:', 'caddy', 'haproxy', 'envoyproxy/envoy',
-        'kong', 'cloudflare/cloudflared'
+        'traefik', 'portainer/portainer', 'dockge', 'komodo',
+        'containrrr/watchtower', 'nginx:', 'caddy'
     ],
     'names': [
-        'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
-        'portainer', 'watchtower', 'cloudflare', 'tunnel',
-        'reverse-proxy', 'load-balancer', 'gateway'
+        'traefik', 'proxy', 'nginx', 'caddy',
+        'portainer', 'watchtower', 'cloudflare'
     ],
     'databases': [
         'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
-        'redis', 'elasticsearch', 'cassandra', 'influxdb'
+        'redis'
     ]
 }
 

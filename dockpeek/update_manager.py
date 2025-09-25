@@ -99,9 +99,6 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'containrrr/watchtower',
         'nginx:',
         'caddy',
-        'haproxy',
-        'envoyproxy/envoy',
-        'kong',
         'cloudflare/cloudflared'
     ]
     
@@ -109,20 +106,18 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     critical_name_patterns = [
         'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
         'portainer', 'watchtower', 'cloudflare', 'tunnel',
-        'reverse-proxy', 'load-balancer', 'gateway'
+        'reverse-proxy'
     ]
     
     # Database containers (high risk)
     database_images = [
         'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
-        'redis', 'elasticsearch', 'cassandra', 'influxdb',
-        'clickhouse', 'timescale', 'couchdb', 'neo4j',
-        'memcached', 'sqlite', 'cockroachdb'
+        'redis', 'sqlite'
     ]
     
     database_name_patterns = [
-        'db', 'database', 'postgres', 'mysql', 'mariadb', 'mongo',
-        'redis', 'elastic', 'cassandra', 'influx', 'timescale'
+        'database', 'postgres', 'mysql', 'mariadb', 'mongo',
+        'redis'
     ]
     
     # Check critical system containers

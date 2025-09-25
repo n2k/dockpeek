@@ -9,31 +9,16 @@ import docker
 logger = logging.getLogger(__name__)
 
 class ContainerUpdateError(Exception):
-    """Custom exception for container update errors."""
     pass
 
 def check_image_updates_available(client: docker.DockerClient, image_name: str, container_image_id: str = None) -> bool:
-    """
-    Check if there are updates available by comparing running container image with local image.
-    Returns True if local image differs from the one currently running in container.
-    
-    Args:
-        client: Docker client instance
-        image_name: Name of the image to check
-        container_image_id: Image ID of currently running container
-    
-    Returns:
-        bool: True if local image is different from container's image, False otherwise
-    """
     try:
-        # Get the latest local image for this tag
         local_image = client.images.get(image_name)
         
         if not container_image_id:
             logger.debug(f"No container image ID provided for comparison")
             return True
             
-        # Compare the local image ID with the container's image ID
         has_update = container_image_id != local_image.id
         
         logger.debug(f"Image {image_name} - Container ID: {container_image_id[:12]}..., Local ID: {local_image.id[:12]}..., Has update: {has_update}")
@@ -42,20 +27,15 @@ def check_image_updates_available(client: docker.DockerClient, image_name: str, 
         
     except docker.errors.ImageNotFound:
         logger.info(f"Local image {image_name} not found - update needed")
-        return True  # Image not found locally, need to pull
+        return True
     except Exception as e:
         logger.warning(f"Could not check for updates for {image_name}: {e}")
-        return True  # Assume update needed if check fails
+        return True
 
 
 def check_network_dependencies(client: docker.DockerClient, container) -> None:
-    """
-    Check if other containers depend on this container's network.
-    Raises ContainerUpdateError if other containers depend on this one.
-    """
     container_name = container.name
     
-    # Get all containers
     try:
         all_containers = client.containers.list(all=True)
     except Exception as e:
@@ -68,7 +48,6 @@ def check_network_dependencies(client: docker.DockerClient, container) -> None:
         if other_container.id == container.id:
             continue
             
-        # Check if other container uses this container's network
         network_mode = other_container.attrs.get('HostConfig', {}).get('NetworkMode', '')
         if network_mode == f'container:{container_name}' or network_mode == f'container:{container.id}':
             dependent_containers.append(other_container.name)
@@ -80,19 +59,12 @@ def check_network_dependencies(client: docker.DockerClient, container) -> None:
         )
 
 def validate_container_for_update(client: docker.DockerClient, container) -> None:
-    """
-    Validate that a container can be safely updated.
-    Raises ContainerUpdateError if container cannot be updated.
-    """
-    # Check if other containers depend on this container's network
     check_network_dependencies(client, container)
     
-    # Get container info
     container_name = container.name.lower()
     image_name = container.attrs.get('Config', {}).get('Image', '').lower()
     labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
     
-    # Critical system containers by image patterns
     critical_images = [
         'traefik',
         'portainer/portainer',
@@ -102,14 +74,12 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'cloudflare/cloudflared'
     ]
     
-    # Critical system containers by name patterns
     critical_name_patterns = [
         'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
         'portainer', 'watchtower', 'cloudflare', 'tunnel',
         'reverse-proxy'
     ]
     
-    # Database containers (high risk)
     database_images = [
         'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
         'redis', 'sqlite'
@@ -120,7 +90,6 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'redis'
     ]
     
-    # Check critical system containers
     for pattern in critical_images:
         if pattern in image_name:
             raise ContainerUpdateError(
@@ -137,7 +106,6 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
                 f"Consider updating this container manually."
             )
     
-    # Check database containers (warning but allow with explicit confirmation needed)
     for pattern in database_images:
         if pattern in image_name:
             raise ContainerUpdateError(
@@ -154,45 +122,33 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
                 f"Consider updating this container manually."
             )
     
-    # Check if container is part of a compose stack
     if 'com.docker.compose.project' in labels:
         project_name = labels['com.docker.compose.project']
         logger.warning(f"Container '{container.name}' is part of Docker Compose project '{project_name}'")
     
-    # Check for containers with health checks (may need special handling)
     health_config = container.attrs.get('Config', {}).get('Healthcheck')
     if health_config and health_config.get('Test'):
         logger.info(f"Container '{container.name}' has health check configured - will monitor during update")
 
 def extract_container_config(container) -> Dict[str, Any]:
-    """
-    Extract container configuration for recreation.
-    Returns a clean configuration dict.
-    """
     attrs = container.attrs
     config = attrs.get('Config', {})
     host_config = attrs.get('HostConfig', {})
     
-    # Clean environment variables (remove None values)
     env_vars = config.get('Env', []) or []
     clean_env = [env for env in env_vars if env is not None]
     
-    # Clean labels
     labels = config.get('Labels') or {}
     clean_labels = {k: v for k, v in labels.items() if v is not None}
     
-    # Prepare volumes/binds
     binds = host_config.get('Binds') or []
     clean_binds = [bind for bind in binds if bind is not None]
     
-    # Prepare port bindings
     port_bindings = host_config.get('PortBindings') or {}
     clean_port_bindings = {k: v for k, v in port_bindings.items() if v is not None}
     
-    # Get network mode
     network_mode = host_config.get('NetworkMode')
     
-    # Docker doesn't allow hostname when using container network mode
     hostname = None
     if network_mode and not network_mode.startswith('container:'):
         hostname = config.get('Hostname')
@@ -219,13 +175,8 @@ def extract_container_config(container) -> Dict[str, Any]:
     }
 
 def create_new_container(client: docker.DockerClient, image_name: str, config: Dict[str, Any]) -> docker.models.containers.Container:
-    """
-    Create a new container with the given configuration.
-    """
-    # Remove None values from config
     clean_config = {k: v for k, v in config.items() if v is not None}
     
-    # Handle special cases for empty lists/dicts
     for key in ['environment', 'volumes', 'cap_add', 'cap_drop', 'devices', 'security_opt']:
         if key in clean_config and not clean_config[key]:
             del clean_config[key]
@@ -237,11 +188,6 @@ def create_new_container(client: docker.DockerClient, image_name: str, config: D
         raise ContainerUpdateError(f"Failed to create new container: {e}")
 
 def connect_to_networks(client: docker.DockerClient, container, original_networks: Dict[str, Any]) -> None:
-    """
-    Connect container to the same networks as the original.
-    Skip if using container network mode.
-    """
-    # Skip network connection if using container network mode
     container_attrs = container.attrs
     network_mode = container_attrs.get('HostConfig', {}).get('NetworkMode', '')
     
@@ -251,12 +197,11 @@ def connect_to_networks(client: docker.DockerClient, container, original_network
     
     for network_name, network_config in original_networks.items():
         if network_name == 'bridge':
-            continue  # Skip default bridge network
+            continue
             
         try:
             network = client.networks.get(network_name)
             
-            # Prepare connection config
             connect_config = {}
             if network_config.get('IPAddress'):
                 connect_config['ipv4_address'] = network_config['IPAddress']
@@ -270,12 +215,8 @@ def connect_to_networks(client: docker.DockerClient, container, original_network
             logger.warning(f"Failed to connect to network {network_name}: {e}")
 
 def wait_for_container_health(container, timeout: int = 60) -> bool:
-    """
-    Wait for container to be healthy or running.
-    Returns True if container is healthy/running, False if timeout.
-    """
     start_time = time.time()
-    check_interval = 2  # Check every 2 seconds
+    check_interval = 2
     
     while time.time() - start_time < timeout:
         try:
@@ -285,7 +226,6 @@ def wait_for_container_health(container, timeout: int = 60) -> bool:
             logger.debug(f"Container {container.name} status: {status}")
             
             if status == 'running':
-                # Check health if health check is configured
                 health = container.attrs.get('State', {}).get('Health', {})
                 if health.get('Status') == 'healthy' or not health:
                     logger.info(f"Container {container.name} is running and healthy")
@@ -294,7 +234,6 @@ def wait_for_container_health(container, timeout: int = 60) -> bool:
                     logger.warning(f"Container {container.name} is unhealthy")
                     return False
                 else:
-                    # Still starting up, continue waiting
                     logger.debug(f"Container {container.name} health status: {health.get('Status', 'unknown')}")
             elif status in ['exited', 'dead']:
                 logger.error(f"Container {container.name} has exited or died")
@@ -309,10 +248,6 @@ def wait_for_container_health(container, timeout: int = 60) -> bool:
     return False
 
 def cleanup_container_by_name(client: docker.DockerClient, container_name: str, force: bool = True) -> bool:
-    """
-    Safely remove a container by name, with proper error handling.
-    Returns True if successfully removed or didn't exist, False on error.
-    """
     try:
         container = client.containers.get(container_name)
         container.remove(force=force)
@@ -326,28 +261,10 @@ def cleanup_container_by_name(client: docker.DockerClient, container_name: str, 
         return False
 
 def update_container(client: docker.DockerClient, server_name: str, container_name: str, force: bool = False) -> Dict[str, Any]:
-    """
-    Safely stops, removes, and recreates a container with the latest image.
-    Improved version with better timeout handling and rollback logic.
-    
-    Args:
-        client: Docker client instance  
-        server_name: Name of the server (for logging)
-        container_name: Name of the container to update
-        force: Force update even if no new image is available
-    
-    Returns:
-        Dict with status and message
-    
-    Raises:
-        ContainerUpdateError: If update cannot be performed safely
-    """
     logger.info(f"[{server_name}] Starting update process for container: {container_name} (force={force})")
     
-    # Configure client timeouts for this operation
     original_timeout = getattr(client.api, 'timeout', None)
     try:
-        # Increase timeout for container operations
         client.api.timeout = 300
     except AttributeError:
         logger.warning("Could not set client timeout")
@@ -356,7 +273,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
     new_container = None
     
     try:
-        # Get the container
         try:
             container = client.containers.get(container_name)
         except docker.errors.NotFound:
@@ -364,10 +280,8 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         except Exception as e:
             raise ContainerUpdateError(f"Error accessing container '{container_name}': {e}")
         
-        # Validate container can be updated
         validate_container_for_update(client, container)
         
-        # Get image name and current container's image ID
         image_name = container.attrs.get('Config', {}).get('Image')
         container_image_id = container.attrs.get('Image', '')
         
@@ -377,7 +291,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         logger.info(f"[{server_name}] Container image: {image_name}")
         logger.debug(f"[{server_name}] Current container image ID: {container_image_id[:12]}...")
         
-        # Pull latest image first
         logger.info(f"[{server_name}] Pulling latest image: {image_name}")
         try:
             new_image = client.images.pull(image_name)
@@ -385,7 +298,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         except Exception as e:
             raise ContainerUpdateError(f"Failed to pull image '{image_name}': {e}")
         
-        # Check if update is needed after pulling (unless forced)
         if not force and not check_image_updates_available(client, image_name, container_image_id):
             logger.info(f"[{server_name}] No updates available for {image_name} - container is already using the latest image")
             return {
@@ -393,15 +305,12 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
                 "message": f"Container {container_name} is already up to date."
             }
         
-        # Extract configuration
         container_config = extract_container_config(container)
         original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
         
-        # Create backup name with timestamp
         timestamp = int(time.time())
         backup_name = f"{container_name}-backup-{timestamp}"
         
-        # Ensure backup name doesn't conflict
         backup_counter = 1
         while True:
             try:
@@ -411,7 +320,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
             except docker.errors.NotFound:
                 break
         
-        # Stop original container with longer timeout
         logger.info(f"[{server_name}] Stopping container: {container_name}")
         try:
             container.stop(timeout=60)
@@ -425,34 +333,28 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
                 logger.error(f"[{server_name}] Failed to kill container: {kill_error}")
                 raise ContainerUpdateError(f"Failed to stop container: {e}")
         
-        # Rename original container to backup
         logger.info(f"[{server_name}] Renaming container to: {backup_name}")
         try:
             container.rename(backup_name)
-            backup_container = container  # Keep reference for cleanup
+            backup_container = container
         except Exception as e:
-            # Try to restart original container
             try:
                 container.start()
             except:
                 pass
             raise ContainerUpdateError(f"Failed to rename container: {e}")
         
-        # Create new container
         try:
             logger.info(f"[{server_name}] Creating new container: {container_name}")
             new_container = create_new_container(client, image_name, container_config)
             
-            # Connect to networks before starting
             if original_networks:
                 logger.info(f"[{server_name}] Connecting to networks")
                 connect_to_networks(client, new_container, original_networks)
             
-            # Start new container
             logger.info(f"[{server_name}] Starting new container: {container_name}")
             new_container.start()
             
-            # Wait for container to be healthy with increased timeout
             logger.info(f"[{server_name}] Waiting for container to become healthy...")
             if not wait_for_container_health(new_container, timeout=120):
                 raise ContainerUpdateError("New container failed to start properly within 60 seconds")
@@ -462,7 +364,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         except Exception as e:
             logger.error(f"[{server_name}] Failed to create/start new container: {e}")
             
-            # Cleanup new container if it exists
             if new_container:
                 try:
                     new_container.remove(force=True)
@@ -470,15 +371,12 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
                 except Exception as cleanup_error:
                     logger.warning(f"[{server_name}] Failed to cleanup new container: {cleanup_error}")
             
-            # Restore original container
             if backup_container:
                 try:
                     logger.info(f"[{server_name}] Restoring original container")
                     
-                    # First ensure no container with original name exists
                     cleanup_container_by_name(client, container_name, force=True)
                     
-                    # Rename backup back to original
                     backup_container.rename(container_name)
                     backup_container.start()
                     logger.info(f"[{server_name}] Successfully restored original container")
@@ -492,7 +390,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
             
             raise ContainerUpdateError(f"Update failed: {e}. Original container restored.")
         
-        # Remove backup container
         if backup_container:
             try:
                 logger.info(f"[{server_name}] Removing backup container: {backup_name}")
@@ -500,7 +397,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
                 logger.info(f"[{server_name}] Successfully removed backup container")
             except Exception as e:
                 logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
-                # This is not critical - the update succeeded
         
         success_message = f"Container '{container_name}' updated successfully to latest image."
         if force:
@@ -513,7 +409,6 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
         }
         
     finally:
-        # Restore original client timeout
         if original_timeout is not None:
             try:
                 client.api.timeout = original_timeout

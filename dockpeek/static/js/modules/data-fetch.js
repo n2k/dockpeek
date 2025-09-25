@@ -288,7 +288,7 @@ export async function installUpdate(serverName, containerName) {
     return;
   }
 
-  showUpdateInProgressModal(containerName); // Używamy nowego modala
+  showUpdateInProgressModal(containerName);
   try {
     const response = await fetch('/update-container', {
       method: 'POST',
@@ -304,24 +304,21 @@ export async function installUpdate(serverName, containerName) {
       throw new Error(result.error || 'Failed to update container.');
     }
 
-    // Import funkcji sukcesu
     const { showUpdateSuccessModal } = await import('./modals.js');
     showUpdateSuccessModal(containerName);
-    // Clear the update indicator immediately for better UX
     state.allContainersData.forEach(container => {
       if (container.server === serverName && container.name === containerName) {
         container.update_available = false;
       }
     });
     updateDisplay();
-    await fetchContainerData(); // Odśwież dane w tabeli
+    await fetchContainerData();
 
   } catch (error) {
     console.error('Update failed:', error);
-    // Import funkcji błędu
     const { showUpdateErrorModal } = await import('./modals.js');
     showUpdateErrorModal(containerName, error.message);
   } finally {
-    hideUpdateInProgressModal(); // Ukrywamy modal niezależnie od wyniku
+    hideUpdateInProgressModal();
   }
 }

@@ -251,11 +251,9 @@ def update_container_route():
         result = update_container(server['client'], server_name, container_name)
         return jsonify(result), 200
     except (RuntimeError, ValueError) as e:
-        # Przekaż szczegółowy komunikat błędu
         current_app.logger.error(f"Update error for {container_name}: {e}")
         return jsonify({"error": str(e)}), 500
     except Exception as e:
-        # Loguj pełny błąd ale nie ujawniaj wszystkich szczegółów użytkownikowi
         current_app.logger.error(f"An unexpected error occurred during update of {container_name}: {e}")
         return jsonify({"error": f"{str(e)}"}), 500
     

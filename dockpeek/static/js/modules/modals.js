@@ -223,19 +223,7 @@ export function showUpdateErrorModal(containerName, errorMessage) {
   const okButton = document.getElementById('update-error-ok-button');
 
   if (messageEl) {
-    // Sprawdź czy to ContainerUpdateError z dodatkowymi szczegółami
-    const isDetailedError = errorMessage.includes('Cannot update container') || 
-                           errorMessage.includes('depends on') ||
-                           errorMessage.includes('Docker Compose') ||
-                           errorMessage.includes('critical system container');
-    
-    if (isDetailedError) {
-      // Dla szczegółowych błędów wyświetl pełną wiadomość
-      messageEl.innerHTML = `<strong>Failed to update "${containerName}"</strong><br><br>${errorMessage.replace(/\n/g, '<br>')}`;
-    } else {
-      // Dla ogólnych błędów użyj prostego formatu
-      messageEl.textContent = `Failed to update container "${containerName}".\n\nError: ${errorMessage}`;
-    }
+    messageEl.textContent = errorMessage;
   }
   
   if (modal) {
@@ -254,6 +242,11 @@ export function showUpdateErrorModal(containerName, errorMessage) {
     }
   };
 
-  okButton.addEventListener('click', okHandler);
-  modal.addEventListener('click', backdropHandler);
+  if (okButton) {
+    okButton.addEventListener('click', okHandler);
+  }
+  
+  if (modal) {
+    modal.addEventListener('click', backdropHandler);
+  }
 }

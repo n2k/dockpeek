@@ -65,7 +65,6 @@ export function initEventListeners() {
   });
 
   containerRowsBody.addEventListener('click', function (e) {
-    // Obsługa kliknięcia na wskaźnik aktualizacji
     if (e.target.classList.contains('update-available-indicator') || e.target.closest('.update-available-indicator')) {
       e.preventDefault();
       e.stopPropagation();

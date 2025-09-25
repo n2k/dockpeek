@@ -13,20 +13,6 @@ from .update import update_checker
 
 main_bp = Blueprint('main', __name__)
 
-CRITICAL_CONTAINER_PATTERNS = {
-    'images': [
-        'traefik', 'portainer/portainer', 'dockge', 'komodo',
-        'containrrr/watchtower', 'nginx:', 'caddy'
-    ],
-    'names': [
-        'traefik', 'proxy', 'nginx', 'caddy',
-        'portainer', 'watchtower', 'cloudflare'
-    ],
-    'databases': [
-        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
-        'redis'
-    ]
-}
 
 def conditional_login_required(f):
     """Dekorator który wymaga logowania tylko gdy autoryzacja nie jest wyłączona."""

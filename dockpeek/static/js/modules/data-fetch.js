@@ -151,7 +151,7 @@ async function checkUpdatesIndividually() {
     const updatedContainers = [];
     let processed = 0;
 
-    const CONCURRENCY_LIMIT = 2; // Number of parallel checks
+    const CONCURRENCY_LIMIT = 3; // Number of parallel checks
     const queue = [...containers];
 
     const checkContainer = async (container) => {

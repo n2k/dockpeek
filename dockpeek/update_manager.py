@@ -214,7 +214,7 @@ def connect_to_networks(client: docker.DockerClient, container, original_network
         except Exception as e:
             logger.warning(f"Failed to connect to network {network_name}: {e}")
 
-def wait_for_container_health(container, timeout: int = 60) -> bool:
+def wait_for_container_health(container, timeout: int = 180) -> bool:
     start_time = time.time()
     check_interval = 2
     
@@ -357,7 +357,7 @@ def update_container(client: docker.DockerClient, server_name: str, container_na
             
             logger.info(f"[{server_name}] Waiting for container to become healthy...")
             if not wait_for_container_health(new_container, timeout=120):
-                raise ContainerUpdateError("New container failed to start properly within 60 seconds")
+                raise ContainerUpdateError("New container failed to start properly within 120 seconds")
             
             logger.info(f"[{server_name}] New container is running successfully")
             

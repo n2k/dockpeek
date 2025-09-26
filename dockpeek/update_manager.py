@@ -54,8 +54,9 @@ def check_network_dependencies(client: docker.DockerClient, container) -> None:
     
     if dependent_containers:
         raise ContainerUpdateError(
-            f"Cannot update container '{container_name}' because other containers depend on its network: "
-            f"{', '.join(dependent_containers)}. Updating such containers must be done outside Dockpeek."
+            f"Cannot update container '{container_name}' because other containers depend on its network: \n "
+            f"{', '.join(dependent_containers)}.\n\n"
+            f"Updating such containers must be done outside of Dockpeek."
         )
 
 def validate_container_for_update(client: docker.DockerClient, container) -> None:
@@ -107,13 +108,13 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
             if pattern == 'dockpeek':
                 raise ContainerUpdateError(
                     f"Dockpeek cannot update itself, as this would interrupt the update process.\n"
-                    f"Please update the dockpeek container outside of dockpeek."
+                    f"Please update the dockpeek container outside of Dockpeek."
                 )
             else:
                 raise ContainerUpdateError(
                     f"Container '{container.name}' appears to be a critical system service. "
                     f"Updating it through Dockpeek is not recommended.\n\n"
-                    f"Please update this container outside of dockpeek."
+                    f"Please update this container outside of Dockpeek."
                 )
     
     for pattern in critical_name_patterns:
@@ -121,7 +122,7 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
             raise ContainerUpdateError(
                 f"Container '{container.name}' appears to be a critical system service. "
                 f"Updating it through Dockpeek is not recommended.\n\n"
-                f"Please update this container outside of dockpeek."
+                f"Please update this container outside of Dockpeek."
             )
     
     for pattern in database_images:
@@ -129,7 +130,7 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
             raise ContainerUpdateError(
                 f"Container '{container.name}' appears to be a database service."
                 f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
-                f"Please update this container outside of dockpeek."
+                f"Please update this container outside of Dockpeek."
             )
     
     for pattern in database_name_patterns:
@@ -137,16 +138,16 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
             raise ContainerUpdateError(
                 f"Container '{container.name}' appears to be a database service."
                 f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
-                f"Please update this container outside of dockpeek."
+                f"Please update this container outside of Dockpeek."
             )
     
     if 'com.docker.compose.project' in labels:
         project_name = labels['com.docker.compose.project']
-        logger.warning(f"Container '{container.name}' is part of Docker Compose project '{project_name}'")
+        logger.debug(f"Container '{container.name}' is part of Docker Compose project '{project_name}'")
     
     health_config = container.attrs.get('Config', {}).get('Healthcheck')
     if health_config and health_config.get('Test'):
-        logger.info(f"Container '{container.name}' has health check configured - will monitor during update")
+        logger.info(f"Container '{container.name}' has health check configured - Dockpeek will monitor it during the update process.")
 
 def extract_container_config(container) -> Dict[str, Any]:
     attrs = container.attrs

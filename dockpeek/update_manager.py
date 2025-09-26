@@ -70,26 +70,37 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'traefik',
         'portainer/portainer',
         'containrrr/watchtower',
+        'pihole/pihole',
+        'jwilder/nginx-proxy',
+        'haproxy',
+        'envoyproxy/envoy',
+        'linuxserver/wireguard',
+        'kylemanna/openvpn',
         'nginx',
         'caddy',
         'cloudflare/cloudflared'
-    ]
-    
+        ]
+
     critical_name_patterns = [
         'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
         'portainer', 'watchtower', 'cloudflare', 'tunnel',
-        'reverse-proxy'
+        'reverse-proxy', 'pihole', 'dns', 'wireguard', 'openvpn',
+        'vpn'
     ]
-    
+
     database_images = [
         'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
-        'redis', 'sqlite'
+        'redis', 'sqlite', 'microsoft/mssql-server',
+        'couchdb', 'couchbase', 'cockroachdb', 'neo4j',
+        'influxdb', 'elasticsearch', 'cassandra', 'memcached'
     ]
-    
+
     database_name_patterns = [
         'database', 'postgres', 'mysql', 'mariadb', 'mongo',
-        'redis'
+        'redis', 'mssql', 'couch', 'cockroach', 'neo4j',
+        'influx', 'elastic', 'cassandra', 'memcached'
     ]
+
     
     for pattern in critical_images:
         if pattern in image_name:

@@ -65,11 +65,12 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     image_name = container.attrs.get('Config', {}).get('Image', '').lower()
     labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
     
-    critical_images = [
+    critical_images = [  
+        'dockpeek',
         'traefik',
         'portainer/portainer',
         'containrrr/watchtower',
-        'nginx:',
+        'nginx',
         'caddy',
         'cloudflare/cloudflared'
     ]
@@ -92,34 +93,40 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     
     for pattern in critical_images:
         if pattern in image_name:
-            raise ContainerUpdateError(
-                f"Container '{container.name}' uses a critical system image ({pattern}). "
-                f"Manual update is not recommended as it may disrupt essential services.\n\n"
-                f"Consider updating this container manually."
-            )
+            if pattern == 'dockpeek':
+                raise ContainerUpdateError(
+                    f"Dockpeek cannot update itself, as this would interrupt the update process.\n"
+                    f"Please update the dockpeek container outside of dockpeek."
+                )
+            else:
+                raise ContainerUpdateError(
+                    f"Container '{container.name}' appears to be a critical system service. "
+                    f"Updating it through Dockpeek is not recommended.\n\n"
+                    f"Please update this container outside of dockpeek."
+                )
     
     for pattern in critical_name_patterns:
         if pattern in container_name:
             raise ContainerUpdateError(
-                f"Container '{container.name}' appears to be a critical system container. "
-                f"Manual update is not recommended as it may disrupt essential services.\n\n"
-                f"Consider updating this container manually."
+                f"Container '{container.name}' appears to be a critical system service. "
+                f"Updating it through Dockpeek is not recommended.\n\n"
+                f"Please update this container outside of dockpeek."
             )
     
     for pattern in database_images:
         if pattern in image_name:
             raise ContainerUpdateError(
-                f"Container '{container.name}' is a database container ({pattern}). "
-                f"Updating databases can cause data corruption or service interruption.\n\n"
-                f"Consider updating this container manually."
+                f"Container '{container.name}' appears to be a database service."
+                f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
+                f"Please update this container outside of dockpeek."
             )
     
     for pattern in database_name_patterns:
         if pattern in container_name:
             raise ContainerUpdateError(
-                f"Container '{container.name}' appears to be a database container. "
-                f"Updating databases can cause data corruption or service interruption.\n\n"
-                f"Consider updating this container manually."
+                f"Container '{container.name}' appears to be a database service."
+                f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
+                f"Please update this container outside of dockpeek."
             )
     
     if 'com.docker.compose.project' in labels:

@@ -154,35 +154,25 @@ export function hideProgressModal() {
   }
 }
 
-/**
- * Pokazuje modal informujący o trwającej aktualizacji kontenera.
- * @param {string} containerName - Nazwa aktualizowanego kontenera.
- */
 export function showUpdateInProgressModal(containerName) {
-  const modal = document.getElementById('update-in-progress-modal');
-  const messageEl = document.getElementById('update-modal-message');
+    const modal = document.getElementById('update-in-progress-modal');
+    const containerNameEl = document.getElementById('update-container-name');
 
-  if (messageEl) {
-    messageEl.textContent = `Updating ${containerName}...`;
-  }
-  if (modal) {
-    modal.classList.remove('hidden');
-  }
+    if (containerNameEl) {
+        containerNameEl.textContent = containerName;
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
 }
 
-/**
- * Ukrywa modal informujący o trwającej aktualizacji.
- */
 export function hideUpdateInProgressModal() {
-  const modal = document.getElementById('update-in-progress-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
+    const modal = document.getElementById('update-in-progress-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
-/**
- * Pokazuje modal o sukcesie aktualizacji.
- * @param {string} containerName - Nazwa zaktualizowanego kontenera.
- */
 export function showUpdateSuccessModal(containerName) {
   const modal = document.getElementById('update-success-modal');
   const messageEl = document.getElementById('update-success-message');
@@ -212,11 +202,6 @@ export function showUpdateSuccessModal(containerName) {
   modal.addEventListener('click', backdropHandler);
 }
 
-/**
- * Pokazuje modal o błędzie aktualizacji.
- * @param {string} containerName - Nazwa kontenera, który nie mógł być zaktualizowany.
- * @param {string} errorMessage - Szczegóły błędu.
- */
 export function showUpdateErrorModal(containerName, errorMessage) {
   const modal = document.getElementById('update-error-modal');
   const messageEl = document.getElementById('update-error-message');

@@ -179,7 +179,7 @@ export function showUpdateSuccessModal(containerName) {
   const okButton = document.getElementById('update-success-ok-button');
 
   if (messageEl) {
-    messageEl.textContent = `Container "${containerName}" has been successfully updated!`;
+    messageEl.innerHTML = `Container <strong>"${containerName}"</strong> has been successfully updated!`;
   }
   
   if (modal) {
@@ -208,7 +208,7 @@ export function showUpdateErrorModal(containerName, errorMessage) {
   const okButton = document.getElementById('update-error-ok-button');
 
   if (messageEl) {
-    messageEl.textContent = errorMessage;
+    messageEl.innerHTML = errorMessage.replace(/\n/g, '<br>');
   }
   
   if (modal) {

@@ -1,7 +1,8 @@
-# dockpeek/update_manager.py
+# update_manager.py
 
 import logging
 import time
+import re
 from typing import Dict, Any, Optional
 from flask import current_app
 import docker
@@ -9,7 +10,19 @@ import docker
 logger = logging.getLogger(__name__)
 
 class ContainerUpdateError(Exception):
-    pass
+    """Exception with separate HTML and plain text messages"""
+    def __init__(self, html_message: str, log_message: str = None):
+        # Use clean message for the exception itself (logging)
+        clean_message = log_message or strip_html_tags(html_message)
+        super().__init__(clean_message)
+        self.html_message = html_message
+
+def strip_html_tags(text: str) -> str:
+    """Remove HTML tags and double newlines from text for clean logging"""
+    clean_text = re.sub(r'<[^>]+>', '', text)
+    clean_text = clean_text.replace('\n', ' ')
+    return clean_text
+
 
 def check_image_updates_available(client: docker.DockerClient, image_name: str, container_image_id: str = None) -> bool:
     try:
@@ -32,7 +45,6 @@ def check_image_updates_available(client: docker.DockerClient, image_name: str, 
         logger.warning(f"Could not check for updates for {image_name}: {e}")
         return True
 
-
 def check_network_dependencies(client: docker.DockerClient, container) -> None:
     container_name = container.name
     
@@ -53,10 +65,11 @@ def check_network_dependencies(client: docker.DockerClient, container) -> None:
             dependent_containers.append(other_container.name)
     
     if dependent_containers:
-        raise ContainerUpdateError(
-            f"Cannot update container '{container_name}' because other containers depend on its network: {', '.join(dependent_containers)}.\n\n"
-            f"Updating such containers must be done outside of Dockpeek."
+        html_message = (
+            f"Cannot update container <strong>'{container_name}'</strong> because other containers <strong>depend</strong> on its network: <strong>{', '.join(dependent_containers)}.</strong>\n"
+            f"<div class='text-center' style='margin-top: 0.7em;'>Updating such containers <strong>must be done outside of dockpeek.</strong></div>"
         )
+        raise ContainerUpdateError(html_message)
 
 def validate_container_for_update(client: docker.DockerClient, container) -> None:
     check_network_dependencies(client, container)
@@ -79,7 +92,7 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'nginx',
         'caddy',
         'cloudflare/cloudflared'
-        ]
+    ]
 
     critical_name_patterns = [
         'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
@@ -105,40 +118,45 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     for pattern in critical_images:
         if pattern in image_name:
             if pattern == 'dockpeek':
-                raise ContainerUpdateError(
-                    f"Dockpeek cannot update itself, as this would interrupt the update process.\n"
-                    f"Please update the dockpeek container outside of Dockpeek."
+                html_message = (
+                    f"<div class='text-center'><strong>Dockpeek</strong> cannot update itself, as this would <strong>interrupt the update process.</strong></div>"
+                    f"<div class='text-center' style='margin-top: 0.7em;'>Please update the dockpeek container <strong>outside of dockpeek.</strong></div>"
                 )
+                raise ContainerUpdateError(html_message)
             else:
-                raise ContainerUpdateError(
-                    f"Container '{container.name}' appears to be a critical system service. "
-                    f"Updating it through Dockpeek is not recommended.\n\n"
-                    f"Please update this container outside of Dockpeek."
+                html_message = (
+                    f"Container <strong>'{container.name}'</strong> appears to be a <strong>critical system service.</strong> "
+                    f"Updating it through Dockpeek is not recommended.\n"
+                    f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
                 )
+                raise ContainerUpdateError(html_message)
     
     for pattern in critical_name_patterns:
         if pattern in container_name:
-            raise ContainerUpdateError(
-                f"Container '{container.name}' appears to be a critical system service. "
-                f"Updating it through Dockpeek is not recommended.\n\n"
-                f"Please update this container outside of Dockpeek."
+            html_message = (
+                f"Container <strong>'{container.name}'</strong> appears to be a <strong>critical system service.</strong> "
+                f"Updating it through Dockpeek is not recommended.\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
             )
+            raise ContainerUpdateError(html_message)
     
     for pattern in database_images:
         if pattern in image_name:
-            raise ContainerUpdateError(
-                f"Container '{container.name}' appears to be a database service."
-                f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
-                f"Please update this container outside of Dockpeek."
+            html_message = (
+                f"Container <strong>'{container.name}'</strong> appears to be a <strong>database service.</strong> "
+                f"Updating databases through Dockpeek is not recommended, as it may cause <strong>downtime or data loss.</strong>\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
             )
+            raise ContainerUpdateError(html_message)
     
     for pattern in database_name_patterns:
         if pattern in container_name:
-            raise ContainerUpdateError(
-                f"Container '{container.name}' appears to be a database service."
-                f"Updating databases through Dockpeek is not recommended, as it may cause downtime or data loss.\n\n"
-                f"Please update this container outside of Dockpeek."
+            html_message = (
+                f"Container <strong>'{container.name}'</strong> appears to be a <strong>database service.</strong> "
+                f"Updating databases through Dockpeek is not recommended, as it may cause <strong>downtime or data loss.</strong>\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
             )
+            raise ContainerUpdateError(html_message)
     
     if 'com.docker.compose.project' in labels:
         project_name = labels['com.docker.compose.project']

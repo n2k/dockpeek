@@ -99,7 +99,7 @@ export async function checkForUpdates() {
     try {
       await showConfirmationModal(
         'Check Updates on Multiple Servers',
-        `You are about to check for updates on ${serversToCheck.length} servers:\n\n${serversToCheck.map(s => `• ${s.name}`).join('\n')}\n\nThis operation may take longer and will pull images from registries. Do you want to continue?`,
+        `You are about to check for updates on <strong>${serversToCheck.length}</strong> servers:\n ${serversToCheck.map(s => s.name).join(', ')}\n\nThis operation may take longer and will pull images from registries. <strong>Do you want to continue?</strong>`,
         'Check Updates'
       );
     } catch (error) {
@@ -107,7 +107,6 @@ export async function checkForUpdates() {
       return;
     }
   }
-
   await checkUpdatesIndividually();
 }
 

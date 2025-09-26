@@ -236,12 +236,13 @@ def update_container_route():
     try:
         result = update_container(server['client'], server_name, container_name)
         return jsonify(result), 200
-    except (RuntimeError, ValueError) as e:
-        current_app.logger.error(f"Update error for {container_name}: {e}")
-        return jsonify({"error": str(e)}), 500
     except Exception as e:
-        current_app.logger.error(f"An unexpected error occurred during update of {container_name}: {e}")
-        return jsonify({"error": f"{str(e)}"}), 500
+        if hasattr(e, 'html_message'):
+            current_app.logger.error(f"Update error for {container_name}: {str(e)}")
+            return jsonify({"error": e.html_message}), 500
+        else:
+            current_app.logger.error(f"Update error for {container_name}: {str(e)}")
+            return jsonify({"error": str(e)}), 500
     
 @main_bp.route("/export/json")
 @conditional_login_required

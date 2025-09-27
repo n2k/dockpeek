@@ -5,6 +5,8 @@
   <h1>Dockpeek</h1>
   <h3>Docker Dashboard for Easy Container Access</h3>
   
+<br>
+<br>
   
  <p>A lightweight, self-hosted Docker dashboard for quick access to container web interfaces. Monitor ports, manage updates with one-click, and integrate seamlessly with Traefik.</p>
 </div>
@@ -27,15 +29,17 @@ Enhance control with custom labels:
 - `dockpeek.ports` — Add custom ports to display alongside detected ports
 - `dockpeek.tags` — Organize and categorize containers with custom tags
 
+<br>
+
 <div align="center">
   
 ![Dockpeek Night mode screenshot](screenshot_v1.6.2.png)
 
 </div>
 
----
+<br>
 
-## 🚀 Quick Start
+## 🔧 Installation
 
 ### Basic Setup (Recommended)
 
@@ -59,7 +63,7 @@ services:
 
 **Then visit:** http://localhost:3420
 
-### Secure Setup with Socket Proxy
+### Option 2: Secure Setup with Socket Proxy
 
 For enhanced security, use a socket proxy to limit Docker API access:
 
@@ -102,7 +106,7 @@ services:
     restart: unless-stopped
 ```
 
----
+<br>
 
 ## 🌐 Multi-Host Setup
 
@@ -145,7 +149,8 @@ services:
 > [!TIP]
 > Install a Docker Socket Proxy on each remote host for secure API access.
 
----
+
+<br>
 
 ## ⚙️ Configuration
 
@@ -184,7 +189,8 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 > - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
 
----
+
+<br>
 
 ## 🏷️ Container Labels
 
@@ -212,7 +218,8 @@ services:
 | `dockpeek.link` | Custom container link | `dockpeek.link=https://app.com` |
 | `dockpeek.tags` | Organization tags | `dockpeek.tags=web,prod` |
 
----
+
+<br>
 
 ## 🐳 Docker Swarm Support
 
@@ -295,7 +302,8 @@ networks:
 
 </details>
 
----
+
+<br>
 
 ## Frequently Asked Questions
 
@@ -376,15 +384,8 @@ networks:
 
 </details>
 
----
 
-## 🤝 Contributing
-
-Welcome contributions! Please feel free to submit issues and pull requests.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+<br>
 
 ---
 

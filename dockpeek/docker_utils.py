@@ -123,7 +123,7 @@ def discover_docker_clients():
     
     # Fallback to default Docker socket if no other clients found
     if not clients:
-        fallback_name = os.environ.get("DOCKER_NAME", "default")
+        fallback_name = os.environ.get("DOCKER_HOST_NAME", "default")
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME", "")
         try:
             client = docker.from_env(timeout=DOCKER_TIMEOUT)

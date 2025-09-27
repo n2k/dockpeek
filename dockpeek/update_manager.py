@@ -91,14 +91,33 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'kylemanna/openvpn',
         'nginx',
         'caddy',
-        'cloudflare/cloudflared'
+        'cloudflare/cloudflared',
+        'bitwarden/server',
+        'vaultwarden/server',
+        'grafana/grafana',
+        'prom/prometheus',
+        'prom/alertmanager',
+        'louislam/uptime-kuma',
+        'duplicati/duplicati',
+        'restic/restic',
+        'rclone/rclone',
+        'nextcloud',
+        'authelia/authelia',
+        'oauth2-proxy/oauth2-proxy',
+        'keycloak/keycloak',
+        'tailscale/tailscale',
+        'netbirdio/netbird',
+        'adguardhome/adguardhome',
+        'jc21/nginx-proxy-manager',
+        'linuxserver/swag'
     ]
 
     critical_name_patterns = [
-        'traefik', 'proxy', 'nginx', 'caddy', 'haproxy',
-        'portainer', 'watchtower', 'cloudflare', 'tunnel',
-        'reverse-proxy', 'pihole', 'dns', 'wireguard', 'openvpn',
-        'vpn'
+        'traefik', 'portainer', 'watchtower', 'pihole', 
+        'wireguard', 'openvpn', 'bitwarden', 'vaultwarden',
+        'grafana', 'prometheus', 'alertmanager', 'authelia', 
+        'keycloak', 'tailscale', 'netbird', 'adguard',
+        'nginx-proxy-manager', 'uptime-kuma'
     ]
 
     database_images = [
@@ -113,7 +132,6 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
         'redis', 'mssql', 'couch', 'cockroach', 'neo4j',
         'influx', 'elastic', 'cassandra', 'memcached'
     ]
-
     
     for pattern in critical_images:
         if pattern in image_name:

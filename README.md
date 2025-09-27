@@ -6,7 +6,7 @@
   <h3>Docker Dashboard for Easy Container Access</h3>
   
   
- <p>A lightweight, self-hosted Docker dashboard for quick access to container web interfaces across multiple hosts. Monitor ports, manage updates with one-click, and integrate seamlessly with Traefik.</p>
+ <p>A lightweight, self-hosted Docker dashboard for quick access to container web interfaces. Monitor ports, manage updates with one-click, and integrate seamlessly with Traefik.</p>
 </div>
 
 ## ✨ Features
@@ -47,9 +47,9 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=your_secure_secret_key_here
-      - USERNAME=admin
-      - PASSWORD=your_secure_password_here
+      - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
+      - USERNAME=admin                       # username
+      - PASSWORD=secure_password             # password
     ports:
       - "3420:8000"
     volumes:
@@ -69,10 +69,10 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=your_secure_secret_key_here
-      - USERNAME=admin
-      - PASSWORD=your_secure_password_here
-      - DOCKER_HOST=tcp://socket-proxy:2375
+      - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
+      - USERNAME=admin                       # username  
+      - PASSWORD=secure_password             # password
+      - DOCKER_HOST=tcp://socket-proxy:2375  # Connect via socket proxy
     ports:
       - "3420:8000"
     depends_on:
@@ -83,12 +83,12 @@ services:
     image: lscr.io/linuxserver/socket-proxy:latest
     container_name: dockpeek-socket-proxy
     environment:
-      - CONTAINERS=1
-      - IMAGES=1
-      - PING=1
-      - VERSION=1
-      - INFO=1
-      - POST=1
+      - CONTAINERS=1 
+      - IMAGES=1     
+      - PING=1       
+      - VERSION=1    
+      - INFO=1       
+      - POST=1       
       # Required for container updates
       - ALLOW_START=1  
       - ALLOW_STOP=1     
@@ -113,26 +113,33 @@ services:
   dockpeek:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
+    restart: unless-stopped
     ports:
       - "3420:8000"
     environment:
-      - SECRET_KEY=your_secure_secret_key_here
+      - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=your_secure_password_here
+      - PASSWORD=secure_password
       
-      # Local Docker
-      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock
-      - DOCKER_HOST_1_NAME=Local Development
-      
-      # Remote Server
-      - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375
-      - DOCKER_HOST_2_NAME=Production Server
-      - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local
-      
-      # Add more hosts as needed...
+      # --- Docker Host 1 (Local) ---
+      - DOCKER_HOST_1_URL=unix:///var/run/docker.sock # Local Docker socket
+      - DOCKER_HOST_1_NAME=Local Development          # Display name in UI
+      # DOCKER_HOST_1_PUBLIC_HOSTNAME is optional; uses host IP by default
+
+      # --- Docker Host 2 (Remote Server) ---
+      - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375    # Remote socket proxy
+      - DOCKER_HOST_2_NAME=Production Server          # Display name in UI
+      - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local    # Optional: Custom hostname for links
+
+      # --- Docker Host 3 (Tailscale) ---
+      - DOCKER_HOST_3_URL=tcp://100.64.1.5:2375       # Tailscale IP
+      - DOCKER_HOST_3_NAME=Remote VPS                 # Display name in UI
+      - DOCKER_HOST_3_PUBLIC_HOSTNAME=vps.tailnet.ts.net # Optional: Tailscale FQDN
+
+      # --- Continue pattern for additional hosts (4, 5, etc.) ---
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
+      # Required only if you are connecting to a local socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 ```
 
 > [!TIP]
@@ -146,7 +153,7 @@ services:
 
 | Variable | Description |
 |----------|-------------|
-| `SECRET_KEY` | **Required.** Secure secret key for session security |
+| `SECRET_KEY` | **Required.** Required. Essential for application functionality and session security |
 | `USERNAME` | **Required.** Username for dashboard login |
 | `PASSWORD` | **Required.** Password for dashboard login |
 
@@ -173,7 +180,7 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 
 > [!IMPORTANT]
 > **Important Configuration Requirements:**
-> - `SECRET_KEY` must always be set for session security
+> - `SECRET_KEY` must always be set - dockpeek will not function without it
 > - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
 
@@ -201,7 +208,7 @@ services:
 | Label | Purpose | Example |
 |-------|---------|---------|
 | `dockpeek.ports` | Show additional ports | `dockpeek.ports=8080,9090` |
-| `dockpeek.https` | Force HTTPS for ports | `dockpeek.https=443,8443` |
+| `dockpeek.https` | Force HTTPS for ports | `dockpeek.https=9002,3000` |
 | `dockpeek.link` | Custom container link | `dockpeek.link=https://app.com` |
 | `dockpeek.tags` | Organization tags | `dockpeek.tags=web,prod` |
 
@@ -209,26 +216,28 @@ services:
 
 ## 🐳 Docker Swarm Support
 
-Deploy Dockpeek in Docker Swarm mode to manage all services and tasks:
+Dockpeek natively supports Docker Swarm, You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This configuration is ideal for production clusters using Traefik as an ingress proxy.
+
+![swarm](https://i.imgur.com/ceEFBT7.png)
 
 <details>
-<summary>Click to see Swarm deployment example</summary>
+<summary>Click to see Example stack file (docker-compose-swarm-socket.yml)</summary>
 
 ```yaml
 services:
   dockpeek:
     image: ghcr.io/dockpeek/dockpeek:latest
     environment:
-      - SECRET_KEY=your_secure_secret_key_here
+      - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=your_secure_password_here
+      - PASSWORD=secure_password
       - TRAEFIK_LABELS=true
-      - DOCKER_HOST=tcp://tasks.socket-proxy:2375
+      - DOCKER_HOST=tcp://tasks.socket-proxy:2375  # Connect to Swarm manager via socket-proxy
     ports:
       - "3420:8000"
     networks:
       - traefik
-      - socket-proxy
+      - dockpeek-internal
     deploy:
       replicas: 1
       labels:
@@ -243,15 +252,19 @@ services:
     environment:
       - CONTAINERS=1
       - IMAGES=1
-      - SERVICES=1
-      - TASKS=1
-      - NODES=1
       - PING=1
       - VERSION=1
       - INFO=1
       - POST=1
+      - SERVICES=1     # Enable Swarm services API
+      - TASKS=1        # Enable Swarm tasks API
+      - NODES=1        # Enable Swarm nodes API
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: tmpfs
+        target: /run
+        tmpfs:
+          size: 100000000
     networks:
       - socket-proxy
     deploy:
@@ -266,7 +279,19 @@ networks:
     external: true
 ```
 
-Deploy with: `docker stack deploy -c docker-compose-swarm.yml dockpeek`
+**How it works:**
+
+- The dockpeek and socket-proxy services share a private network for secure API access.
+- The traefik network is external and should be pre-created by your Traefik deployment.
+- Traefik labels on dockpeek expose the dashboard securely at your chosen domain.
+- The DOCKER_HOST variable points to the socket-proxy service, which must run on a Swarm manager node.
+- Dockpeek will auto-detect Swarm mode and show all services/tasks in the dashboard, with all the usual features (port mapping, Traefik integration, update checks, etc.).
+
+> Deploy with:
+> ```sh
+> docker stack deploy -c docker-compose-swarm-socket.yml dockpeek
+> ```
+
 
 </details>
 
@@ -277,72 +302,77 @@ Deploy with: `docker stack deploy -c docker-compose-swarm.yml dockpeek`
 <details>
 <summary><strong>How do I search for containers by port?</strong></summary>
 
-Use the format `:port` in the search box. For example, typing `:8080` will show all containers exposing port 8080.
+> Use the format `:port` in the search box. For example, typing `:8080` will show all containers exposing port 8080.
 
 </details>
 
 <details>
 <summary><strong>When does Dockpeek use HTTPS automatically?</strong></summary>
 
-Dockpeek automatically uses HTTPS for:
-- Container port `443/tcp`
-- Host ports ending with `443` (e.g., `8443`, `9443`)
-- Ports specified with the `dockpeek.https` label
+
+> Dockpeek automatically uses HTTPS for:
+> - Container port `443/tcp`
+> - Host ports ending with `443` (e.g., `8443`, `9443`)
+> - Ports specified with the `dockpeek.https` label
 
 </details>
 
 <details>
 <summary><strong>How do I make container names clickable?</strong></summary>
 
-Use the `dockpeek.link` label:
 
-```yaml
-labels:
-  - "dockpeek.link=https://myapp.example.com"
-```
-
-This is especially useful with reverse proxies to link directly to public addresses.
+> Use the `dockpeek.link` label:
+> 
+> ```yaml
+> labels:
+>   - "dockpeek.link=https://myapp.example.com"
+> ```
+>
+>This is especially useful with reverse proxies to link directly to public addresses.
 
 </details>
 
 <details>
 <summary><strong>How do I show ports for containers without port mapping?</strong></summary>
 
-Some containers (like those using host networking or behind reverse proxies) don't expose ports through Docker's standard port mapping. Use the `dockpeek.ports` label:
 
-```yaml
-labels:
-  - "dockpeek.ports=8096,8920"
-```
+> Some containers (like those using host networking or behind reverse proxies) don't expose ports through Docker's standard port mapping. Use the `dockpeek.ports` label:
+> 
+> ```yaml
+> labels:
+>   - "dockpeek.ports=8096,8920"
+> ```
 
 </details>
 
 <details>
 <summary><strong>How do I clear the search filter?</strong></summary>
 
-Click on the "Dockpeek" logo/title at the top of the page to reset the search and return to the full container view.
+
+> Click on the "Dockpeek" logo/title at the top of the page to reset the search and return to the full container view.
 
 </details>
 
 <details>
 <summary><strong>What permissions does Dockpeek need for updates?</strong></summary>
 
-To install container updates, Dockpeek needs:
 
-**For direct Docker socket access:**
-- Read/write access to `/var/run/docker.sock`
-
-**For socket-proxy setups, ensure these permissions are enabled:**
-```yaml
-environment:
-  - POST=1             # Required for API write operations
-  - ALLOW_START=1      # Start containers after update
-  - ALLOW_STOP=1       # Stop containers for update
-  - ALLOW_RESTARTS=1   # Restart containers if needed
-  - NETWORKS=1         # Connect containers to networks
-```
-
-The update feature works with all supported connection methods (local socket, remote socket-proxy, and multi-host configurations).
+> To install container updates, Dockpeek needs:
+> 
+> **For direct Docker socket access:**
+> - Read/write access to `/var/run/docker.sock`
+> 
+> **For socket-proxy setups, ensure these permissions are enabled:**
+> ```yaml
+> environment:
+>   - POST=1             # Required for API write operations
+>   - ALLOW_START=1      # Start containers after update
+>   - ALLOW_STOP=1       # Stop containers for update
+>   - ALLOW_RESTARTS=1   # Restart containers if needed
+>   - NETWORKS=1         # Connect containers to networks
+> ```
+> 
+> The update feature works with all supported connection methods (local socket, remote socket-proxy, and multi-host configurations).
 
 </details>
 
@@ -350,7 +380,7 @@ The update feature works with all supported connection methods (local socket, re
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit issues and pull requests.
+Welcome contributions! Please feel free to submit issues and pull requests.
 
 ## 📝 License
 

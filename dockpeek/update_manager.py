@@ -80,6 +80,7 @@ def validate_container_for_update(client: docker.DockerClient, container) -> Non
     
     critical_images = [  
         'dockpeek',
+        'socket-proxy',
         'traefik',
         'portainer/portainer',
         'containrrr/watchtower',

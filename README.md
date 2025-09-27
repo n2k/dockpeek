@@ -3,23 +3,24 @@
      <img src="dockpeek/static/images/logo_2.svg" alt="dockpeek logo" width="80" height="80"/>
   </a>
   <h1>Dockpeek</h1>
-  <h3>Docker Dashboard for Easy Container Access</h3>
+  <h3>Intuitive Docker Dashboard for Quick Access and Updates</h3>
   
-<br>
-<br>
   
- <p>A lightweight, self-hosted Docker dashboard for quick access to container web interfaces. Monitor ports, manage updates with one-click, and integrate seamlessly with Traefik.</p>
+<br><br>
+  
+ <p><b>Dockpeek</b> is a lightweight, self-hosted dashboard that gives you instant access to your Docker container web apps.  
+ Monitor ports, check and install updates with one click, and integrate seamlessly with Traefik — all from a single, intuitive interface.</p>
 </div>
 
-## ✨ Features
+## ✨ Key Features
 
-- **Port Mapping Overview** — View all running containers and their published ports at a glance
-- **One-Click Access** — Launch containerized web applications instantly with direct URL links
-- **Traefik Integration** — Automatically detect and display container addresses from Traefik labels
-- **Multi-Host Management** — Monitor multiple Docker hosts from a unified dashboard
-- **Zero Configuration** — Detects containers automatically with no setup required
-- **Image Update Management** — Monitor and install updates
-- **Mobile-Responsive** — Full functionality across smartphones, tablets, and desktops
+- **Port Mapping Overview** — See all running containers and their published ports at a glance  
+- **One-Click Access** — Open containerized web apps instantly with direct links  
+- **Traefik Integration** — Auto-detect and display container addresses from Traefik labels  
+- **Multi-Host Management** — Manage multiple Docker hosts from one dashboard  
+- **Zero Configuration** — Works out of the box, auto-detecting containers  
+- **Update Management** — Check for image updates and install with a single click  
+- **Responsive UI** — Optimized for desktops, tablets, and smartphones
 
 ### Labels Support
 
@@ -73,9 +74,9 @@ services:
     image: ghcr.io/dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
-      - SECRET_KEY=your_secure_secret_key    # Required: Set a secure secret key
-      - USERNAME=admin                       # username  
-      - PASSWORD=secure_password             # password
+      - SECRET_KEY=your_secure_secret_key    
+      - USERNAME=admin                       
+      - PASSWORD=secure_password             
       - DOCKER_HOST=tcp://socket-proxy:2375  # Connect via socket proxy
     ports:
       - "3420:8000"
@@ -158,7 +159,7 @@ services:
 
 | Variable | Description |
 |----------|-------------|
-| `SECRET_KEY` | **Required.** Required. Essential for application functionality and session security |
+| `SECRET_KEY` | **Required.** Essential for application functionality and session security |
 | `USERNAME` | **Required.** Username for dashboard login |
 | `PASSWORD` | **Required.** Password for dashboard login |
 
@@ -306,6 +307,9 @@ networks:
 <br>
 
 ## Frequently Asked Questions
+Here are some common questions about using Dockpeek.
+
+<br>
 
 <details>
 <summary><strong>How do I search for containers by port?</strong></summary>
@@ -393,6 +397,7 @@ networks:
   <p>Made with ❤️ for the Docker community</p>
   <p>
     <a href="https://github.com/dockpeek/dockpeek/issues">Report Bug</a> •
-    <a href="https://github.com/dockpeek/dockpeek/issues">Request Feature</a>
+    <a href="https://github.com/dockpeek/dockpeek/issues">Request Feature</a> •
+    <a href="https://github.com/dockpeek/dockpeek/releases">Check out the latest release</a>
   </p>
 </div>

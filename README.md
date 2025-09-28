@@ -7,38 +7,36 @@
   
   [![GitHub release (latest by date)](https://img.shields.io/github/v/release/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/releases)
   [![GitHub Repo stars](https://img.shields.io/github/stars/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek)
-  [![Container Registry](https://img.shields.io/badge/container-ghcr.io-blue?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/pkgs/container/dockpeek)
-  [![GitHub issues](https://img.shields.io/github/issues/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/issues)
-  [![GitHub last commit](https://img.shields.io/github/last-commit/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/commits)
   [![License](https://img.shields.io/github/license/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/blob/main/LICENSE)
+  [![Package Registry](https://img.shields.io/badge/package-ghcr.io-blue?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/pkgs/container/dockpeek)
   [![Docker Image Size](https://img.shields.io/docker/image-size/dockpeek/dockpeek/latest?style=flat-square&logo=docker)](https://hub.docker.com/r/dockpeek/dockpeek)
 
 <h3>Quick Access & One-Click Updates for Your Docker Containers</h3>
 
-<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for speed and simplicity.  
-Instantly access your container web interfaces, monitor ports, and apply updates with a single click.  
-Automatically reads Traefik labels to display container addresses, keeping your setup organized — all from one clean, intuitive interface.</p>
+<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for speed and simplicity.
+With Dockpeek, you can instantly access container web interfaces, monitor ports, and apply updates in a single click.
+It also auto-detects Traefik labels to display container addresses, helping you keep everything organized — all from one clean and intuitive interface.</p>
 </div>
 
-  
+ 
 ## ✨ Key Features
 
-- **Port Mapping Overview** — See all running containers and their published ports at a glance
-- **One-Click Access** — Open containerized web apps instantly with direct links
-- **Traefik Integration** — Auto-detect and display container addresses from Traefik labels
-- **Multi-Host Management** — Manage multiple Docker hosts from one dashboard
-- **Zero Configuration** — Works out of the box, auto-detecting containers
-- **Update Management** — Check for image updates and install with a single click
-- **Responsive UI** — Optimized for desktops, tablets, and smartphones
+* **Port Mapping Overview** — Instantly see all running containers and their published ports
+* **Traefik Integration** — Auto-detect and display container addresses from Traefik labels
+* **One-Click Access** — Jump directly into containerized web interfaces
+* **Multi-Host Management** — Manage multiple Docker hosts in one place
+* **Zero Configuration** — Works out of the box, no manual setup required
+* **Update Management** — Check for image updates and upgrade containers with a click
+* **Responsive UI** — Smooth experience on desktop, tablet, and mobile
 
-### Labels Support
+## 🏷️ Labels Support
 
-Enhance control with custom labels:
+Customize how your containers are displayed with custom labels:
 
-- `dockpeek.https` — Force HTTPS protocol for specific ports
-- `dockpeek.link` — Make container names clickable links
-- `dockpeek.ports` — Add custom ports to display alongside detected ports
-- `dockpeek.tags` — Organize and categorize containers with custom tags
+* `dockpeek.https` — Force HTTPS protocol for specific ports
+* `dockpeek.link` — Turn container names into clickable links
+* `dockpeek.ports` — Add custom ports to display alongside detected ones
+* `dockpeek.tags` — Organize and categorize containers with custom tags
 
 <br>
 

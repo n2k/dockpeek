@@ -33,6 +33,14 @@ def index():
     version = current_app.config['APP_VERSION']
     return render_template("index.html", version=version)
 
+@main_bp.route("/health")
+def health():
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": current_app.config['APP_VERSION']
+    }), 200
+
 @main_bp.route("/data")
 @conditional_login_required
 def data():
@@ -281,3 +289,4 @@ def export_json():
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     response.headers['Content-Type'] = 'application/json'
     return response
+

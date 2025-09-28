@@ -310,9 +310,9 @@ networks:
 
 <br>
 
-## Frequently Asked Questions
+## FAQ
 
-Here are some common questions about using Dockpeek.
+**Answers to common questions:**
 
 <br>
 
@@ -368,19 +368,13 @@ Here are some common questions about using Dockpeek.
 </details>
 
 <details>
-<summary><strong>What permissions does Dockpeek need for updates?</strong></summary>
+<summary><strong>Which environment variables are required for updates when using Docker socket-proxy?</strong></summary>
 
-> To install container updates, Dockpeek needs:
->
-> **For direct Docker socket access:**
->
-> - Read/write access to `/var/run/docker.sock`
->
+> 
 > **For socket-proxy setups, ensure these permissions are enabled:**
 >
 > ```yaml
 > environment:
->   - POST=1 # Required for API write operations
 >   - ALLOW_START=1 # Start containers after update
 >   - ALLOW_STOP=1 # Stop containers for update
 >   - ALLOW_RESTARTS=1 # Restart containers if needed
@@ -396,9 +390,8 @@ Here are some common questions about using Dockpeek.
 ---
 
 <div align="center">
-  <p>Made with ❤️ for the self-hosted & open-source community</p>
-  <p>
-    <a href="https://github.com/dockpeek/dockpeek/issues">Report Bug</a> •
-    <a href="https://github.com/dockpeek/dockpeek/releases">View Releases</a>
-  </p>
+  <sub>Made with ❤️ for the self-hosted & open-source community</sub>  
+  <br>
+  <a href="https://github.com/dockpeek/dockpeek/issues">Report a bug</a> •
+  <a href="https://github.com/dockpeek/dockpeek/releases">Check releases</a>
 </div>

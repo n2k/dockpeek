@@ -57,10 +57,6 @@
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-          <button id="theme-switcher"
-            class="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
-            <span id="theme-icon"> </span>
-          </button>
           <button id="check-updates-button" class="px-4 py-2 rounded-lg font-medium">
             <svg fill="currentColor" width="20" height="20" viewBox="2 2 52 52" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -265,6 +261,37 @@
 
   <footer class="footer mx-auto py-3 flex justify-center items-center text-sm text-gray-500 p-4">
     <div class="footer-section footer-center flex items-center space-x-9">
+
+      <div class="theme-switcher-wrapper">
+        <button id="theme-switcher" class="hover:text-blue-500 flex items-center space-x-1">
+          <span id="theme-icon"></span>
+        </button>
+        <div id="theme-menu" class="theme-menu">
+          <button data-theme="system" class="theme-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8M12 17v4" />
+            </svg>
+            <span>System</span>
+          </button>
+          <button data-theme="light" class="theme-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+            <span>Light</span>
+          </button>
+          <button data-theme="dark" class="theme-menu-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 11.5373 21.3065 11.4608 21.0672 11.8568C19.9289 13.7406 17.8615 15 15.5 15C11.9101 15 9 12.0899 9 8.5C9 6.13845 10.2594 4.07105 12.1432 2.93276C12.5392 2.69347 12.4627 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+            </svg>
+            <span>Dark</span>
+          </button>
+        </div>
+      </div>
+
       <a href="/export/json" id="export-json-link" class="hover:text-blue-500"
         data-tooltip="Export container data for currently selected server">
         Export JSON
@@ -397,11 +424,14 @@
   <div id="progress-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium flex items-center justify-center">
-        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-         <span>Checking for Updates</span>
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+          </path>
+        </svg>
+        <span>Checking for Updates</span>
       </h3>
       <div class="progress-container">
         <div class="progress-info">
@@ -424,18 +454,23 @@
 
   <div id="update-in-progress-modal" class="modal-overlay hidden">
     <div class="modal-content">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium flex items-center justify-center">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Updating <strong id="update-container-name" class="ml-1"></strong>...</span>
-        </h3>
-        <div class="text-gray-600 justify-center">
-            <p class="mb-4 text-center">This may take a <strong>few moments</strong>. The container will be <strong>recreated</strong> with the new image.</p>           
-        </div>
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium flex items-center justify-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+          </path>
+        </svg>
+        <span>Updating <strong id="update-container-name" class="ml-1"></strong>...</span>
+      </h3>
+      <div class="text-gray-600 justify-center">
+        <p class="mb-4 text-center">This may take a <strong>few moments</strong>. The container will be
+          <strong>recreated</strong> with the new image.
+        </p>
+      </div>
     </div>
-</div>
+  </div>
 
   <div id="update-success-modal" class="modal-overlay hidden">
     <div class="modal-content">
@@ -471,7 +506,8 @@
         Update Failed
       </h3>
       <div class="text-gray-600 mb-6">
-        <div id="update-error-message" class="text-left leading-relaxed max-h-64 overflow-y-auto whitespace-pre-line"></div>
+        <div id="update-error-message" class="text-left leading-relaxed max-h-64 overflow-y-auto whitespace-pre-line">
+        </div>
       </div>
       <div class="flex justify-center">
         <button id="update-error-ok-button"

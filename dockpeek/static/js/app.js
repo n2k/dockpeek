@@ -1,4 +1,4 @@
-import { showLoadingIndicator, hideLoadingIndicator, displayError, initCustomTooltips, applyTheme } from './modules/ui-utils.js';
+import { showLoadingIndicator, hideLoadingIndicator, displayError, initCustomTooltips, initTheme } from './modules/ui-utils.js';
 import { renderTable, updateColumnVisibility, initColumnDragAndDrop, updateTableColumnOrder } from './modules/table-render.js';
 import { fetchContainerData, checkForUpdates, updateExportLink } from './modules/data-fetch.js';
 import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClearButton, clearSearch, setupServerUI, updateActiveButton } from './modules/filters.js';
@@ -38,7 +38,7 @@ export { state };
 // Initialize after DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   initCustomTooltips();
-  applyTheme(localStorage.getItem("theme") || "dark");
+  initTheme();
   initColumnDragAndDrop();
   initSwarmIndicator();
   fetchContainerData();

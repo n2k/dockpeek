@@ -242,7 +242,6 @@ body.dark-mode #search-input:focus {
   color: #bbbfc5;
 }
 
-#theme-switcher,
 #refresh-button {
   display: flex;
   justify-content: center;
@@ -254,6 +253,15 @@ body.dark-mode #search-input:focus {
   border-radius: 0.5rem;
 }
 
+#theme-switcher {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 0.3rem 1rem;
+  border-radius: 1.5rem;
+}
+
 #theme-switcher:hover,
 #refresh-button:hover {
   background-color: #d1d5da;
@@ -263,6 +271,77 @@ body.dark-mode #search-input:focus {
 #refresh-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(108, 117, 125, 0.75);
+}
+
+.theme-switcher-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.theme-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 4px;
+  min-width: 140px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 1000;
+}
+
+.theme-menu.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.theme-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-size: 14px;
+}
+
+.theme-menu-item:hover {
+  background-color: #f3f4f6;
+}
+
+.theme-menu-item.active {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.dark-mode .theme-menu {
+  background: #1d2129;
+  border-color: #292d33;
+}
+
+.dark-mode .theme-menu-item {
+  color: #d1d5db;
+}
+
+.dark-mode .theme-menu-item:hover {
+  background-color: #374151;
+}
+
+.dark-mode .theme-menu-item.active {
+  background-color: #1e3a8a;
+  color: #93c5fd;
 }
 
 .source-link[data-tooltip-top-right]::after {
@@ -568,8 +647,6 @@ body.dark-mode input[type="text"] {
 body.dark-mode #search-input::placeholder {
   color: #41464b;
 }
-
-body.dark-mode #theme-switcher,
 body.dark-mode #refresh-button {
   background-color: #21262d;
   color: #97a1ab;

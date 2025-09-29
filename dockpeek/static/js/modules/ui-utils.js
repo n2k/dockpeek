@@ -155,11 +155,17 @@ export function initCustomTooltips() {
 
   document.addEventListener('scroll', () => hideTooltip(true), true);
 }
-
 export function applyTheme(theme) {
   const themeIcon = document.getElementById("theme-icon");
   const body = document.body;
-  if (theme === "dark") {
+  
+  // Determine actual theme (handle 'system' option)
+  let effectiveTheme = theme;
+  if (theme === 'system') {
+    effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  
+  if (effectiveTheme === "dark") {
     body.classList.add("dark-mode");
     themeIcon.innerHTML = `<svg fill="currentColor" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 11.5373 21.3065 11.4608 21.0672 11.8568C19.9289 13.7406 17.8615 15 15.5 15C11.9101 15 9 12.0899 9 8.5C9 6.13845 10.2594 4.07105 12.1432 2.93276C12.5392 2.69347 12.4627 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"/></svg>`;
   } else {
@@ -167,4 +173,36 @@ export function applyTheme(theme) {
     themeIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke-width="0"/><g stroke-linecap="round" stroke-linejoin="round"/><g clip-path="url(#a)" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4" stroke-linejoin="round"/><path d="M20 12h1M3 12h1m8 8v1m0-18v1m5.657 13.657.707.707M5.636 5.636l.707.707m0 11.314-.707.707M18.364 5.636l-.707.707" stroke-linecap="round"/></g><defs><clipPath id="a"><path fill="currentColor" d="M0 0h24v24H0z"/></clipPath></defs></svg>`;
   }
   localStorage.setItem("theme", theme);
+}
+
+let currentTheme = 'system';
+
+export function initTheme() {
+  currentTheme = localStorage.getItem("theme") || "system";
+  applyTheme(currentTheme);
+  updateThemeMenuActive();
+  
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (currentTheme === 'system') {
+      applyTheme('system');
+    }
+  });
+}
+
+export function toggleThemeMenu() {
+  const menu = document.getElementById('theme-menu');
+  menu.classList.toggle('show');
+}
+
+export function setTheme(theme) {
+  currentTheme = theme;
+  applyTheme(currentTheme);
+  updateThemeMenuActive();
+  document.getElementById('theme-menu').classList.remove('show');
+}
+
+function updateThemeMenuActive() {
+  document.querySelectorAll('.theme-menu-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.theme === currentTheme);
+  });
 }

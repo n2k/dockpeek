@@ -28,21 +28,30 @@ export function showNoUpdatesModal() {
   const updatesModalTitle = document.getElementById("updates-modal-title");
   const updatesList = document.getElementById("updates-list");
   const updatesModalOkBtn = document.getElementById("updates-modal-ok-button");
-
-  updatesModalTitle.textContent = "No Updates Available";
+  
+  updatesModalTitle.innerHTML = `
+    <div class="flex items-center justify-center">
+      <svg class="mr-3 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span>No Updates Available</span>
+    </div>
+  `;
+  
   updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
   updatesModal.classList.remove('hidden');
   updatesModal.classList.add('no-update');
-
+  
   const okHandler = () => {
     updatesModal.classList.add('hidden');
     updatesModal.classList.remove('no-update');
     updatesModalTitle.textContent = "Updates Found";
   };
-
+  
   updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
   updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
 }
+
 
 export function showConfirmationModal(title, message, confirmText = 'Confirm') {
   return new Promise((resolve, reject) => {

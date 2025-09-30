@@ -285,7 +285,7 @@ def get_prune_info():
                     size = image.attrs.get('Size', 0)
                     unused_images.append({
                         'id': image.id,
-                        'tags': image.tags,
+                        'tags': image.tags if image.tags else [image.attrs.get('RepoTags', [None])[0] if image.attrs.get('RepoTags') else f"{image.attrs.get('RepoDigests', [''])[0].split('@')[0]}:<none>" if image.attrs.get('RepoDigests') else None],
                         'size': size
                     })
                     unused_size += size

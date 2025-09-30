@@ -274,7 +274,7 @@ export function showPruneInfoModal(data) {
           details += '<ul class="ml-4 mt-1 text-xs text-gray-600">';
           server.images.forEach(img => {
             const imageName = img.tags && img.tags.length > 0
-              ? img.tags.join(', ')
+              ? img.tags[0]
               : `<untagged> (${img.id.substring(7, 19)})`;
             details += `<li>- ${imageName} (${formatSize(img.size)})</li>`;
           });

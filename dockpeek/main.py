@@ -283,12 +283,32 @@ def get_prune_info():
             for image in all_images:
                 if image.id not in used_images:
                     size = image.attrs.get('Size', 0)
+                    
+                    if image.tags:
+                        tags = image.tags
+                    else:
+                        repo_tags = image.attrs.get('RepoTags', [])
+                        if repo_tags and len(repo_tags) > 0:  # Jawnie sprawdź długość
+                            tags = [repo_tags[0]]
+                        else:
+                            repo_digests = image.attrs.get('RepoDigests', [])
+                            if repo_digests and len(repo_digests) > 0:
+                                repo_name = repo_digests[0].split('@')[0]
+                                tags = [f"{repo_name}:<none>"]
+                            else:
+                                tags = ["<none>:<none>"]
+                    
+                    # DODAJ DEBUG
+                    current_app.logger.info(f"  FINAL tags: {tags}")
+                    
+                    
                     unused_images.append({
                         'id': image.id,
-                        'tags': image.tags if image.tags else [f"{image.attrs.get('RepoDigests', [''])[0].split('@')[0]}:<none>" if image.attrs.get('RepoDigests') and image.attrs.get('RepoDigests')[0] else "<none>:<none>"],
+                        'tags': tags,
                         'size': size
                     })
                     unused_size += size
+
             
             if unused_images:
                 count = len(unused_images)

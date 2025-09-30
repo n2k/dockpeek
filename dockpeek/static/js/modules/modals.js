@@ -274,10 +274,14 @@ export function showPruneInfoModal(data) {
           details += '<ul class="ml-4 mt-1 text-xs text-gray-600">';
           server.images.forEach(img => {
             const imageName = img.tags && img.tags.length > 0
-              ? img.tags[0]
-              : `<untagged> (${img.id.substring(7, 19)})`;
+              ? img.tags[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              : `&lt;untagged&gt; (${img.id.substring(7, 19)})`;
+
+            console.log('Image name:', imageName); // DODAJ TO
+
             details += `<li>- ${imageName} (${formatSize(img.size)})</li>`;
           });
+
           details += '</ul>';
         }
 

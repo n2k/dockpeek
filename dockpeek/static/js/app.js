@@ -5,6 +5,7 @@ import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClear
 import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './modules/modals.js';
 import { initEventListeners } from './modules/events.js';
 import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
+import { handlePruneImages } from './modules/prune.js';
 
 
 // Centralized state object
@@ -37,6 +38,7 @@ export { state };
 
 // Initialize after DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById('prune-images-button').addEventListener('click', handlePruneImages);
   initCustomTooltips();
   initTheme();
   initColumnDragAndDrop();

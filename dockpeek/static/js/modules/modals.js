@@ -28,7 +28,7 @@ export function showNoUpdatesModal() {
   const updatesModalTitle = document.getElementById("updates-modal-title");
   const updatesList = document.getElementById("updates-list");
   const updatesModalOkBtn = document.getElementById("updates-modal-ok-button");
-  
+
   updatesModalTitle.innerHTML = `
     <div class="flex items-center justify-center">
       <svg class="mr-3 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,17 +37,17 @@ export function showNoUpdatesModal() {
       <span>No Updates Available</span>
     </div>
   `;
-  
+
   updatesList.innerHTML = "<li class='no-updates-message'>All containers are up to date!</li>";
   updatesModal.classList.remove('hidden');
   updatesModal.classList.add('no-update');
-  
+
   const okHandler = () => {
     updatesModal.classList.add('hidden');
     updatesModal.classList.remove('no-update');
     updatesModalTitle.textContent = "Updates Found";
   };
-  
+
   updatesModalOkBtn.addEventListener('click', okHandler, { once: true });
   updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
 }
@@ -117,7 +117,7 @@ export function showProgressModal(total) {
 
   cancelButton.removeEventListener('click', cancelHandler);
   cancelButton.addEventListener('click', cancelHandler);
-  
+
   const backdropHandler = (e) => {
     if (e.target === progressModal) {
       hideProgressModal();
@@ -164,23 +164,23 @@ export function hideProgressModal() {
 }
 
 export function showUpdateInProgressModal(containerName) {
-    const modal = document.getElementById('update-in-progress-modal');
-    const containerNameEl = document.getElementById('update-container-name');
+  const modal = document.getElementById('update-in-progress-modal');
+  const containerNameEl = document.getElementById('update-container-name');
 
-    if (containerNameEl) {
-        containerNameEl.textContent = containerName;
-    }
+  if (containerNameEl) {
+    containerNameEl.textContent = containerName;
+  }
 
-    if (modal) {
-        modal.classList.remove('hidden');
-    }
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
 }
 
 export function hideUpdateInProgressModal() {
-    const modal = document.getElementById('update-in-progress-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+  const modal = document.getElementById('update-in-progress-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
 }
 export function showUpdateSuccessModal(containerName) {
   const modal = document.getElementById('update-success-modal');
@@ -190,7 +190,7 @@ export function showUpdateSuccessModal(containerName) {
   if (messageEl) {
     messageEl.innerHTML = `Container <strong>"${containerName}"</strong> has been successfully updated!`;
   }
-  
+
   if (modal) {
     modal.classList.remove('hidden');
   }
@@ -219,7 +219,7 @@ export function showUpdateErrorModal(containerName, errorMessage) {
   if (messageEl) {
     messageEl.innerHTML = errorMessage.replace(/\n/g, '<br>');
   }
-  
+
   if (modal) {
     modal.classList.remove('hidden');
   }
@@ -239,8 +239,124 @@ export function showUpdateErrorModal(containerName, errorMessage) {
   if (okButton) {
     okButton.addEventListener('click', okHandler);
   }
-  
+
   if (modal) {
     modal.addEventListener('click', backdropHandler);
   }
+}
+
+export function showPruneInfoModal(data) {
+  const modal = document.getElementById('prune-info-modal');
+  const messageEl = document.getElementById('prune-info-message');
+  const confirmBtn = document.getElementById('prune-confirm-button');
+  const cancelBtn = document.getElementById('prune-cancel-button');
+
+  const formatSize = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  if (data.total_count === 0) {
+    messageEl.innerHTML = `<p class="text-center">No unused images found. All images are currently in use!</p>`;
+    confirmBtn.style.display = 'none';
+  } else {
+    let details = `<p class="mb-3"><strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''} found, taking up <strong>${formatSize(data.total_size)}</strong> of disk space.</p>`;
+
+    if (data.servers && data.servers.length > 0) {
+      details += '<div class="text-sm text-left mt-3"><strong>Details:</strong><ul class="mt-2 space-y-1">';
+      data.servers.forEach(server => {
+        details += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})`;
+
+        if (server.images && server.images.length > 0) {
+          details += '<ul class="ml-4 mt-1 text-xs text-gray-600">';
+          server.images.forEach(img => {
+            const imageName = img.tags && img.tags.length > 0
+              ? img.tags.join(', ')
+              : `<untagged> (${img.id.substring(7, 19)})`;
+            details += `<li>- ${imageName} (${formatSize(img.size)})</li>`;
+          });
+          details += '</ul>';
+        }
+
+        details += '</li>';
+      });
+      details += '</ul></div>';
+    }
+
+    messageEl.innerHTML = details;
+    confirmBtn.style.display = 'inline-block';
+  }
+
+  modal.classList.remove('hidden');
+
+  return new Promise((resolve, reject) => {
+    const confirmHandler = () => {
+      modal.classList.add('hidden');
+      removeListeners();
+      resolve();
+    };
+
+    const cancelHandler = () => {
+      modal.classList.add('hidden');
+      removeListeners();
+      reject(new Error('User cancelled'));
+    };
+
+    const backdropHandler = (e) => {
+      if (e.target === modal) cancelHandler();
+    };
+
+    const removeListeners = () => {
+      confirmBtn.removeEventListener('click', confirmHandler);
+      cancelBtn.removeEventListener('click', cancelHandler);
+      modal.removeEventListener('click', backdropHandler);
+    };
+
+    confirmBtn.addEventListener('click', confirmHandler);
+    cancelBtn.addEventListener('click', cancelHandler);
+    modal.addEventListener('click', backdropHandler);
+  });
+}
+
+export function showPruneResultModal(data) {
+  const modal = document.getElementById('prune-result-modal');
+  const messageEl = document.getElementById('prune-result-message');
+  const okBtn = document.getElementById('prune-result-ok-button');
+
+  const formatSize = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  let message = `<p class="text-center mb-3">Successfully removed <strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''}, freeing up <strong>${formatSize(data.total_size)}</strong> of disk space!</p>`;
+
+  if (data.servers && data.servers.length > 0) {
+    message += '<div class="text-sm text-left"><strong>Details:</strong><ul class="mt-2 space-y-1">';
+    data.servers.forEach(server => {
+      message += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})</li>`;
+    });
+    message += '</ul></div>';
+  }
+
+  messageEl.innerHTML = message;
+  modal.classList.remove('hidden');
+
+  const okHandler = () => {
+    modal.classList.add('hidden');
+    okBtn.removeEventListener('click', okHandler);
+    modal.removeEventListener('click', backdropHandler);
+  };
+
+  const backdropHandler = (e) => {
+    if (e.target === modal) okHandler();
+  };
+
+  okBtn.addEventListener('click', okHandler);
+  modal.addEventListener('click', backdropHandler);
 }

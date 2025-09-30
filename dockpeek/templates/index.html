@@ -327,6 +327,16 @@
         </svg>
         <span>GitHub</span>
       </a>
+
+      <button id="prune-images-button" class="hover:text-blue-500 flex items-center space-x-1"
+        data-tooltip="Remove unused Docker images">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        <span>Prune Images</span>
+        <span id="prune-badge" class="hidden ml-1 px-2 py-0.5 text-xs bg-orange-500 text-white rounded-full"></span>
+      </button>
     </div>
   </footer>
 
@@ -518,7 +528,43 @@
     </div>
   </div>
 
+  <div id="prune-info-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium">
+        Unused Docker Images
+      </h3>
+      <div id="prune-info-message" class="text-gray-600 mb-6"></div>
+      <div class="flex justify-center space-x-3">
+        <button id="prune-cancel-button"
+          class="modal-cancel-button px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium">
+          Cancel
+        </button>
+        <button id="prune-confirm-button"
+          class="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 font-medium">
+          Prune Now
+        </button>
+      </div>
+    </div>
+  </div>
 
+  <div id="prune-result-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="flex items-center justify-center text-lg font-semibold mb-4 font-medium">
+        <svg class="w-5 h-5 mr-2 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22,4 12,14.01 9,11.01"></polyline>
+        </svg>
+        Images Pruned Successfully
+      </h3>
+      <div id="prune-result-message" class="text-gray-600 mb-6"></div>
+      <div class="flex justify-center">
+        <button id="prune-result-ok-button"
+          class="green-ok-button px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 

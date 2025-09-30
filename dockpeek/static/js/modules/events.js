@@ -1,8 +1,9 @@
 import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate } from './data-fetch.js';
 import { updateDisplay, clearSearch, filterByStackAndServer } from './filters.js';
 import { toggleThemeMenu, setTheme } from './ui-utils.js';
-import { state } from '../app.js';
 import { updateColumnVisibility, updateTableColumnOrder, reorderColumnMenuItems, saveColumnOrder } from './table-render.js';
+import { handlePruneImages } from './prune.js';
+import { state } from '../app.js';
 
 export function initEventListeners() {
   const refreshButton = document.getElementById('refresh-button');
@@ -19,26 +20,30 @@ export function initEventListeners() {
   refreshButton.addEventListener("click", fetchContainerData);
   checkUpdatesButton.addEventListener("click", checkForUpdates);
 
-  document.getElementById("theme-switcher").addEventListener("click", (e) => {
-  e.preventDefault();
-  toggleThemeMenu();
-});
-
-// Close menu when clicking outside
-document.addEventListener('click', (e) => {
-  const wrapper = e.target.closest('.theme-switcher-wrapper');
-  if (!wrapper) {
-    document.getElementById('theme-menu').classList.remove('show');
-  }
-});
-
-// Theme menu items
-document.querySelectorAll('.theme-menu-item').forEach(item => {
-  item.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setTheme(item.dataset.theme);
+  document.getElementById('prune-images-button').addEventListener('click', () => {
+    handlePruneImages();
   });
-});
+
+  document.getElementById("theme-switcher").addEventListener("click", (e) => {
+    e.preventDefault();
+    toggleThemeMenu();
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.theme-switcher-wrapper');
+    if (!wrapper) {
+      document.getElementById('theme-menu').classList.remove('show');
+    }
+  });
+
+  // Theme menu items
+  document.querySelectorAll('.theme-menu-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setTheme(item.dataset.theme);
+    });
+  });
 
 
   filterUpdatesCheckbox.addEventListener("change", updateDisplay);
@@ -86,11 +91,11 @@ document.querySelectorAll('.theme-menu-item').forEach(item => {
     if (e.target.classList.contains('update-available-indicator') || e.target.closest('.update-available-indicator')) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const indicator = e.target.classList.contains('update-available-indicator') ? e.target : e.target.closest('.update-available-indicator');
       const serverName = indicator.dataset.server;
       const containerName = indicator.dataset.container;
-      
+
       if (serverName && containerName) {
         console.log(`Initiating update for ${containerName} on ${serverName}`);
         installUpdate(serverName, containerName);

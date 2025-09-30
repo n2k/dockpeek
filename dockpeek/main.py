@@ -252,6 +252,125 @@ def update_container_route():
             current_app.logger.error(f"Update error for {container_name}: {str(e)}")
             return jsonify({"error": str(e)}), 500
     
+@main_bp.route("/get-prune-info", methods=["POST"])
+@conditional_login_required
+def get_prune_info():
+    request_data = request.get_json() or {}
+    server_name = request_data.get('server_name', 'all')
+    
+    servers = discover_docker_clients()
+    active_servers = [s for s in servers if s['status'] == 'active']
+    
+    if server_name != 'all':
+        active_servers = [s for s in active_servers if s['name'] == server_name]
+    
+    total_size = 0
+    total_count = 0
+    server_details = []
+    
+    for server in active_servers:
+        try:
+            all_images = server['client'].images.list()
+            used_images = set()
+            
+            for container in server['client'].containers.list(all=True):
+                image_id = container.image.id
+                used_images.add(image_id)
+            
+            unused_images = []
+            unused_size = 0
+            
+            for image in all_images:
+                if image.id not in used_images:
+                    size = image.attrs.get('Size', 0)
+                    unused_images.append({
+                        'id': image.id,
+                        'tags': image.tags,
+                        'size': size
+                    })
+                    unused_size += size
+            
+            if unused_images:
+                count = len(unused_images)
+                total_count += count
+                total_size += unused_size
+                
+                server_details.append({
+                    'server': server['name'],
+                    'count': count,
+                    'size': unused_size,
+                    'images': unused_images
+                })
+                
+        except Exception as e:
+            current_app.logger.error(f"Error getting prune info for {server['name']}: {e}")
+    
+    return jsonify({
+        'total_count': total_count,
+        'total_size': total_size,
+        'servers': server_details
+    })
+
+@main_bp.route("/prune-images", methods=["POST"])
+@conditional_login_required
+def prune_images():
+    request_data = request.get_json() or {}
+    server_name = request_data.get('server_name', 'all')
+    
+    servers = discover_docker_clients()
+    active_servers = [s for s in servers if s['status'] == 'active']
+    
+    if server_name != 'all':
+        active_servers = [s for s in active_servers if s['name'] == server_name]
+    
+    total_size = 0
+    total_count = 0
+    server_results = []
+    
+    for server in active_servers:
+        try:
+            all_images = server['client'].images.list()
+            used_images = set()
+            
+            for container in server['client'].containers.list(all=True):
+                image_id = container.image.id
+                used_images.add(image_id)
+            
+            removed_count = 0
+            removed_size = 0
+            
+            for image in all_images:
+                if image.id not in used_images:
+                    try:
+                        size = image.attrs.get('Size', 0)
+                        server['client'].images.remove(image.id, force=True)
+                        removed_count += 1
+                        removed_size += size
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not remove image {image.id}: {e}")
+            
+            total_count += removed_count
+            total_size += removed_size
+            
+            if removed_count > 0:
+                server_results.append({
+                    'server': server['name'],
+                    'count': removed_count,
+                    'size': removed_size
+                })
+                
+            current_app.logger.info(f"Pruned {removed_count} images from {server['name']}, reclaimed {removed_size} bytes")
+            
+        except Exception as e:
+            current_app.logger.error(f"Error pruning images on {server['name']}: {e}")
+            return jsonify({"error": f"Failed to prune on {server['name']}: {str(e)}"}), 500
+    
+    return jsonify({
+        'total_count': total_count,
+        'total_size': total_size,
+        'servers': server_results
+    })
+
 @main_bp.route("/export/json")
 @conditional_login_required
 def export_json():

@@ -2,77 +2,119 @@ import logging
 from datetime import datetime, timedelta
 from threading import Lock
 import time
-import signal
-from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 logger = logging.getLogger(__name__)
 
-class UpdateChecker:
-    """Handles checking for container image updates with caching and cancellation support."""
-    
+
+class CancellationToken:
     def __init__(self):
-        self.cache = {}
-        self.lock = Lock()
-        self.cache_duration = 120
-        self.is_cancelled = False
-        self.pull_timeout = 300
+        self._cancelled = False
+        self._lock = Lock()
+    
+    def cancel(self):
+        with self._lock:
+            self._cancelled = True
+    
+    def reset(self):
+        with self._lock:
+            self._cancelled = False
+    
+    def is_cancelled(self):
+        with self._lock:
+            return self._cancelled
+
+
+class UpdateCache:
+    def __init__(self, duration_seconds=120):
+        self._cache = {}
+        self._lock = Lock()
+        self._duration = duration_seconds
+    
+    def get(self, key):
+        with self._lock:
+            if key in self._cache:
+                result, timestamp = self._cache[key]
+                if datetime.now() - timestamp < timedelta(seconds=self._duration):
+                    return result, True
+            return None, False
+    
+    def set(self, key, value):
+        with self._lock:
+            self._cache[key] = (value, datetime.now())
+    
+    def clear(self):
+        with self._lock:
+            self._cache.clear()
+    
+    def prune_expired(self):
+        with self._lock:
+            now = datetime.now()
+            expired_keys = [
+                key for key, (_, timestamp) in self._cache.items()
+                if now - timestamp >= timedelta(seconds=self._duration)
+            ]
+            for key in expired_keys:
+                del self._cache[key]
+            return len(expired_keys)
+    
+    def get_stats(self):
+        with self._lock:
+            total = len(self._cache)
+            now = datetime.now()
+            valid = sum(
+                1 for _, timestamp in self._cache.values()
+                if now - timestamp < timedelta(seconds=self._duration)
+            )
+            return {
+                "total_entries": total,
+                "valid_entries": valid,
+                "expired_entries": total - valid,
+                "cache_duration_seconds": self._duration
+            }
+
+
+class UpdateChecker:
+    def __init__(self):
+        self._cache = UpdateCache(duration_seconds=120)
+        self._cancellation = CancellationToken()
+        self._pull_timeout = 300
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        
+    @property
+    def is_cancelled(self):
+        return self._cancellation.is_cancelled()
+    
+    @property
+    def cache_duration(self):
+        return self._cache._duration
         
     def start_check(self):
-        """Reset the cancellation flag before starting a new check."""
-        self.is_cancelled = False
+        self._cancellation.reset()
         logger.debug("Update check started")
 
     def cancel_check(self):
-        """Set the cancellation flag."""
-        self.is_cancelled = True
+        self._cancellation.cancel()
         logger.info("Update check cancellation requested")
 
-    @contextmanager
-    def timeout_handler(self, seconds):
-        """Context manager for handling timeouts."""
-        def timeout_signal_handler(signum, frame):
-            raise TimeoutError(f"Operation timed out after {seconds} seconds")
-        
-        old_handler = signal.signal(signal.SIGALRM, timeout_signal_handler)
-        signal.alarm(seconds)
-        
-        try:
-            yield
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
-
     def get_cache_key(self, server_name, container_name, image_name):
-        """Generate a unique cache key for the given parameters."""
         return f"{server_name}:{container_name}:{image_name}"
     
-    def is_cache_valid(self, timestamp):
-        """Check if a cached result is still valid based on timestamp."""
-        return datetime.now() - timestamp < timedelta(seconds=self.cache_duration)
-    
     def get_cached_result(self, cache_key):
-        """Retrieve a cached result if it exists and is valid."""
-        with self.lock:
-            if cache_key in self.cache:
-                result, timestamp = self.cache[cache_key]
-                if self.is_cache_valid(timestamp):
-                    return result, True
-        return None, False
+        return self._cache.get(cache_key)
     
     def set_cache_result(self, cache_key, result):
-        """Store a result in the cache with current timestamp."""
-        with self.lock:
-            self.cache[cache_key] = (result, datetime.now())
+        self._cache.set(cache_key, result)
 
     def clear_cache(self):
-        """Clear all cached results."""
-        with self.lock:
-            self.cache.clear()
-            logger.info("Update checker cache cleared")
+        self._cache.clear()
+        logger.info("Update checker cache cleared")
+    
+    def get_cache_stats(self):
+        return self._cache.get_stats()
 
     def check_local_image_updates(self, client, container, server_name):
-        """Check for updates by comparing local image IDs (fast, no network)."""
-        if self.is_cancelled:
+        if self._cancellation.is_cancelled():
             return False
             
         try:
@@ -84,10 +126,7 @@ class UpdateChecker:
             if not image_name: 
                 return False
                 
-            if ':' in image_name: 
-                base_name, current_tag = image_name.rsplit(':', 1)
-            else: 
-                base_name, current_tag = image_name, 'latest'
+            base_name, current_tag = self._parse_image_name(image_name)
                 
             try:
                 local_image = client.images.get(f"{base_name}:{current_tag}")
@@ -99,8 +138,7 @@ class UpdateChecker:
             return False
     
     def check_image_updates(self, client, container, server_name):
-        """Check for updates by pulling latest image and comparing with container's current image."""
-        if self.is_cancelled:
+        if self._cancellation.is_cancelled():
             logger.debug(f"Update check cancelled before starting for {container.name}")
             return False
             
@@ -119,81 +157,68 @@ class UpdateChecker:
                 logger.info(f"Using cached update result for {server_name}:{container.name}")
                 return cached_result
             
-            if ':' in image_name: 
-                base_name, current_tag = image_name.rsplit(':', 1)
-            else: 
-                base_name, current_tag = image_name, 'latest'
-                
-            try:
-                if self.is_cancelled:
-                    logger.info(f"Update check cancelled before pulling {base_name}:{current_tag} on {server_name}")
-                    return False
-    
-                logger.debug(f"Pulling {base_name}:{current_tag} on {server_name}")
-                start_time = time.time()
-                
-                try:
-                    with self.timeout_handler(self.pull_timeout):
-                        client.images.pull(base_name, tag=current_tag)
-                        
-                except TimeoutError:
-                    logger.warning(f"Pull timeout ({self.pull_timeout}s) for {base_name}:{current_tag} on {server_name}")
-                    self.set_cache_result(cache_key, False)
-                    return False
-                
-                if self.is_cancelled:
-                    logger.info(f"Update check cancelled after pulling {base_name}:{current_tag} on {server_name}")
-                    return False
-                    
-                pull_time = time.time() - start_time
-                logger.debug(f"Pull completed in {pull_time:.2f}s for {base_name}:{current_tag}")
-                
-                # Get the updated local image
-                updated_image = client.images.get(f"{base_name}:{current_tag}")
-                
-                # Compare container's current image ID with the pulled image ID
-                result = container_image_id != updated_image.id
-                
-                self.set_cache_result(cache_key, result)                
-                
-                if result: 
-                    logger.info(f"[{server_name}] ⬆️ Update available for {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
-                else: 
-                    logger.info(f"[{server_name}] ✅ Image up to date: {base_name}:{current_tag}")
-                    
-                return result                
-                
-            except Exception as pull_error:
-                if self.is_cancelled:
-                    logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
-                    return False
-                    
-                logger.info(f"[{server_name}] ❌ Cannot pull {base_name}:{current_tag} - built locally or private repository: {pull_error}")
-                self.set_cache_result(cache_key, False)
+            base_name, current_tag = self._parse_image_name(image_name)
+            
+            if self._cancellation.is_cancelled():
+                logger.info(f"Update check cancelled before pulling {base_name}:{current_tag} on {server_name}")
                 return False
+            
+            result = self._pull_and_compare(client, container_image_id, base_name, current_tag, server_name)
+            self.set_cache_result(cache_key, result)
+            return result
                 
         except Exception as e:
-            if not self.is_cancelled:
+            if not self._cancellation.is_cancelled():
                 logger.error(f"Error checking image updates for '{container.name}' on {server_name}: {e}")
             return False
 
-    def get_cache_stats(self):
-        """Get cache statistics."""
-        with self.lock:
-            total_entries = len(self.cache)
-            valid_entries = 0
-            now = datetime.now()
+    def _parse_image_name(self, image_name):
+        if ':' in image_name: 
+            base_name, current_tag = image_name.rsplit(':', 1)
+        else: 
+            base_name, current_tag = image_name, 'latest'
+        return base_name, current_tag
+    
+    def _pull_and_compare(self, client, container_image_id, base_name, current_tag, server_name):
+        try:
+            logger.debug(f"Pulling {base_name}:{current_tag} on {server_name}")
+            start_time = time.time()
             
-            for _, (_, timestamp) in self.cache.items():
-                if self.is_cache_valid(timestamp):
-                    valid_entries += 1
-                    
-            return {
-                "total_entries": total_entries,
-                "valid_entries": valid_entries,
-                "expired_entries": total_entries - valid_entries,
-                "cache_duration_seconds": self.cache_duration
-            }
+            future = self._executor.submit(self._pull_image, client, base_name, current_tag)
+            
+            try:
+                future.result(timeout=self._pull_timeout)
+            except FuturesTimeoutError:
+                logger.warning(f"Pull timeout ({self._pull_timeout}s) for {base_name}:{current_tag} on {server_name}")
+                return False
+            
+            if self._cancellation.is_cancelled():
+                logger.info(f"Update check cancelled after pulling {base_name}:{current_tag} on {server_name}")
+                return False
+            
+            pull_time = time.time() - start_time
+            logger.debug(f"Pull completed in {pull_time:.2f}s for {base_name}:{current_tag}")
+            
+            updated_image = client.images.get(f"{base_name}:{current_tag}")
+            result = container_image_id != updated_image.id
+            
+            if result: 
+                logger.info(f"[{server_name}] Update available for {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
+            else: 
+                logger.info(f"[{server_name}] Image up to date: {base_name}:{current_tag}")
+            
+            return result
+            
+        except Exception as pull_error:
+            if self._cancellation.is_cancelled():
+                logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
+                return False
+            
+            logger.info(f"[{server_name}] Cannot pull {base_name}:{current_tag} - built locally or private repository: {pull_error}")
+            return False
+    
+    def _pull_image(self, client, base_name, tag):
+        client.images.pull(base_name, tag=tag)
 
 
 update_checker = UpdateChecker()

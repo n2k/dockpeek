@@ -1,471 +1,522 @@
-# update_manager.py
-
 import logging
 import time
 import re
-from typing import Dict, Any, Optional
-from flask import current_app
+from typing import Dict, Any, List, Optional, Tuple
+from dataclasses import dataclass
+from enum import Enum
 import docker
 
 logger = logging.getLogger(__name__)
 
+
+class ValidationResult(Enum):
+    ALLOWED = "allowed"
+    BLOCKED_SELF = "blocked_self"
+    BLOCKED_CRITICAL = "blocked_critical"
+    BLOCKED_DATABASE = "blocked_database"
+    BLOCKED_DEPENDENCY = "blocked_dependency"
+
+
+@dataclass
+class ValidationBlockage:
+    result: ValidationResult
+    html_message: str
+    log_message: str
+
+
 class ContainerUpdateError(Exception):
-    """Exception with separate HTML and plain text messages"""
     def __init__(self, html_message: str, log_message: str = None):
-        # Use clean message for the exception itself (logging)
         clean_message = log_message or strip_html_tags(html_message)
         super().__init__(clean_message)
         self.html_message = html_message
 
+
 def strip_html_tags(text: str) -> str:
-    """Remove HTML tags and double newlines from text for clean logging"""
     clean_text = re.sub(r'<[^>]+>', '', text)
     clean_text = clean_text.replace('\n', ' ')
     return clean_text
 
 
-def check_image_updates_available(client: docker.DockerClient, image_name: str, container_image_id: str = None) -> bool:
-    try:
-        local_image = client.images.get(image_name)
-        
-        if not container_image_id:
-            logger.debug(f"No container image ID provided for comparison")
-            return True
-            
-        has_update = container_image_id != local_image.id
-        
-        logger.debug(f"Image {image_name} - Container ID: {container_image_id[:12]}..., Local ID: {local_image.id[:12]}..., Has update: {has_update}")
-        
-        return has_update
-        
-    except docker.errors.ImageNotFound:
-        logger.info(f"Local image {image_name} not found - update needed")
-        return True
-    except Exception as e:
-        logger.warning(f"Could not check for updates for {image_name}: {e}")
-        return True
-
-def check_network_dependencies(client: docker.DockerClient, container) -> None:
-    container_name = container.name
-    
-    try:
-        all_containers = client.containers.list(all=True)
-    except Exception as e:
-        logger.warning(f"Could not list containers to check dependencies: {e}")
-        return
-    
-    dependent_containers = []
-    
-    for other_container in all_containers:
-        if other_container.id == container.id:
-            continue
-            
-        network_mode = other_container.attrs.get('HostConfig', {}).get('NetworkMode', '')
-        if network_mode == f'container:{container_name}' or network_mode == f'container:{container.id}':
-            dependent_containers.append(other_container.name)
-    
-    if dependent_containers:
-        html_message = (
-            f"Cannot update container <strong>'{container_name}'</strong> because other containers <strong>depend</strong> on its network: <strong>{', '.join(dependent_containers)}.</strong>\n"
-            f"<div class='text-center' style='margin-top: 0.7em;'>Updating such containers <strong>must be done outside of dockpeek.</strong></div>"
-        )
-        raise ContainerUpdateError(html_message)
-
-def validate_container_for_update(client: docker.DockerClient, container) -> None:
-    check_network_dependencies(client, container)
-    
-    container_name = container.name.lower()
-    image_name = container.attrs.get('Config', {}).get('Image', '').lower()
-    labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
-    
-    critical_images = [  
-        'dockpeek',
-        'socket-proxy',
-        'traefik',
-        'portainer/portainer',
-        'containrrr/watchtower',
-        'pihole/pihole',
-        'jwilder/nginx-proxy',
-        'haproxy',
-        'envoyproxy/envoy',
-        'linuxserver/wireguard',
-        'kylemanna/openvpn',
-        'nginx',
-        'caddy',
-        'cloudflare/cloudflared',
-        'bitwarden/server',
-        'vaultwarden/server',
-        'grafana/grafana',
-        'prom/prometheus',
-        'prom/alertmanager',
-        'louislam/uptime-kuma',
-        'duplicati/duplicati',
-        'restic/restic',
-        'rclone/rclone',
-        'nextcloud',
-        'authelia/authelia',
-        'oauth2-proxy/oauth2-proxy',
-        'keycloak/keycloak',
-        'tailscale/tailscale',
-        'netbirdio/netbird',
-        'adguardhome/adguardhome',
-        'jc21/nginx-proxy-manager',
+class ValidationPatterns:
+    CRITICAL_IMAGES = [
+        'dockpeek', 'socket-proxy', 'traefik', 'portainer/portainer',
+        'containrrr/watchtower', 'pihole/pihole', 'jwilder/nginx-proxy',
+        'haproxy', 'envoyproxy/envoy', 'linuxserver/wireguard',
+        'kylemanna/openvpn', 'nginx', 'caddy', 'cloudflare/cloudflared',
+        'bitwarden/server', 'vaultwarden/server', 'grafana/grafana',
+        'prom/prometheus', 'prom/alertmanager', 'louislam/uptime-kuma',
+        'duplicati/duplicati', 'restic/restic', 'rclone/rclone',
+        'nextcloud', 'authelia/authelia', 'oauth2-proxy/oauth2-proxy',
+        'keycloak/keycloak', 'tailscale/tailscale', 'netbirdio/netbird',
+        'adguardhome/adguardhome', 'jc21/nginx-proxy-manager',
         'linuxserver/swag'
     ]
 
-    critical_name_patterns = [
-        'traefik', 'portainer', 'watchtower', 'pihole', 
-        'wireguard', 'openvpn', 'bitwarden', 'vaultwarden',
-        'grafana', 'prometheus', 'alertmanager', 'authelia', 
-        'keycloak', 'tailscale', 'netbird', 'adguard',
-        'nginx-proxy-manager', 'uptime-kuma'
+    CRITICAL_NAME_PATTERNS = [
+        'traefik', 'portainer', 'watchtower', 'pihole', 'wireguard',
+        'openvpn', 'bitwarden', 'vaultwarden', 'grafana', 'prometheus',
+        'alertmanager', 'authelia', 'keycloak', 'tailscale', 'netbird',
+        'adguard', 'nginx-proxy-manager', 'uptime-kuma'
     ]
 
-    database_images = [
-        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo',
-        'redis', 'sqlite', 'microsoft/mssql-server',
-        'couchdb', 'couchbase', 'cockroachdb', 'neo4j',
-        'influxdb', 'elasticsearch', 'cassandra', 'memcached'
+    DATABASE_IMAGES = [
+        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo', 'redis',
+        'sqlite', 'microsoft/mssql-server', 'couchdb', 'couchbase',
+        'cockroachdb', 'neo4j', 'influxdb', 'elasticsearch',
+        'cassandra', 'memcached'
     ]
 
-    database_name_patterns = [
-        'database', 'postgres', 'mysql', 'mariadb', 'mongo',
-        'redis', 'mssql', 'couch', 'cockroach', 'neo4j',
-        'influx', 'elastic', 'cassandra', 'memcached'
+    DATABASE_NAME_PATTERNS = [
+        'database', 'postgres', 'mysql', 'mariadb', 'mongo', 'redis',
+        'mssql', 'couch', 'cockroach', 'neo4j', 'influx', 'elastic',
+        'cassandra', 'memcached'
     ]
-    
-    for pattern in critical_images:
-        if pattern in image_name:
-            if pattern == 'dockpeek':
-                html_message = (
-                    f"<div class='text-center'><strong>Dockpeek</strong> cannot update itself, as this would <strong>interrupt the update process.</strong></div>"
-                    f"<div class='text-center' style='margin-top: 0.7em;'>Please update the dockpeek container <strong>outside of dockpeek.</strong></div>"
-                )
-                raise ContainerUpdateError(html_message)
-            else:
-                html_message = (
-                    f"Container <strong>'{container.name}'</strong> appears to be a <strong>critical system service.</strong> "
-                    f"Updating it through Dockpeek is not recommended.\n"
-                    f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
-                )
-                raise ContainerUpdateError(html_message)
-    
-    for pattern in critical_name_patterns:
-        if pattern in container_name:
-            html_message = (
-                f"Container <strong>'{container.name}'</strong> appears to be a <strong>critical system service.</strong> "
-                f"Updating it through Dockpeek is not recommended.\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
-            )
-            raise ContainerUpdateError(html_message)
-    
-    for pattern in database_images:
-        if pattern in image_name:
-            html_message = (
-                f"Container <strong>'{container.name}'</strong> appears to be a <strong>database service.</strong> "
-                f"Updating databases through Dockpeek is not recommended, as it may cause <strong>downtime or data loss.</strong>\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
-            )
-            raise ContainerUpdateError(html_message)
-    
-    for pattern in database_name_patterns:
-        if pattern in container_name:
-            html_message = (
-                f"Container <strong>'{container.name}'</strong> appears to be a <strong>database service.</strong> "
-                f"Updating databases through Dockpeek is not recommended, as it may cause <strong>downtime or data loss.</strong>\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container <strong>outside of dockpeek.</strong></div>"
-            )
-            raise ContainerUpdateError(html_message)
-    
-    if 'com.docker.compose.project' in labels:
-        project_name = labels['com.docker.compose.project']
-        logger.debug(f"Container '{container.name}' is part of Docker Compose project '{project_name}'")
-    
-    health_config = container.attrs.get('Config', {}).get('Healthcheck')
-    if health_config and health_config.get('Test'):
-        logger.info(f"Container '{container.name}' has health check configured - Dockpeek will monitor it during the update process.")
 
-def extract_container_config(container) -> Dict[str, Any]:
-    attrs = container.attrs
-    config = attrs.get('Config', {})
-    host_config = attrs.get('HostConfig', {})
-    
-    env_vars = config.get('Env', []) or []
-    clean_env = [env for env in env_vars if env is not None]
-    
-    labels = config.get('Labels') or {}
-    clean_labels = {k: v for k, v in labels.items() if v is not None}
-    
-    binds = host_config.get('Binds') or []
-    clean_binds = [bind for bind in binds if bind is not None]
-    
-    port_bindings = host_config.get('PortBindings') or {}
-    clean_port_bindings = {k: v for k, v in port_bindings.items() if v is not None}
-    
-    network_mode = host_config.get('NetworkMode')
-    
-    hostname = None
-    if network_mode and not network_mode.startswith('container:'):
-        hostname = config.get('Hostname')
-    
-    return {
-        'name': container.name,
-        'hostname': hostname,
-        'user': config.get('User'),
-        'working_dir': config.get('WorkingDir'),
-        'labels': clean_labels,
-        'environment': clean_env,
-        'command': config.get('Cmd'),
-        'entrypoint': config.get('Entrypoint'),
-        'volumes': clean_binds,
-        'ports': clean_port_bindings,
-        'network_mode': network_mode,
-        'restart_policy': host_config.get('RestartPolicy', {'Name': 'no'}),
-        'privileged': host_config.get('Privileged', False),
-        'cap_add': host_config.get('CapAdd'),
-        'cap_drop': host_config.get('CapDrop'),
-        'devices': host_config.get('Devices'),
-        'security_opt': host_config.get('SecurityOpt'),
-        'detach': True
-    }
+    @classmethod
+    def check_patterns(cls, text: str, patterns: List[str]) -> Optional[str]:
+        text_lower = text.lower()
+        for pattern in patterns:
+            if pattern in text_lower:
+                return pattern
+        return None
 
-def create_new_container(client: docker.DockerClient, image_name: str, config: Dict[str, Any]) -> docker.models.containers.Container:
-    clean_config = {k: v for k, v in config.items() if v is not None}
-    
-    for key in ['environment', 'volumes', 'cap_add', 'cap_drop', 'devices', 'security_opt']:
-        if key in clean_config and not clean_config[key]:
-            del clean_config[key]
-    
-    try:
-        return client.containers.create(image_name, **clean_config)
-    except Exception as e:
-        logger.error(f"Failed to create container with config: {clean_config}")
-        raise ContainerUpdateError(f"Failed to create new container: {e}")
 
-def connect_to_networks(client: docker.DockerClient, container, original_networks: Dict[str, Any]) -> None:
-    container_attrs = container.attrs
-    network_mode = container_attrs.get('HostConfig', {}).get('NetworkMode', '')
+class ContainerValidator:
+    def __init__(self, container, client: docker.DockerClient):
+        self.container = container
+        self.client = client
+        self.container_name = container.name.lower()
+        self.image_name = container.attrs.get('Config', {}).get('Image', '').lower()
+        self.labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
     
-    if network_mode and network_mode.startswith('container:'):
-        logger.info(f"Container uses network mode '{network_mode}', skipping network connections")
-        return
+    def validate(self) -> Optional[ValidationBlockage]:
+        dependency_check = self._check_network_dependencies()
+        if dependency_check:
+            return dependency_check
+        
+        pattern_check = self._check_patterns()
+        if pattern_check:
+            return pattern_check
+        
+        return None
     
-    for network_name, network_config in original_networks.items():
-        if network_name == 'bridge':
-            continue
-            
+    def _check_network_dependencies(self) -> Optional[ValidationBlockage]:
         try:
-            network = client.networks.get(network_name)
-            
-            connect_config = {}
-            if network_config.get('IPAddress'):
-                connect_config['ipv4_address'] = network_config['IPAddress']
-            if network_config.get('Aliases'):
-                connect_config['aliases'] = network_config['Aliases']
-                
-            network.connect(container, **connect_config)
-            logger.info(f"Connected container to network: {network_name}")
-            
+            all_containers = self.client.containers.list(all=True)
         except Exception as e:
-            logger.warning(f"Failed to connect to network {network_name}: {e}")
-
-def wait_for_container_health(container, timeout: int = 180) -> bool:
-    start_time = time.time()
-    check_interval = 2
-    
-    while time.time() - start_time < timeout:
-        try:
-            container.reload()
-            status = container.status
+            logger.warning(f"Could not list containers to check dependencies: {e}")
+            return None
+        
+        dependent_containers = []
+        for other_container in all_containers:
+            if other_container.id == self.container.id:
+                continue
             
-            logger.debug(f"Container {container.name} status: {status}")
-            
-            if status == 'running':
-                health = container.attrs.get('State', {}).get('Health', {})
-                if health.get('Status') == 'healthy' or not health:
-                    logger.info(f"Container {container.name} is running and healthy")
-                    return True
-                elif health.get('Status') == 'unhealthy':
-                    logger.warning(f"Container {container.name} is unhealthy")
-                    return False
-                else:
-                    logger.debug(f"Container {container.name} health status: {health.get('Status', 'unknown')}")
-            elif status in ['exited', 'dead']:
-                logger.error(f"Container {container.name} has exited or died")
-                return False
-                
-            time.sleep(check_interval)
-        except Exception as e:
-            logger.warning(f"Error checking container health: {e}")
-            time.sleep(check_interval)
+            network_mode = other_container.attrs.get('HostConfig', {}).get('NetworkMode', '')
+            if network_mode in [f'container:{self.container.name}', f'container:{self.container.id}']:
+                dependent_containers.append(other_container.name)
+        
+        if dependent_containers:
+            html_message = (
+                f"Cannot update container <strong>'{self.container.name}'</strong> because other containers "
+                f"<strong>depend</strong> on its network: <strong>{', '.join(dependent_containers)}.</strong>\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Updating such containers "
+                f"<strong>must be done outside of dockpeek.</strong></div>"
+            )
+            return ValidationBlockage(
+                ValidationResult.BLOCKED_DEPENDENCY,
+                html_message,
+                f"Container {self.container.name} has network dependencies: {dependent_containers}"
+            )
+        
+        return None
     
-    logger.warning(f"Container health check timed out after {timeout} seconds")
-    return False
+    def _check_patterns(self) -> Optional[ValidationBlockage]:
+        if 'dockpeek' in self.image_name:
+            html_message = (
+                f"<div class='text-center'><strong>Dockpeek</strong> cannot update itself, as this would "
+                f"<strong>interrupt the update process.</strong></div>"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update the dockpeek container "
+                f"<strong>outside of dockpeek.</strong></div>"
+            )
+            return ValidationBlockage(ValidationResult.BLOCKED_SELF, html_message, "Cannot update dockpeek itself")
+        
+        critical_match = ValidationPatterns.check_patterns(
+            self.image_name, ValidationPatterns.CRITICAL_IMAGES
+        ) or ValidationPatterns.check_patterns(
+            self.container_name, ValidationPatterns.CRITICAL_NAME_PATTERNS
+        )
+        
+        if critical_match:
+            html_message = (
+                f"Container <strong>'{self.container.name}'</strong> appears to be a "
+                f"<strong>critical system service.</strong> Updating it through Dockpeek is not recommended.\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container "
+                f"<strong>outside of dockpeek.</strong></div>"
+            )
+            return ValidationBlockage(
+                ValidationResult.BLOCKED_CRITICAL,
+                html_message,
+                f"Container {self.container.name} matches critical pattern: {critical_match}"
+            )
+        
+        database_match = ValidationPatterns.check_patterns(
+            self.image_name, ValidationPatterns.DATABASE_IMAGES
+        ) or ValidationPatterns.check_patterns(
+            self.container_name, ValidationPatterns.DATABASE_NAME_PATTERNS
+        )
+        
+        if database_match:
+            html_message = (
+                f"Container <strong>'{self.container.name}'</strong> appears to be a "
+                f"<strong>database service.</strong> Updating databases through Dockpeek is not recommended, "
+                f"as it may cause <strong>downtime or data loss.</strong>\n"
+                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container "
+                f"<strong>outside of dockpeek.</strong></div>"
+            )
+            return ValidationBlockage(
+                ValidationResult.BLOCKED_DATABASE,
+                html_message,
+                f"Container {self.container.name} matches database pattern: {database_match}"
+            )
+        
+        return None
 
-def cleanup_container_by_name(client: docker.DockerClient, container_name: str, force: bool = True) -> bool:
-    try:
-        container = client.containers.get(container_name)
-        container.remove(force=force)
-        logger.info(f"Successfully removed container: {container_name}")
-        return True
-    except docker.errors.NotFound:
-        logger.debug(f"Container {container_name} not found (already removed)")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to remove container {container_name}: {e}")
-        return False
 
-def update_container(client: docker.DockerClient, server_name: str, container_name: str, force: bool = False) -> Dict[str, Any]:
-    logger.info(f"[{server_name}] Starting update process for container: {container_name} (force={force})")
+class ContainerConfigExtractor:
+    def __init__(self, container):
+        self.container = container
+        self.attrs = container.attrs
+        self.config = self.attrs.get('Config', {})
+        self.host_config = self.attrs.get('HostConfig', {})
     
-    original_timeout = getattr(client.api, 'timeout', None)
-    try:
-        client.api.timeout = 300
-    except AttributeError:
-        logger.warning("Could not set client timeout")
+    def extract(self) -> Dict[str, Any]:
+        network_mode = self.host_config.get('NetworkMode')
+        
+        hostname = None
+        if network_mode and not network_mode.startswith('container:'):
+            hostname = self.config.get('Hostname')
+        
+        return {
+            'name': self.container.name,
+            'hostname': hostname,
+            'user': self.config.get('User'),
+            'working_dir': self.config.get('WorkingDir'),
+            'labels': self._clean_dict(self.config.get('Labels') or {}),
+            'environment': self._clean_list(self.config.get('Env', []) or []),
+            'command': self.config.get('Cmd'),
+            'entrypoint': self.config.get('Entrypoint'),
+            'volumes': self._clean_list(self.host_config.get('Binds') or []),
+            'ports': self._clean_dict(self.host_config.get('PortBindings') or {}),
+            'network_mode': network_mode,
+            'restart_policy': self.host_config.get('RestartPolicy', {'Name': 'no'}),
+            'privileged': self.host_config.get('Privileged', False),
+            'cap_add': self.host_config.get('CapAdd'),
+            'cap_drop': self.host_config.get('CapDrop'),
+            'devices': self.host_config.get('Devices'),
+            'security_opt': self.host_config.get('SecurityOpt'),
+            'detach': True
+        }
     
-    backup_container = None
-    new_container = None
+    @staticmethod
+    def _clean_list(items: List) -> List:
+        return [item for item in items if item is not None]
     
-    try:
+    @staticmethod
+    def _clean_dict(items: Dict) -> Dict:
+        return {k: v for k, v in items.items() if v is not None}
+
+
+class ContainerUpdater:
+    def __init__(self, client: docker.DockerClient, server_name: str, timeouts: Dict[str, int] = None):
+        self.client = client
+        self.server_name = server_name
+        self.timeouts = timeouts or {
+            'api': 300,
+            'stop': 60,
+            'health': 120
+        }
+        self.original_timeout = None
+        
+    def __enter__(self):
+        self.original_timeout = getattr(self.client.api, 'timeout', None)
         try:
-            container = client.containers.get(container_name)
+            self.client.api.timeout = self.timeouts['api']
+        except AttributeError:
+            logger.warning("Could not set client timeout")
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.original_timeout is not None:
+            try:
+                self.client.api.timeout = self.original_timeout
+            except AttributeError:
+                pass
+    
+    def update(self, container_name: str, force: bool = False) -> Dict[str, Any]:
+        logger.info(f"[{self.server_name}] Starting update for: {container_name} (force={force})")
+        
+        container = self._get_container(container_name)
+        self._validate_container(container)
+        
+        image_name, container_image_id = self._get_image_info(container)
+        
+        self._pull_image(image_name)
+        
+        if not force and not self._has_updates(image_name, container_image_id):
+            logger.info(f"[{self.server_name}] No updates for {image_name}")
+            return {"status": "success", "message": f"Container {container_name} is already up to date."}
+        
+        config = ContainerConfigExtractor(container).extract()
+        original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
+        
+        backup_name = self._generate_backup_name(container_name)
+        
+        return self._perform_update(container, backup_name, image_name, config, original_networks)
+    
+    def _get_container(self, container_name: str):
+        try:
+            return self.client.containers.get(container_name)
         except docker.errors.NotFound:
             raise ContainerUpdateError(f"Container '{container_name}' not found.")
         except Exception as e:
             raise ContainerUpdateError(f"Error accessing container '{container_name}': {e}")
+    
+    def _validate_container(self, container):
+        validator = ContainerValidator(container, self.client)
+        blockage = validator.validate()
         
-        validate_container_for_update(client, container)
+        if blockage:
+            logger.warning(f"[{self.server_name}] Validation blocked: {blockage.log_message}")
+            raise ContainerUpdateError(blockage.html_message, blockage.log_message)
         
+        if 'com.docker.compose.project' in validator.labels:
+            project = validator.labels['com.docker.compose.project']
+            logger.debug(f"Container '{container.name}' is part of Compose project '{project}'")
+        
+        health_config = container.attrs.get('Config', {}).get('Healthcheck')
+        if health_config and health_config.get('Test'):
+            logger.info(f"Container '{container.name}' has health check - will monitor during update")
+    
+    def _get_image_info(self, container) -> Tuple[str, str]:
         image_name = container.attrs.get('Config', {}).get('Image')
         container_image_id = container.attrs.get('Image', '')
         
         if not image_name:
             raise ContainerUpdateError("Could not determine image name for the container.")
         
-        logger.info(f"[{server_name}] Container image: {image_name}")
-        logger.debug(f"[{server_name}] Current container image ID: {container_image_id[:12]}...")
+        logger.info(f"[{self.server_name}] Container image: {image_name}")
+        logger.debug(f"[{self.server_name}] Current image ID: {container_image_id[:12]}...")
         
-        logger.info(f"[{server_name}] Pulling latest image: {image_name}")
+        return image_name, container_image_id
+    
+    def _pull_image(self, image_name: str):
+        logger.info(f"[{self.server_name}] Pulling latest image: {image_name}")
         try:
-            new_image = client.images.pull(image_name)
-            logger.info(f"[{server_name}] Successfully pulled image: {new_image.short_id}")
+            new_image = self.client.images.pull(image_name)
+            logger.info(f"[{self.server_name}] Successfully pulled: {new_image.short_id}")
         except Exception as e:
             raise ContainerUpdateError(f"Failed to pull image '{image_name}': {e}")
-        
-        if not force and not check_image_updates_available(client, image_name, container_image_id):
-            logger.info(f"[{server_name}] No updates available for {image_name} - container is already using the latest image")
-            return {
-                "status": "success", 
-                "message": f"Container {container_name} is already up to date."
-            }
-        
-        container_config = extract_container_config(container)
-        original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
-        
+    
+    def _has_updates(self, image_name: str, container_image_id: str) -> bool:
+        try:
+            local_image = self.client.images.get(image_name)
+            return container_image_id != local_image.id
+        except Exception:
+            return True
+    
+    def _generate_backup_name(self, container_name: str) -> str:
         timestamp = int(time.time())
         backup_name = f"{container_name}-backup-{timestamp}"
         
-        backup_counter = 1
+        counter = 1
         while True:
             try:
-                client.containers.get(backup_name)
-                backup_name = f"{container_name}-backup-{timestamp}-{backup_counter}"
-                backup_counter += 1
+                self.client.containers.get(backup_name)
+                backup_name = f"{container_name}-backup-{timestamp}-{counter}"
+                counter += 1
             except docker.errors.NotFound:
                 break
         
-        logger.info(f"[{server_name}] Stopping container: {container_name}")
+        return backup_name
+    
+    def _perform_update(self, container, backup_name: str, image_name: str, 
+                        config: Dict[str, Any], networks: Dict[str, Any]) -> Dict[str, Any]:
+        backup_container = None
+        new_container = None
+        
         try:
-            container.stop(timeout=60)
-            logger.info(f"[{server_name}] Container stopped successfully")
+            self._stop_container(container)
+            backup_container = self._rename_to_backup(container, backup_name)
+            new_container = self._create_and_start(image_name, config, networks)
+            self._cleanup_backup(backup_container, backup_name)
+            
+            success_msg = f"Container '{container.name}' updated successfully to latest image."
+            if config.get('force'):
+                success_msg += " (Forced update)"
+            
+            logger.info(f"[{self.server_name}] Successfully updated: {container.name}")
+            return {"status": "success", "message": success_msg}
+            
         except Exception as e:
-            logger.warning(f"[{server_name}] Error stopping container gracefully: {e}")
+            self._handle_failure(e, backup_container, backup_name, new_container, container.name)
+    
+    def _stop_container(self, container):
+        logger.info(f"[{self.server_name}] Stopping: {container.name}")
+        try:
+            container.stop(timeout=self.timeouts['stop'])
+            logger.info(f"[{self.server_name}] Container stopped")
+        except Exception as e:
+            logger.warning(f"[{self.server_name}] Graceful stop failed: {e}")
             try:
                 container.kill()
-                logger.info(f"[{server_name}] Container killed successfully")
+                logger.info(f"[{self.server_name}] Container killed")
             except Exception as kill_error:
-                logger.error(f"[{server_name}] Failed to kill container: {kill_error}")
+                logger.error(f"[{self.server_name}] Kill failed: {kill_error}")
                 raise ContainerUpdateError(f"Failed to stop container: {e}")
-        
-        logger.info(f"[{server_name}] Renaming container to: {backup_name}")
+    
+    def _rename_to_backup(self, container, backup_name: str):
+        logger.info(f"[{self.server_name}] Renaming to: {backup_name}")
         try:
             container.rename(backup_name)
-            backup_container = container
+            return container
         except Exception as e:
             try:
                 container.start()
             except:
                 pass
             raise ContainerUpdateError(f"Failed to rename container: {e}")
+    
+    def _create_and_start(self, image_name: str, config: Dict[str, Any], networks: Dict[str, Any]):
+        logger.info(f"[{self.server_name}] Creating new container: {config['name']}")
+        
+        clean_config = {k: v for k, v in config.items() if v is not None}
+        for key in ['environment', 'volumes', 'cap_add', 'cap_drop', 'devices', 'security_opt']:
+            if key in clean_config and not clean_config[key]:
+                del clean_config[key]
         
         try:
-            logger.info(f"[{server_name}] Creating new container: {container_name}")
-            new_container = create_new_container(client, image_name, container_config)
-            
-            if original_networks:
-                logger.info(f"[{server_name}] Connecting to networks")
-                connect_to_networks(client, new_container, original_networks)
-            
-            logger.info(f"[{server_name}] Starting new container: {container_name}")
-            new_container.start()
-            
-            logger.info(f"[{server_name}] Waiting for container to become healthy...")
-            if not wait_for_container_health(new_container, timeout=120):
-                raise ContainerUpdateError("New container failed to start properly within 120 seconds")
-            
-            logger.info(f"[{server_name}] New container is running successfully")
-            
+            new_container = self.client.containers.create(image_name, **clean_config)
         except Exception as e:
-            logger.error(f"[{server_name}] Failed to create/start new container: {e}")
+            logger.error(f"Failed to create with config: {clean_config}")
+            raise ContainerUpdateError(f"Failed to create new container: {e}")
+        
+        if networks:
+            self._connect_networks(new_container, networks)
+        
+        logger.info(f"[{self.server_name}] Starting new container")
+        new_container.start()
+        
+        logger.info(f"[{self.server_name}] Waiting for health check...")
+        if not self._wait_for_health(new_container):
+            raise ContainerUpdateError("Container failed to start properly within timeout")
+        
+        logger.info(f"[{self.server_name}] Container running successfully")
+        return new_container
+    
+    def _connect_networks(self, container, networks: Dict[str, Any]):
+        network_mode = container.attrs.get('HostConfig', {}).get('NetworkMode', '')
+        
+        if network_mode and network_mode.startswith('container:'):
+            logger.info(f"Using network mode '{network_mode}', skipping network connections")
+            return
+        
+        logger.info(f"[{self.server_name}] Connecting to networks")
+        for network_name, network_config in networks.items():
+            if network_name == 'bridge':
+                continue
             
-            if new_container:
-                try:
-                    new_container.remove(force=True)
-                    logger.info(f"[{server_name}] Cleaned up failed new container")
-                except Exception as cleanup_error:
-                    logger.warning(f"[{server_name}] Failed to cleanup new container: {cleanup_error}")
-            
-            if backup_container:
-                try:
-                    logger.info(f"[{server_name}] Restoring original container")
-                    
-                    cleanup_container_by_name(client, container_name, force=True)
-                    
-                    backup_container.rename(container_name)
-                    backup_container.start()
-                    logger.info(f"[{server_name}] Successfully restored original container")
-                    
-                except Exception as restore_error:
-                    logger.error(f"[{server_name}] Failed to restore original container: {restore_error}")
-                    raise ContainerUpdateError(
-                        f"Update failed: {e}. CRITICAL: Failed to restore original container: {restore_error}. "
-                        f"Manual intervention required for container '{backup_name}'"
-                    )
-            
-            raise ContainerUpdateError(f"Update failed: {e}. Original container restored.")
+            try:
+                network = self.client.networks.get(network_name)
+                connect_config = {}
+                if network_config.get('IPAddress'):
+                    connect_config['ipv4_address'] = network_config['IPAddress']
+                if network_config.get('Aliases'):
+                    connect_config['aliases'] = network_config['Aliases']
+                
+                network.connect(container, **connect_config)
+                logger.info(f"Connected to network: {network_name}")
+            except Exception as e:
+                logger.warning(f"Failed to connect to {network_name}: {e}")
+    
+    def _wait_for_health(self, container) -> bool:
+        start_time = time.time()
+        check_interval = 2
+        timeout = self.timeouts['health']
+        
+        while time.time() - start_time < timeout:
+            try:
+                container.reload()
+                status = container.status
+                
+                logger.debug(f"Container {container.name} status: {status}")
+                
+                if status == 'running':
+                    health = container.attrs.get('State', {}).get('Health', {})
+                    if health.get('Status') == 'healthy' or not health:
+                        return True
+                    elif health.get('Status') == 'unhealthy':
+                        logger.warning(f"Container {container.name} is unhealthy")
+                        return False
+                elif status in ['exited', 'dead']:
+                    logger.error(f"Container {container.name} has exited or died")
+                    return False
+                
+                time.sleep(check_interval)
+            except Exception as e:
+                logger.warning(f"Error checking health: {e}")
+                time.sleep(check_interval)
+        
+        logger.warning(f"Health check timed out after {timeout}s")
+        return False
+    
+    def _cleanup_backup(self, backup_container, backup_name: str):
+        if not backup_container:
+            return
+        
+        try:
+            logger.info(f"[{self.server_name}] Removing backup: {backup_name}")
+            backup_container.remove(force=True)
+            logger.info(f"[{self.server_name}] Backup removed")
+        except Exception as e:
+            logger.warning(f"[{self.server_name}] Could not remove backup {backup_name}: {e}")
+    
+    def _handle_failure(self, error: Exception, backup_container, backup_name: str, 
+                       new_container, original_name: str):
+        logger.error(f"[{self.server_name}] Update failed: {error}")
+        
+        if new_container:
+            try:
+                new_container.remove(force=True)
+                logger.info(f"[{self.server_name}] Cleaned up failed container")
+            except Exception as cleanup_error:
+                logger.warning(f"[{self.server_name}] Failed to cleanup: {cleanup_error}")
         
         if backup_container:
             try:
-                logger.info(f"[{server_name}] Removing backup container: {backup_name}")
-                backup_container.remove(force=True)
-                logger.info(f"[{server_name}] Successfully removed backup container")
-            except Exception as e:
-                logger.warning(f"[{server_name}] Could not remove backup container {backup_name}: {e}")
+                logger.info(f"[{self.server_name}] Restoring original container")
+                
+                try:
+                    temp = self.client.containers.get(original_name)
+                    temp.remove(force=True)
+                except docker.errors.NotFound:
+                    pass
+                
+                backup_container.rename(original_name)
+                backup_container.start()
+                logger.info(f"[{self.server_name}] Original container restored")
+                
+            except Exception as restore_error:
+                logger.error(f"[{self.server_name}] Failed to restore: {restore_error}")
+                raise ContainerUpdateError(
+                    f"Update failed: {error}. CRITICAL: Failed to restore original container: {restore_error}. "
+                    f"Manual intervention required for '{backup_name}'"
+                )
         
-        success_message = f"Container '{container_name}' updated successfully to latest image."
-        if force:
-            success_message += " (Forced update)"
-        
-        logger.info(f"[{server_name}] Successfully updated container: {container_name}")
-        return {
-            "status": "success", 
-            "message": success_message
-        }
-        
-    finally:
-        if original_timeout is not None:
-            try:
-                client.api.timeout = original_timeout
-            except AttributeError:
-                pass
+        raise ContainerUpdateError(f"Update failed: {error}. Original container restored.")
+
+
+def update_container(client: docker.DockerClient, server_name: str, 
+                     container_name: str, force: bool = False) -> Dict[str, Any]:
+    with ContainerUpdater(client, server_name) as updater:
+        return updater.update(container_name, force)

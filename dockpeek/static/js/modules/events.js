@@ -2,7 +2,7 @@ import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate } 
 import { updateDisplay, clearSearch, filterByStackAndServer } from './filters.js';
 import { toggleThemeMenu, setTheme } from './ui-utils.js';
 import { updateColumnVisibility, updateTableColumnOrder, reorderColumnMenuItems, saveColumnOrder } from './table-render.js';
-import { handlePruneImages } from './prune.js';
+import { handlePruneImages, initPruneInfo } from './prune.js';
 import { state } from '../app.js';
 
 export function initEventListeners() {
@@ -17,7 +17,11 @@ export function initEventListeners() {
   const resetColumnsButton = document.getElementById('reset-columns-button');
   const containerRowsBody = document.getElementById("container-rows");
 
-  refreshButton.addEventListener("click", fetchContainerData);
+  refreshButton.addEventListener("click", () => {
+    fetchContainerData();
+    initPruneInfo();
+});
+
   checkUpdatesButton.addEventListener("click", checkForUpdates);
 
   document.getElementById('prune-images-button').addEventListener('click', () => {

@@ -1,6 +1,25 @@
 import { state } from '../app.js';
 import { showPruneInfoModal, showPruneResultModal } from './modals.js';
 
+export async function initPruneInfo() {
+  try {
+    const response = await fetch('/get-prune-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_name: state.currentServerFilter })
+    });
+
+    if (!response.ok) throw new Error('Failed to get prune info');
+
+    const data = await response.json();
+    updatePruneBadge(data.total_count);
+  } catch (error) {
+    console.error('Error getting prune info:', error);
+    alert('Failed to get image information. Please try again.');
+  }
+}
+
+
 export async function handlePruneImages() {
   try {
     const response = await fetch('/get-prune-info', {

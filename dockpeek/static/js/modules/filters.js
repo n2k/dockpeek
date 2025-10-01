@@ -1,6 +1,7 @@
 import { state } from '../app.js';
 import { updateSwarmIndicator,  isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from './table-render.js';
+import { handlePruneImages, initPruneInfo } from './prune.js';
 
 export function setupServerUI() {
   const serverFilterContainer = document.getElementById("server-filter-container");
@@ -51,6 +52,7 @@ export function setupServerUI() {
   }
 
   updateActiveButton();
+  initPruneInfo();
 }
 
 export function updateActiveButton() {

@@ -288,7 +288,7 @@ def get_prune_info():
                         tags = image.tags
                     else:
                         repo_tags = image.attrs.get('RepoTags', [])
-                        if repo_tags and len(repo_tags) > 0:  # Jawnie sprawdź długość
+                        if repo_tags and len(repo_tags) > 0:
                             tags = [repo_tags[0]]
                         else:
                             repo_digests = image.attrs.get('RepoDigests', [])
@@ -297,11 +297,7 @@ def get_prune_info():
                                 tags = [f"{repo_name}:<none>"]
                             else:
                                 tags = ["<none>:<none>"]
-                    
-                    # DODAJ DEBUG
-                    current_app.logger.info(f"  FINAL tags: {tags}")
-                    
-                    
+                                       
                     unused_images.append({
                         'id': image.id,
                         'tags': tags,

@@ -1,619 +1,602 @@
 import { state } from '../app.js';
 
-function getUptimeText(startedAt) {
-  if (!startedAt) return '';
+const UPTIME_UNITS = [
+  { name: 'year', divisor: 365 * 24 * 60 },
+  { name: 'month', divisor: 30 * 24 * 60 },
+  { name: 'week', divisor: 7 * 24 * 60 },
+  { name: 'day', divisor: 24 * 60 },
+  { name: 'hour', divisor: 60 },
+  { name: 'minute', divisor: 1 }
+];
 
-  const startTime = new Date(startedAt);
-  const now = new Date();
-  const uptimeMs = now - startTime;
-  const uptimeMinutes = Math.floor(uptimeMs / (1000 * 60));
-  const uptimeHours = Math.floor(uptimeMinutes / 60);
-  const uptimeDays = Math.floor(uptimeHours / 24);
-  const uptimeWeeks = Math.floor(uptimeDays / 7);
-  const uptimeMonths = Math.floor(uptimeDays / 30);
-  const uptimeYears = Math.floor(uptimeDays / 365);
+const STATUS_CLASSES = {
+  running: 'status-running',
+  healthy: 'status-healthy',
+  unhealthy: 'status-unhealthy',
+  starting: 'status-starting',
+  exited: 'status-exited',
+  paused: 'status-paused',
+  restarting: 'status-restarting',
+  removing: 'status-removing',
+  dead: 'status-dead',
+  created: 'status-created'
+};
 
-  if (uptimeYears > 0) {
-    return uptimeYears === 1 ? '1 year' : `${uptimeYears} years`;
-  } else if (uptimeMonths > 0) {
-    return uptimeMonths === 1 ? '1 month' : `${uptimeMonths} months`;
-  } else if (uptimeWeeks > 0) {
-    return uptimeWeeks === 1 ? '1 week' : `${uptimeWeeks} weeks`;
-  } else if (uptimeDays > 0) {
-    return uptimeDays === 1 ? '1 day' : `${uptimeDays} days`;
-  } else if (uptimeHours > 0) {
-    return uptimeHours === 1 ? '1 hour' : `${uptimeHours} hours`;
-  } else if (uptimeMinutes > 0) {
-    return uptimeMinutes === 1 ? '1 minute' : `${uptimeMinutes} minutes`;
-  } else {
+const EXIT_CODE_MESSAGES = {
+  0: 'normal',
+  1: 'General application error',
+  2: 'Misuse of shell command',
+  125: 'Docker daemon error',
+  126: 'Container command not executable',
+  127: 'Container command not found',
+  128: 'Invalid exit argument',
+  130: 'SIGINT - interrupted',
+  134: 'SIGABRT - aborted',
+  137: 'SIGKILL - killed',
+  139: 'SIGSEGV - segmentation fault',
+  143: 'SIGTERM - terminated'
+};
+
+const COLUMN_MAPPINGS = {
+  name: { selector: '[data-sort-column="name"]', cellClass: 'table-cell-name' },
+  server: { selector: '.server-column', cellClass: 'table-cell-server' },
+  stack: { selector: '[data-sort-column="stack"]', cellClass: 'table-cell-stack' },
+  image: { selector: '[data-sort-column="image"]', cellClass: 'table-cell-image' },
+  tags: { selector: '[data-sort-column="tags"]', cellClass: 'table-cell-tags' },
+  status: { selector: '[data-sort-column="status"]', cellClass: 'table-cell-status' },
+  ports: { selector: '[data-sort-column="ports"]', cellClass: 'table-cell-ports' },
+  traefik: { selector: '.traefik-column', cellClass: 'table-cell-traefik' }
+};
+
+
+class UptimeCalculator {
+  static calculate(startedAt) {
+    if (!startedAt) return '';
+
+    const uptimeMinutes = Math.floor((Date.now() - new Date(startedAt)) / (1000 * 60));
+
+    for (const unit of UPTIME_UNITS) {
+      const value = Math.floor(uptimeMinutes / unit.divisor);
+      if (value > 0) {
+        return value === 1 ? `1 ${unit.name}` : `${value} ${unit.name}s`;
+      }
+    }
+
     return 'less than 1 minute';
   }
 }
 
-export function renderTable() {
-  const containerRowsBody = document.getElementById("container-rows");
-  const rowTemplate = document.getElementById("container-row-template");
-  containerRowsBody.innerHTML = "";
-  const pageItems = state.filteredAndSortedContainers;
 
-  if (pageItems.length === 0) {
-    containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
-    return;
+class StatusRenderer {
+  static render(container) {
+    const span = document.createElement('span');
+    span.textContent = container.status;
+
+    if (container.exit_code != null) {
+      span.setAttribute('data-tooltip', this._getExitCodeTooltip(container.exit_code));
+    } else {
+      span.setAttribute('data-tooltip', this._getStatusTooltip(container));
+    }
+
+    return { span, className: this._getStatusClass(container) };
   }
 
-  const fragment = document.createDocumentFragment();
-  for (const c of pageItems) {
-    const clone = rowTemplate.content.cloneNode(true);
+  static _getExitCodeTooltip(exitCode) {
+    const message = EXIT_CODE_MESSAGES[exitCode];
+    return message ? `Exit code: ${exitCode} (${message})` : `Exit code: ${exitCode}`;
+  }
 
-    const nameCell = clone.querySelector('[data-content="name"]');
-    nameCell.classList.add('table-cell-name');
+  static _getStatusTooltip(container) {
+    const uptime = UptimeCalculator.calculate(container.started_at);
+    const baseMessages = {
+      running: 'Container is running',
+      healthy: 'Health check passed',
+      unhealthy: 'Health check failed',
+      starting: 'Container is starting up',
+      paused: 'Container is paused',
+      restarting: 'Container is restarting',
+      removing: 'Container is being removed',
+      dead: 'Container is dead (cannot be restarted)',
+      created: 'Container created but not started'
+    };
 
-    const nameSpan = nameCell.querySelector('[data-content="container-name"]');
-    const tagsContainer = nameCell.querySelector('[data-content="tags"]');
+    let message = baseMessages[container.status] || `Container status: ${container.status}`;
 
-    if (c.custom_url) {
-      function normalizeUrl(url) {
-        if (url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
-          return url;
-        }
-        return `https://${url}`;
+    if (uptime) {
+      if (container.status === 'starting') {
+        message += ` (starting for: ${uptime})`;
+      } else if (container.status === 'paused') {
+        message += ` (was up: ${uptime})`;
+      } else if (['running', 'healthy', 'unhealthy'].includes(container.status)) {
+        message += ` (up: ${uptime})`;
       }
+    }
 
-      const url = normalizeUrl(c.custom_url);
-      const tooltipUrl = url.replace(/^https:\/\//, '');
-      nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip="${tooltipUrl}">${c.name}</a>`;
+    return message;
+  }
+
+  static _getStatusClass(container) {
+    const swarmMatch = container.status?.match(/^running \((\d+)\/(\d+)\)$/);
+    if (swarmMatch) {
+      const [, running, desired] = swarmMatch.map(Number);
+      return running === desired ? STATUS_CLASSES.running : STATUS_CLASSES.unhealthy;
+    }
+
+    if (container.status?.includes('exited')) return STATUS_CLASSES.exited;
+    if (container.status?.includes('health unknown')) return STATUS_CLASSES.running;
+
+    return STATUS_CLASSES[container.status] || 'status-unknown';
+  }
+}
+
+
+class CellRenderer {
+  static renderName(container, cell) {
+    const nameSpan = cell.querySelector('[data-content="container-name"]');
+    
+    if (container.custom_url) {
+      const url = this._normalizeUrl(container.custom_url);
+      const tooltipUrl = url.replace(/^https?:\/\//, '');
+      nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip="${tooltipUrl}">${container.name}</a>`;
     } else {
-      nameSpan.textContent = c.name;
+      nameSpan.textContent = container.name;
     }
+  }
 
-    const serverNameSpan = clone.querySelector('[data-content="server-name"]');
-    serverNameSpan.closest('td').classList.add('table-cell-server');
-    serverNameSpan.textContent = c.server;
-    const serverData = state.allContainersData.find(s => s.name === c.server);
-    if (serverData && serverData.url) {
-      serverNameSpan.setAttribute('data-tooltip', serverData.url);
+  static renderServer(container, clone) {
+    const serverCell = clone.querySelector('[data-content="server-name"]').closest('td');
+    const serverSpan = serverCell.querySelector('[data-content="server-name"]');
+    serverSpan.textContent = container.server;
+
+    const serverData = state.allContainersData.find(s => s.name === container.server);
+    if (serverData?.url) {
+      serverSpan.setAttribute('data-tooltip', serverData.url);
     }
+  }
 
-    const stackCell = clone.querySelector('[data-content="stack"]');
-    stackCell.classList.add('table-cell-stack');
-    if (c.stack) {
-      stackCell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${c.stack}" data-server="${c.server}">${c.stack}</a>`;
+  static renderStack(container, cell) {
+    if (container.stack) {
+      cell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${container.stack}" data-server="${container.server}">${container.stack}</a>`;
     } else {
-      stackCell.textContent = '';
+      cell.textContent = '';
     }
+  }
 
-    clone.querySelector('[data-content="image"]').textContent = c.image;
-    clone.querySelector('[data-content="image"]').closest('td').classList.add('table-cell-image');
+  static renderImage(container, cell) {
+    cell.textContent = container.image;
 
-    const sourceLink = clone.querySelector('[data-content="source-link"]');
-    if (c.source_url) {
-      sourceLink.href = c.source_url;
-      sourceLink.classList.remove('hidden');
-      sourceLink.setAttribute('data-tooltip', c.source_url);
+    const sourceLink = cell.nextElementSibling?.querySelector('[data-content="source-link"]');
+    if (sourceLink) {
+      if (container.source_url) {
+        sourceLink.href = container.source_url;
+        sourceLink.classList.remove('hidden');
+        sourceLink.setAttribute('data-tooltip', container.source_url);
+      } else {
+        sourceLink.classList.add('hidden');
+      }
+    }
+  }
+
+  static renderUpdateIndicator(container, clone) {
+    const indicator = clone.querySelector('[data-content="update-indicator"]');
+    
+    if (container.update_available) {
+      indicator.classList.remove('hidden');
+      indicator.classList.add('update-available-indicator');
+      indicator.setAttribute('data-server', container.server);
+      indicator.setAttribute('data-container', container.name);
+      indicator.setAttribute('data-tooltip', `Click to update ${container.name}`);
+      indicator.style.cursor = 'pointer';
     } else {
-      sourceLink.classList.add('hidden');
+      indicator.classList.add('hidden');
+      indicator.classList.remove('update-available-indicator');
+      indicator.removeAttribute('data-server');
+      indicator.removeAttribute('data-container');
+      indicator.removeAttribute('data-tooltip');
+      indicator.style.cursor = '';
     }
+  }
 
-    const updateIndicator = clone.querySelector('[data-content="update-indicator"]');
-    if (c.update_available) {
-      updateIndicator.classList.remove('hidden');
-      updateIndicator.classList.add('update-available-indicator');
-      updateIndicator.setAttribute('data-server', c.server);
-      updateIndicator.setAttribute('data-container', c.name);
-      updateIndicator.setAttribute('data-tooltip', `Click to update ${c.name}`);
-      updateIndicator.style.cursor = 'pointer';
-
-      console.log(`Update indicator configured for ${c.server}:${c.name}`);
-    } else {
-      updateIndicator.classList.add('hidden');
-      updateIndicator.classList.remove('update-available-indicator');
-      updateIndicator.removeAttribute('data-server');
-      updateIndicator.removeAttribute('data-container');
-      updateIndicator.removeAttribute('data-tooltip');
-      updateIndicator.style.cursor = '';
-    }
-
-
-    const tagsCell = clone.querySelector('[data-content="tags"]');
-    tagsCell.classList.add('table-cell-tags');
-    if (c.tags && c.tags.length > 0) {
-      const sortedTags = [...c.tags].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-      tagsCell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
+  static renderTags(container, cell) {
+    if (container.tags?.length) {
+      const sortedTags = [...container.tags].sort((a, b) => 
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      );
+      cell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
         `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
       ).join('')}</div>`;
     } else {
-      tagsCell.innerHTML = '';
+      cell.innerHTML = '';
     }
+  }
+
+  static renderPorts(container, cell) {
+    if (!container.ports.length) {
+      cell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
+      return;
+    }
+
+    const arrowSvg = `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle"><path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    cell.innerHTML = container.ports.map(p => {
+      const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
+      
+      if (p.is_custom || !p.container_port) {
+        return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
+      }
+      
+      return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
+    }).join('');
+  }
+
+  static renderTraefik(container, cell, hasAnyRoutes) {
+    if (!hasAnyRoutes) {
+      cell.classList.add('hidden');
+      return;
+    }
+
+    cell.classList.remove('hidden');
+
+    if (container.traefik_routes?.length) {
+      cell.innerHTML = container.traefik_routes.map(route => {
+        const displayUrl = route.url.replace(/^https?:\/\//, '');
+        return `<div class="traefik-route mb-1"><div class="inline-block"><a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm"><span class="traefik-text">${displayUrl}</span></a></div></div>`;
+      }).join('');
+    } else {
+      cell.innerHTML = `<span class="status-none text-sm">none</span>`;
+    }
+  }
+
+  static _normalizeUrl(url) {
+    return url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//) ? url : `https://${url}`;
+  }
+}
+
+
+class TableRenderer {
+  constructor(templateId, bodyId) {
+    this.template = document.getElementById(templateId);
+    this.body = document.getElementById(bodyId);
+  }
+
+  render(containers) {
+    this.body.innerHTML = '';
+
+    if (!containers.length) {
+      this.body.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      return;
+    }
+
+    const hasAnyTraefikRoutes = window.traefikEnabled !== false && 
+      containers.some(c => c.traefik_routes?.length);
+
+    const fragment = document.createDocumentFragment();
+
+    for (const container of containers) {
+      const row = this._renderRow(container, hasAnyTraefikRoutes);
+      fragment.appendChild(row);
+    }
+
+    this.body.appendChild(fragment);
+    updateTableColumnOrder();
+    updateColumnVisibility();
+    updateFirstAndLastVisibleColumns();
+  }
+
+  _renderRow(container, hasAnyTraefikRoutes) {
+    const clone = this.template.content.cloneNode(true);
+
+    const nameCell = clone.querySelector('[data-content="name"]');
+    nameCell.classList.add('table-cell-name');
+    CellRenderer.renderName(container, nameCell);
+
+    CellRenderer.renderServer(container, clone);
+
+    const stackCell = clone.querySelector('[data-content="stack"]');
+    stackCell.classList.add('table-cell-stack');
+    CellRenderer.renderStack(container, stackCell);
+
+    const imageCell = clone.querySelector('[data-content="image"]');
+    imageCell.classList.add('table-cell-image');
+    CellRenderer.renderImage(container, imageCell);
+
+    CellRenderer.renderUpdateIndicator(container, clone);
+
+    const tagsCell = clone.querySelector('[data-content="tags"]');
+    tagsCell.classList.add('table-cell-tags');
+    CellRenderer.renderTags(container, tagsCell);
 
     const statusCell = clone.querySelector('[data-content="status"]');
-    const statusSpan = document.createElement('span');
-    statusSpan.textContent = c.status;
-
-    if (c.exit_code !== null && c.exit_code !== undefined) {
-      let exitCodeText;
-      if (c.exit_code === 0) {
-        exitCodeText = 'Exit code: 0 (normal)';
-      } else {
-        exitCodeText = `Exit code: ${c.exit_code}`;
-        if (c.exit_code === 137) exitCodeText += ' (SIGKILL - killed)';
-        else if (c.exit_code === 143) exitCodeText += ' (SIGTERM - terminated)';
-        else if (c.exit_code === 125) exitCodeText += ' (Docker daemon error)';
-        else if (c.exit_code === 126) exitCodeText += ' (Container command not executable)';
-        else if (c.exit_code === 127) exitCodeText += ' (Container command not found)';
-        else if (c.exit_code === 1) exitCodeText += ' (General application error)';
-        else if (c.exit_code === 2) exitCodeText += ' (Misuse of shell command)';
-        else if (c.exit_code === 128) exitCodeText += ' (Invalid exit argument)';
-        else if (c.exit_code === 130) exitCodeText += ' (SIGINT - interrupted)';
-        else if (c.exit_code === 134) exitCodeText += ' (SIGABRT - aborted)';
-        else if (c.exit_code === 139) exitCodeText += ' (SIGSEGV - segmentation fault)';
-      }
-      statusSpan.setAttribute('data-tooltip', exitCodeText);
-    } else {
-      let tooltipText;
-      switch (c.status) {
-        case 'running':
-          tooltipText = 'Container is running';
-          const runningUptime = getUptimeText(c.started_at);
-          if (runningUptime) tooltipText += ` (up: ${runningUptime})`;
-          break;
-        case 'healthy':
-          tooltipText = 'Health check passed';
-          const healthyUptime = getUptimeText(c.started_at);
-          if (healthyUptime) tooltipText += ` (up: ${healthyUptime})`;
-          break;
-        case 'unhealthy':
-          tooltipText = 'Health check failed';
-          const unhealthyUptime = getUptimeText(c.started_at);
-          if (unhealthyUptime) tooltipText += ` (up: ${unhealthyUptime})`;
-          break;
-        case 'starting':
-          tooltipText = 'Container is starting up';
-          const startingUptime = getUptimeText(c.started_at);
-          if (startingUptime) tooltipText += ` (starting for: ${startingUptime})`;
-          break;
-        case 'paused':
-          tooltipText = 'Container is paused';
-          const pausedUptime = getUptimeText(c.started_at);
-          if (pausedUptime) tooltipText += ` (was up: ${pausedUptime})`;
-          break;
-        case 'restarting':
-          tooltipText = 'Container is restarting';
-          break;
-        case 'removing':
-          tooltipText = 'Container is being removed';
-          break;
-        case 'dead':
-          tooltipText = 'Container is dead (cannot be restarted)';
-          break;
-        case 'created':
-          tooltipText = 'Container created but not started';
-          break;
-        default:
-          if (c.status.includes('health unknown')) {
-            tooltipText = 'Container running, health status unknown';
-            const unknownUptime = getUptimeText(c.started_at);
-            if (unknownUptime) tooltipText += ` (up: ${unknownUptime})`;
-          } else {
-            tooltipText = `Container status: ${c.status}`;
-            const defaultUptime = getUptimeText(c.started_at);
-            if (defaultUptime) tooltipText += ` (up: ${defaultUptime})`;
-          }
-      }
-      statusSpan.setAttribute('data-tooltip', tooltipText);
-    }
-
-    let statusClass = 'status-unknown';
-
-    // Swarm: running (x/y) should be green if x==y, else default
-    const swarmRunningMatch = typeof c.status === 'string' && c.status.match(/^running \((\d+)\/(\d+)\)$/);
-    if (swarmRunningMatch) {
-      const running = parseInt(swarmRunningMatch[1], 10);
-      const desired = parseInt(swarmRunningMatch[2], 10);
-      if (running === desired) {
-        statusClass = 'status-running';
-      } else {
-        statusClass = 'status-unhealthy'; // or keep as-is for problem color
-      }
-    } else {
-      switch (c.status) {
-        case 'running':
-          statusClass = 'status-running';
-          break;
-        case 'healthy':
-          statusClass = 'status-healthy';
-          break;
-        case 'unhealthy':
-          statusClass = 'status-unhealthy';
-          break;
-        case 'starting':
-          statusClass = 'status-starting';
-          break;
-        case 'exited':
-          statusClass = 'status-exited';
-          break;
-        case 'paused':
-          statusClass = 'status-paused';
-          break;
-        case 'restarting':
-          statusClass = 'status-restarting';
-          break;
-        case 'removing':
-          statusClass = 'status-removing';
-          break;
-        case 'dead':
-          statusClass = 'status-dead';
-          break;
-        case 'created':
-          statusClass = 'status-created';
-          break;
-        default:
-          if (c.status.includes('exited')) {
-            statusClass = 'status-exited';
-          } else if (c.status.includes('health unknown')) {
-            statusClass = 'status-running';
-          } else {
-            statusClass = 'status-unknown';
-          }
-      }
-    }
-
-    statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${statusClass}`;
-    statusCell.innerHTML = '';
-    statusCell.appendChild(statusSpan);
+    const { span, className } = StatusRenderer.render(container);
+    statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${className}`;
+    statusCell.appendChild(span);
 
     const portsCell = clone.querySelector('[data-content="ports"]');
     portsCell.classList.add('table-cell-ports');
-    if (c.ports.length > 0) {
-      const arrowSvg =
-        `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle">
-         <path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-         </svg>`;
-
-      portsCell.innerHTML = c.ports.map(p => {
-        if (p.is_custom || (!p.container_port || p.container_port === '')) {
-          return `<div class="custom-port flex items-center mb-1">
-            <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
-          </div>`;
-        } else {
-          return `<div class="flex items-center mb-1">
-            <a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>
-            ${arrowSvg}
-            <small class="text-secondary">${p.container_port}</small>
-          </div>`;
-        }
-      }).join('');
-    } else {
-      portsCell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
-    }
-
-    const isTraefikGloballyEnabled = window.traefikEnabled !== false;
-    const hasTraefikRoutes = isTraefikGloballyEnabled && pageItems.some(c => c.traefik_routes && c.traefik_routes.length > 0);
+    CellRenderer.renderPorts(container, portsCell);
 
     const traefikCell = clone.querySelector('[data-content="traefik-routes"]');
     traefikCell.classList.add('table-cell-traefik');
-    if (hasTraefikRoutes) {
-      traefikCell.classList.remove('hidden');
+    CellRenderer.renderTraefik(container, traefikCell, hasAnyTraefikRoutes);
 
-      if (c.traefik_routes && c.traefik_routes.length > 0) {
-        traefikCell.innerHTML = c.traefik_routes.map(route => {
-          const displayUrl = route.url.replace(/^https?:\/\//, '');
-          return `<div class="traefik-route mb-1">
-            <div class="inline-block">
-              <a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
-                <span class="traefik-text">${displayUrl}</span>             
-              </a>
-            </div>
-          </div>`;
-        }).join('');
-      } else {
-        traefikCell.innerHTML = `<span class="status-none text-sm">none</span>`;
-      }
-    } else {
-      traefikCell.classList.add('hidden');
+    return clone;
+  }
+}
+
+
+class ColumnVisibilityManager {
+  static update() {
+    for (const [columnName, mapping] of Object.entries(COLUMN_MAPPINGS)) {
+      const isVisible = state.columnVisibility[columnName];
+      
+      document.querySelectorAll(mapping.selector).forEach(el => {
+        el.classList.toggle('column-hidden', !isVisible);
+      });
+      
+      document.querySelectorAll(`.${mapping.cellClass}`).forEach(el => {
+        el.classList.toggle('column-hidden', !isVisible);
+      });
     }
-    fragment.appendChild(clone);
+
+    const hasTags = state.filteredAndSortedContainers.some(c => c.tags?.length);
+    document.querySelectorAll('.tags-column, .table-cell-tags').forEach(el => {
+      el.classList.toggle('column-hidden', !state.columnVisibility.tags || !hasTags);
+    });
+
+    updateFirstAndLastVisibleColumns();
   }
-  containerRowsBody.appendChild(fragment);
-  updateTableColumnOrder();
-  updateColumnVisibility();
-  updateFirstAndLastVisibleColumns();
 }
 
-export function updateColumnVisibility() {
-  document.querySelectorAll(`[data-sort-column="name"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.name);
-  });
 
-  document.querySelectorAll('.server-column').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.server);
-  });
-
-  document.querySelectorAll(`[data-sort-column="stack"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.stack);
-  });
-
-  document.querySelectorAll(`[data-sort-column="image"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.image);
-  });
-
-  document.querySelectorAll(`[data-sort-column="tags"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.tags);
-  });
-
-  document.querySelectorAll(`[data-sort-column="status"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.status);
-  });
-
-  document.querySelectorAll(`[data-sort-column="ports"]`).forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.ports);
-  });
-
-  document.querySelectorAll('.traefik-column').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.traefik);
-  });
-
-  document.querySelectorAll('.table-cell-name').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.name);
-  });
-
-  document.querySelectorAll('.table-cell-server').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.server);
-  });
-
-  document.querySelectorAll('.table-cell-stack').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.stack);
-  });
-
-  document.querySelectorAll('.table-cell-image').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.image);
-  });
-
-  document.querySelectorAll('.table-cell-tags').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.tags);
-  });
-  document.querySelectorAll('.table-cell-status').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.status);
-  });
-
-  document.querySelectorAll('.table-cell-ports').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.ports);
-  });
-
-  document.querySelectorAll('.table-cell-traefik').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.traefik);
-  });
-
-  const hasTags = state.filteredAndSortedContainers.some(c => c.tags && c.tags.length > 0);
-  document.querySelectorAll('.tags-column').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.tags || !hasTags);
-  });
-  document.querySelectorAll('.table-cell-tags').forEach(el => {
-    el.classList.toggle('column-hidden', !state.columnVisibility.tags || !hasTags);
-  });
-
-  updateFirstAndLastVisibleColumns();
-}
-
-export function initColumnDragAndDrop() {
-  const columnList = document.getElementById('column-list');
-  let draggedElement = null;
-  let touchStartY = 0;
-  let touchCurrentY = 0;
-  let isDragging = false;
-
-  const savedOrder = localStorage.getItem('columnOrder');
-  if (savedOrder) {
-    state.columnOrder.splice(0, state.columnOrder.length, ...JSON.parse(savedOrder));
-    reorderColumnMenuItems();
+class ColumnOrderManager {
+  static updateFromDOM() {
+    const items = document.querySelectorAll('#column-list .draggable');
+    state.columnOrder.splice(0, state.columnOrder.length, 
+      ...Array.from(items).map(item => item.dataset.column));
   }
 
-  columnList.addEventListener('dragstart', (e) => {
+  static reorderMenuItems() {
+    const columnList = document.getElementById('column-list');
+    const items = Array.from(columnList.children);
+
+    items.sort((a, b) => {
+      const aIndex = state.columnOrder.indexOf(a.dataset.column);
+      const bIndex = state.columnOrder.indexOf(b.dataset.column);
+      return aIndex - bIndex;
+    });
+
+    items.forEach(item => columnList.appendChild(item));
+  }
+
+  static save() {
+    localStorage.setItem('columnOrder', JSON.stringify(state.columnOrder));
+  }
+
+  static load() {
+    const saved = localStorage.getItem('columnOrder');
+    if (saved) {
+      state.columnOrder.splice(0, state.columnOrder.length, ...JSON.parse(saved));
+    }
+  }
+
+  static updateTableOrder() {
+    const thead = document.querySelector('#main-table thead tr');
+    const headers = Array.from(thead.children);
+
+    state.columnOrder.forEach(columnName => {
+      const header = headers.find(h =>
+        h.dataset.sortColumn === columnName ||
+        h.classList.contains(`${columnName}-column`) ||
+        h.classList.contains(`table-cell-${columnName}`)
+      );
+      if (header) thead.appendChild(header);
+    });
+
+    document.querySelectorAll('#container-rows tr').forEach(row => {
+      const cells = Array.from(row.children);
+      state.columnOrder.forEach(columnName => {
+        const cell = cells.find(c =>
+          c.classList.contains(`table-cell-${columnName}`) ||
+          c.dataset.content === columnName ||
+          (columnName === 'server' && c.classList.contains('server-column')) ||
+          (columnName === 'traefik' && c.classList.contains('traefik-column'))
+        );
+        if (cell) row.appendChild(cell);
+      });
+    });
+
+    updateFirstAndLastVisibleColumns();
+  }
+}
+
+
+class DragDropHandler {
+  constructor(listId) {
+    this.list = document.getElementById(listId);
+    this.draggedElement = null;
+    this.touchStartY = 0;
+    this.isDragging = false;
+    this._setupEventListeners();
+  }
+
+  _setupEventListeners() {
+    this.list.addEventListener('dragstart', this._onDragStart.bind(this));
+    this.list.addEventListener('dragend', this._onDragEnd.bind(this));
+    this.list.addEventListener('dragover', this._onDragOver.bind(this));
+    this.list.addEventListener('drop', this._onDrop.bind(this));
+    this.list.addEventListener('touchstart', this._onTouchStart.bind(this), { passive: false });
+    this.list.addEventListener('touchmove', this._onTouchMove.bind(this), { passive: false });
+    this.list.addEventListener('touchend', this._onTouchEnd.bind(this));
+
+    this.list.querySelectorAll('.draggable').forEach(item => {
+      item.draggable = true;
+    });
+  }
+
+  _onDragStart(e) {
     if (e.target.classList.contains('draggable')) {
-      draggedElement = e.target;
+      this.draggedElement = e.target;
       e.target.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/html', e.target.outerHTML);
     }
-  });
+  }
 
-  columnList.addEventListener('dragend', (e) => {
+  _onDragEnd(e) {
     if (e.target.classList.contains('draggable')) {
       e.target.classList.remove('dragging');
-      draggedElement = null;
+      this.draggedElement = null;
     }
-  });
+  }
 
-  columnList.addEventListener('dragover', (e) => {
+  _onDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
-    const afterElement = getDragAfterElement(columnList, e.clientY);
-    const dragging = columnList.querySelector('.dragging');
+    const afterElement = this._getDragAfterElement(e.clientY);
+    const dragging = this.list.querySelector('.dragging');
 
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
-    });
+    this.list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
     if (afterElement == null) {
-      columnList.appendChild(dragging);
+      this.list.appendChild(dragging);
     } else {
       afterElement.classList.add('drag-over');
-      columnList.insertBefore(dragging, afterElement);
+      this.list.insertBefore(dragging, afterElement);
     }
-  });
+  }
 
-  columnList.addEventListener('drop', (e) => {
+  _onDrop(e) {
     e.preventDefault();
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
-    });
+    this.list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    this._saveOrder();
+  }
 
-    updateColumnOrderFromDOM();
-    saveColumnOrder();
-    updateTableColumnOrder();
-  });
-
-  columnList.addEventListener('touchstart', (e) => {
+  _onTouchStart(e) {
     const target = e.target.closest('.draggable');
     if (target) {
-      draggedElement = target;
-      touchStartY = e.touches[0].clientY;
-      isDragging = false;
+      this.draggedElement = target;
+      this.touchStartY = e.touches[0].clientY;
+      this.isDragging = false;
 
       setTimeout(() => {
-        if (draggedElement) {
-          isDragging = true;
-          draggedElement.classList.add('dragging');
+        if (this.draggedElement) {
+          this.isDragging = true;
+          this.draggedElement.classList.add('dragging');
         }
       }, 150);
     }
-  }, { passive: false });
+  }
 
-  columnList.addEventListener('touchmove', (e) => {
-    if (!draggedElement || !isDragging) return;
+  _onTouchMove(e) {
+    if (!this.draggedElement || !this.isDragging) return;
 
     e.preventDefault();
-    touchCurrentY = e.touches[0].clientY;
+    const touchY = e.touches[0].clientY;
+    const afterElement = this._getDragAfterElement(touchY);
 
-    const afterElement = getDragAfterElement(columnList, touchCurrentY);
-
-    columnList.querySelectorAll('.drag-over').forEach(el => {
-      el.classList.remove('drag-over');
-    });
+    this.list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
     if (afterElement == null) {
-      columnList.appendChild(draggedElement);
+      this.list.appendChild(this.draggedElement);
     } else {
       afterElement.classList.add('drag-over');
-      columnList.insertBefore(draggedElement, afterElement);
+      this.list.insertBefore(this.draggedElement, afterElement);
     }
-  }, { passive: false });
+  }
 
-  columnList.addEventListener('touchend', (e) => {
-    if (draggedElement) {
-      columnList.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-      });
+  _onTouchEnd(e) {
+    if (this.draggedElement) {
+      this.list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
-      if (isDragging) {
-        draggedElement.classList.remove('dragging');
-        updateColumnOrderFromDOM();
-        saveColumnOrder();
-        updateTableColumnOrder();
+      if (this.isDragging) {
+        this.draggedElement.classList.remove('dragging');
+        this._saveOrder();
       }
 
-      draggedElement = null;
-      isDragging = false;
+      this.draggedElement = null;
+      this.isDragging = false;
     }
-  });
+  }
 
-  columnList.querySelectorAll('.draggable').forEach(item => {
-    item.draggable = true;
-  });
+  _getDragAfterElement(y) {
+    const draggableElements = [...this.list.querySelectorAll('.draggable:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  _saveOrder() {
+    ColumnOrderManager.updateFromDOM();
+    ColumnOrderManager.save();
+    ColumnOrderManager.updateTableOrder();
+  }
 }
 
-export function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
 
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
+let dragDropHandler = null;
+const tableRenderer = new TableRenderer('container-row-template', 'container-rows');
 
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
+
+export function renderTable() {
+  tableRenderer.render(state.filteredAndSortedContainers);
+}
+
+export function updateColumnVisibility() {
+  ColumnVisibilityManager.update();
+}
+
+export function initColumnDragAndDrop() {
+  ColumnOrderManager.load();
+  ColumnOrderManager.reorderMenuItems();
+  
+  if (dragDropHandler) {
+    dragDropHandler = null;
+  }
+  dragDropHandler = new DragDropHandler('column-list');
 }
 
 export function updateFirstAndLastVisibleColumns() {
   const table = document.querySelector('#main-table');
   const rows = Array.from(table.querySelectorAll('tr'));
 
-  // Usuń wcześniejsze klasy
   rows.forEach(row => {
     row.querySelectorAll('th, td').forEach(cell => {
       cell.classList.remove('first-visible', 'last-visible');
     });
   });
 
-  if (rows.length === 0) return;
+  if (!rows.length) return;
 
   const columnsCount = rows[0].children.length;
-
-  // Znajdź pierwszą i ostatnią widoczną kolumnę
   let firstIndex = -1;
   let lastIndex = -1;
 
   for (let i = 0; i < columnsCount; i++) {
-    // Sprawdzenie widoczności komórki
     const cell = rows[0].children[i];
-    if (cell.offsetParent !== null) { // widoczny
+    if (cell.offsetParent !== null) {
       if (firstIndex === -1) firstIndex = i;
       lastIndex = i;
     }
   }
 
-  // Dodaj klasy
   rows.forEach(row => {
     if (firstIndex !== -1) row.children[firstIndex].classList.add('first-visible');
     if (lastIndex !== -1) row.children[lastIndex].classList.add('last-visible');
   });
 }
 
-
-
-export function updateColumnOrderFromDOM() {
-  const items = document.querySelectorAll('#column-list .draggable');
-  state.columnOrder.splice(0, state.columnOrder.length, ...Array.from(items).map(item => item.dataset.column));
-}
-
-export function reorderColumnMenuItems() {
-  const columnList = document.getElementById('column-list');
-  const items = Array.from(columnList.children);
-
-  items.sort((a, b) => {
-    const aIndex = state.columnOrder.indexOf(a.dataset.column);
-    const bIndex = state.columnOrder.indexOf(b.dataset.column);
-    return aIndex - bIndex;
-  });
-
-  items.forEach(item => columnList.appendChild(item));
-}
-
-export function saveColumnOrder() {
-  localStorage.setItem('columnOrder', JSON.stringify(state.columnOrder));
-}
-
-export function updateTableColumnOrder() {
-  const thead = document.querySelector('#main-table thead tr');
-  const headers = Array.from(thead.children);
-
-  state.columnOrder.forEach(columnName => {
-    const header = headers.find(h =>
-      h.dataset.sortColumn === columnName ||
-      h.classList.contains(`${columnName}-column`) ||
-      h.classList.contains(`table-cell-${columnName}`)
-    );
-    if (header) {
-      thead.appendChild(header);
-    }
-  });
-
-  document.querySelectorAll('#container-rows tr').forEach(row => {
-    const cells = Array.from(row.children);
-    state.columnOrder.forEach(columnName => {
-      const cell = cells.find(c =>
-        c.classList.contains(`table-cell-${columnName}`) ||
-        c.dataset.content === columnName ||
-        (columnName === 'server' && c.classList.contains('server-column')) ||
-        (columnName === 'traefik' && c.classList.contains('traefik-column'))
-      );
-      if (cell) {
-        row.appendChild(cell);
-      }
-    });
-  });
-  updateFirstAndLastVisibleColumns();
+export const updateColumnOrderFromDOM = ColumnOrderManager.updateFromDOM.bind(ColumnOrderManager);
+export const reorderColumnMenuItems = ColumnOrderManager.reorderMenuItems.bind(ColumnOrderManager);
+export const saveColumnOrder = ColumnOrderManager.save.bind(ColumnOrderManager);
+export const updateTableColumnOrder = ColumnOrderManager.updateTableOrder.bind(ColumnOrderManager);
+export function getDragAfterElement(container, y) {
+  return dragDropHandler?._getDragAfterElement(y);
 }

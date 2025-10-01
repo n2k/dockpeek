@@ -126,7 +126,7 @@ class LinkHostnameResolver:
 
 
 class DockerClientFactory:
-    def __init__(self, timeout: float = 2.0):
+    def __init__(self, timeout: float = 1.0):
         self.timeout = timeout
     
     def create_client(self, url: str) -> DockerClient:
@@ -271,7 +271,7 @@ class DockerClientDiscovery:
                 logger.warning(f"Could not connect to Docker host '{config.name}' at {config.url}")
                 return self._create_inactive_host(config)
         except Exception as e:
-            logger.warning(f"Failed to create client for '{config.name}': {e}")
+            logger.debug(f"Failed to create client for '{config.name}': {e}")
             return self._create_inactive_host(config)
     
     def _create_inactive_host(self, config: DockerHostConfig) -> DockerHost:

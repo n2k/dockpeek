@@ -53,6 +53,7 @@ export function setupServerUI() {
   }
 
   updateActiveButton();
+  initPruneInfo();
 }
 
 export function updateActiveButton() {

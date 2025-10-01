@@ -2,178 +2,362 @@ import os
 import re
 import logging
 from urllib.parse import urlparse
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from enum import Enum
 import docker
 from docker.client import DockerClient
-from flask import request
+from flask import request, has_request_context
+from threading import Lock
+import time
 
 logger = logging.getLogger(__name__)
 
 
-def _extract_hostname_from_url(url, is_docker_host):
-    if not url: 
-        return None
-    if url.startswith("unix://"): 
-        return None
-    if url.startswith("tcp://"):
+class HostStatus(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+@dataclass
+class DockerHostConfig:
+    name: str
+    url: str
+    order: int
+    public_hostname: Optional[str] = None
+    is_docker_host: bool = True
+
+
+@dataclass
+class DockerHost:
+    name: str
+    client: Optional[DockerClient]
+    url: str
+    public_hostname: Optional[str]
+    status: HostStatus
+    is_docker_host: bool
+    order: int
+    
+    def to_dict(self) -> Dict:
+        return {
+            "name": self.name,
+            "client": self.client,
+            "url": self.url,
+            "public_hostname": self.public_hostname,
+            "status": self.status.value,
+            "is_docker_host": self.is_docker_host,
+            "order": self.order
+        }
+
+
+class HostnameExtractor:
+    LOCALHOST_ADDRESSES = {"127.0.0.1", "0.0.0.0", "localhost"}
+    
+    @classmethod
+    def extract_from_url(cls, url: str, is_docker_host: bool) -> Optional[str]:
+        if not url or url.startswith("unix://"):
+            return None
+        
+        if url.startswith("tcp://"):
+            hostname = cls._extract_via_urlparse(url)
+            if hostname:
+                return hostname
+        
+        return cls._extract_via_regex(url, is_docker_host)
+    
+    @classmethod
+    def _extract_via_urlparse(cls, url: str) -> Optional[str]:
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
-            if hostname and hostname not in ["127.0.0.1", "0.0.0.0", "localhost"] and not _is_likely_internal_hostname(hostname, is_docker_host):
+            if hostname and cls._is_usable_hostname(hostname, True):
                 return hostname
-        except Exception: 
-            pass
-    try:
-        match = re.search(r"(?:tcp://)?([^:]+)(?::\d+)?", url)
-        if match:
-            hostname = match.group(1)
-            if hostname not in ["127.0.0.1", "0.0.0.0", "localhost"] and not _is_likely_internal_hostname(hostname, is_docker_host):
-                return hostname
-    except Exception: 
-        pass
-    return None
+        except Exception as e:
+            logger.debug(f"Failed to parse URL {url}: {e}")
+        return None
+    
+    @classmethod
+    def _extract_via_regex(cls, url: str, is_docker_host: bool) -> Optional[str]:
+        try:
+            match = re.search(r"(?:tcp://)?([^:]+)(?::\d+)?", url)
+            if match:
+                hostname = match.group(1)
+                if cls._is_usable_hostname(hostname, is_docker_host):
+                    return hostname
+        except Exception as e:
+            logger.debug(f"Failed to extract hostname from {url}: {e}")
+        return None
+    
+    @classmethod
+    def _is_usable_hostname(cls, hostname: str, is_docker_host: bool) -> bool:
+        if hostname in cls.LOCALHOST_ADDRESSES:
+            return False
+        if is_docker_host and cls._is_internal_name(hostname):
+            return False
+        return True
+    
+    @classmethod
+    def _is_internal_name(cls, hostname: str) -> bool:
+        if re.match(r'^(\d{1,3}\.){3}\d{1,3}$', hostname):
+            return False
+        if '.' in hostname:
+            return False
+        return True
 
 
-def _is_likely_internal_hostname(hostname, is_docker_host):
-    if not is_docker_host: 
-        return False
-    if re.match(r'^(\d{1,3}\.){3}\d{1,3}$', hostname): 
-        return False
-    if '.' in hostname: 
-        return False
-    return True
-
-
-def _get_link_hostname(public_hostname, host_ip, is_docker_host):
-    if public_hostname: 
-        return public_hostname
-    if host_ip and host_ip not in ['0.0.0.0', '127.0.0.1']: 
-        return host_ip
-    try: 
-        return request.host.split(":")[0]
-    except: 
+class LinkHostnameResolver:
+    @staticmethod
+    def resolve(public_hostname: Optional[str], host_ip: Optional[str], 
+                is_docker_host: bool) -> str:
+        if public_hostname:
+            return public_hostname
+        
+        if host_ip and host_ip not in ['0.0.0.0', '127.0.0.1']:
+            return host_ip
+        
+        if has_request_context():
+            try:
+                return request.host.split(":")[0]
+            except Exception as e:
+                logger.debug(f"Failed to get hostname from request: {e}")
+        
         return "localhost"
 
 
-def discover_docker_clients():
-    """Discover and connect to Docker clients based on environment variables."""
-    DOCKER_TIMEOUT = 0.5 
-    clients = []
+class DockerClientFactory:
+    def __init__(self, timeout: float = 5.0):
+        self.timeout = timeout
     
-    # Check main DOCKER_HOST environment variable
-    if "DOCKER_HOST" in os.environ:
-        host_url = os.environ.get("DOCKER_HOST")
-        host_name = os.environ.get("DOCKER_HOST_NAME", "default")
-        public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME") or _extract_hostname_from_url(host_url, True)
+    def create_client(self, url: str) -> DockerClient:
+        return DockerClient(base_url=url, timeout=self.timeout)
+    
+    def create_default_client(self) -> DockerClient:
+        return docker.from_env(timeout=self.timeout)
+    
+    def test_connection(self, client: DockerClient) -> bool:
         try:
-            client = DockerClient(base_url=host_url, timeout=DOCKER_TIMEOUT)
             client.ping()
-            clients.append({
-                "name": host_name, 
-                "client": client, 
-                "url": host_url, 
-                "public_hostname": public_hostname, 
-                "status": "active", 
-                "is_docker_host": True, 
-                "order": 0
-            })
-        except Exception:
-            logger.debug(f"Could not connect to DOCKER_HOST '{host_name}' at '{host_url}'")
-            clients.append({
-                "name": host_name, 
-                "client": None, 
-                "url": host_url, 
-                "public_hostname": public_hostname, 
-                "status": "inactive", 
-                "is_docker_host": True, 
-                "order": 0
-            })
+            return True
+        except Exception as e:
+            logger.debug(f"Connection test failed: {e}")
+            return False
+
+
+class EnvironmentConfigParser:
+    HOST_PATTERN = re.compile(r"^DOCKER_HOST_(\d+)_URL$")
     
-    # Check for numbered Docker hosts (DOCKER_HOST_1_URL, DOCKER_HOST_2_URL, etc.)
-    host_vars = {k: v for k, v in os.environ.items() if re.match(r"^DOCKER_HOST_\d+_URL$", k)}
-    for key, url in host_vars.items():
-        match = re.match(r"^DOCKER_HOST_(\d+)_URL$", key)
-        if match:
+    @classmethod
+    def parse(cls) -> List[DockerHostConfig]:
+        configs = []
+        
+        main_host = cls._parse_main_host()
+        if main_host:
+            configs.append(main_host)
+        
+        numbered_hosts = cls._parse_numbered_hosts()
+        configs.extend(numbered_hosts)
+        
+        return configs
+    
+    @classmethod
+    def _parse_main_host(cls) -> Optional[DockerHostConfig]:
+        if "DOCKER_HOST" not in os.environ:
+            return None
+        
+        host_url = os.environ["DOCKER_HOST"]
+        host_name = os.environ.get("DOCKER_HOST_NAME", "default")
+        public_hostname = (
+            os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME") or 
+            HostnameExtractor.extract_from_url(host_url, True)
+        )
+        
+        return DockerHostConfig(
+            name=host_name,
+            url=host_url,
+            order=0,
+            public_hostname=public_hostname,
+            is_docker_host=True
+        )
+    
+    @classmethod
+    def _parse_numbered_hosts(cls) -> List[DockerHostConfig]:
+        configs = []
+        host_vars = {k: v for k, v in os.environ.items() if cls.HOST_PATTERN.match(k)}
+        
+        for key, url in sorted(host_vars.items()):
+            match = cls.HOST_PATTERN.match(key)
+            if not match:
+                continue
+            
             num = match.group(1)
             name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
-            public_hostname = os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME") or _extract_hostname_from_url(url, False)
-            try:
-                client = DockerClient(base_url=url, timeout=DOCKER_TIMEOUT)
-                client.ping()
-                logger.debug(f"[ {name} ]  Docker host is active")
-                clients.append({
-                    "name": name, 
-                    "client": client, 
-                    "url": url, 
-                    "public_hostname": public_hostname, 
-                    "status": "active", 
-                    "is_docker_host": False, 
-                    "order": int(num)
-                })
-            except Exception:
-                logger.debug(f"[ {name} ] Could not connect to Docker host at {url}")
-                clients.append({
-                    "name": name, 
-                    "client": None, 
-                    "url": url, 
-                    "public_hostname": public_hostname, 
-                    "status": "inactive", 
-                    "is_docker_host": False, 
-                    "order": int(num)
-                })
+            public_hostname = (
+                os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME") or
+                HostnameExtractor.extract_from_url(url, False)
+            )
+            
+            configs.append(DockerHostConfig(
+                name=name,
+                url=url,
+                order=int(num),
+                public_hostname=public_hostname,
+                is_docker_host=False
+            ))
+        
+        return configs
+
+
+class DockerClientDiscovery:
+    def __init__(self, client_factory: Optional[DockerClientFactory] = None):
+        self.client_factory = client_factory or DockerClientFactory()
+        self._lock = Lock()
+        self._cache = None
+        self._cache_time = 0
+        self._cache_ttl = 30
     
-    # Fallback to default Docker socket if no other clients found
-    if not clients:
+    def discover(self, use_cache: bool = True) -> List[DockerHost]:
+        if use_cache:
+            with self._lock:
+                if self._cache and (time.time() - self._cache_time) < self._cache_ttl:
+                    return self._cache
+        
+        hosts = self._perform_discovery()
+        
+        if use_cache:
+            with self._lock:
+                self._cache = hosts
+                self._cache_time = time.time()
+        
+        return hosts
+    
+    def _perform_discovery(self) -> List[DockerHost]:
+        configs = EnvironmentConfigParser.parse()
+        
+        if not configs:
+            return [self._create_fallback_host()]
+        
+        hosts = [self._create_host_from_config(config) for config in configs]
+        return hosts
+    
+    def _create_host_from_config(self, config: DockerHostConfig) -> DockerHost:
+        try:
+            client = self.client_factory.create_client(config.url)
+            
+            if self.client_factory.test_connection(client):
+                logger.debug(f"Connected to Docker host '{config.name}' at {config.url}")
+                return DockerHost(
+                    name=config.name,
+                    client=client,
+                    url=config.url,
+                    public_hostname=config.public_hostname,
+                    status=HostStatus.ACTIVE,
+                    is_docker_host=config.is_docker_host,
+                    order=config.order
+                )
+            else:
+                logger.warning(f"Could not connect to Docker host '{config.name}' at {config.url}")
+                return self._create_inactive_host(config)
+        except Exception as e:
+            logger.warning(f"Failed to create client for '{config.name}': {e}")
+            return self._create_inactive_host(config)
+    
+    def _create_inactive_host(self, config: DockerHostConfig) -> DockerHost:
+        return DockerHost(
+            name=config.name,
+            client=None,
+            url=config.url,
+            public_hostname=config.public_hostname,
+            status=HostStatus.INACTIVE,
+            is_docker_host=config.is_docker_host,
+            order=config.order
+        )
+    
+    def _create_fallback_host(self) -> DockerHost:
         fallback_name = os.environ.get("DOCKER_HOST_NAME", "default")
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME", "")
-        try:
-            client = docker.from_env(timeout=DOCKER_TIMEOUT)
-            client.ping()
-            clients.append({
-                "name": fallback_name, 
-                "client": client, 
-                "url": "unix:///var/run/docker.sock", 
-                "public_hostname": public_hostname, 
-                "status": "active", 
-                "is_docker_host": True, 
-                "order": 0
-            })
-        except Exception:
-            clients.append({
-                "name": fallback_name, 
-                "client": None, 
-                "url": "unix:///var/run/docker.sock", 
-                "public_hostname": public_hostname, 
-                "status": "inactive", 
-                "is_docker_host": True, 
-                "order": 0
-            })
-    
-    return clients
-
-
-def get_container_status_with_exit_code(container):
-    """Get container status and exit code if applicable."""
-    try:
-        base_status = container.status
-        state = container.attrs.get('State', {})
-        exit_code = state.get('ExitCode')
+        url = "unix:///var/run/docker.sock"
         
-        if base_status in ['exited', 'dead']: 
-            return base_status, exit_code
-        if base_status in ['paused', 'restarting', 'removing', 'created']: 
+        try:
+            client = self.client_factory.create_default_client()
+            
+            if self.client_factory.test_connection(client):
+                logger.debug(f"Connected to default Docker socket")
+                return DockerHost(
+                    name=fallback_name,
+                    client=client,
+                    url=url,
+                    public_hostname=public_hostname,
+                    status=HostStatus.ACTIVE,
+                    is_docker_host=True,
+                    order=0
+                )
+        except Exception as e:
+            logger.warning(f"Could not connect to default Docker socket: {e}")
+        
+        return DockerHost(
+            name=fallback_name,
+            client=None,
+            url=url,
+            public_hostname=public_hostname,
+            status=HostStatus.INACTIVE,
+            is_docker_host=True,
+            order=0
+        )
+    
+    def invalidate_cache(self):
+        with self._lock:
+            self._cache = None
+            self._cache_time = 0
+
+
+class ContainerStatusExtractor:
+    @staticmethod
+    def get_status_with_exit_code(container) -> Tuple[str, Optional[int]]:
+        try:
+            base_status = container.status
+            state = container.attrs.get('State', {})
+            exit_code = state.get('ExitCode')
+            
+            if base_status in ['exited', 'dead']:
+                return base_status, exit_code
+            
+            if base_status in ['paused', 'restarting', 'removing', 'created']:
+                return base_status, None
+            
+            if base_status == 'running':
+                health = state.get('Health', {})
+                if health:
+                    health_status = health.get('Status', '')
+                    if health_status == 'healthy':
+                        return 'healthy', None
+                    if health_status == 'unhealthy':
+                        return 'unhealthy', exit_code
+                    if health_status == 'starting':
+                        return 'starting', None
+                return 'running', None
+            
             return base_status, None
-        if base_status == 'running':
-            health = state.get('Health', {})
-            if health:
-                health_status = health.get('Status', '')
-                if health_status == 'healthy': 
-                    return 'healthy', None
-                if health_status == 'unhealthy': 
-                    return 'unhealthy', exit_code
-                if health_status == 'starting': 
-                    return 'starting', None
-            return 'running', None
-        return base_status, None
-    except Exception as e:
-        logger.warning(f"Error getting status for container {container.name}: {e}")
-        return container.status, None
+        except Exception as e:
+            logger.warning(f"Error getting status for container {container.name}: {e}")
+            return container.status, None
+
+
+_discovery_instance = DockerClientDiscovery()
+
+
+def discover_docker_clients() -> List[Dict]:
+    hosts = _discovery_instance.discover(use_cache=True)
+    return [host.to_dict() for host in hosts]
+
+
+def invalidate_docker_clients_cache():
+    _discovery_instance.invalidate_cache()
+
+
+def get_container_status_with_exit_code(container) -> Tuple[str, Optional[int]]:
+    return ContainerStatusExtractor.get_status_with_exit_code(container)
+
+
+def _get_link_hostname(public_hostname: Optional[str], host_ip: Optional[str], 
+                       is_docker_host: bool) -> str:
+    return LinkHostnameResolver.resolve(public_hostname, host_ip, is_docker_host)

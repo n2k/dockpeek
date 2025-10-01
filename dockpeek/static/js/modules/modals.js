@@ -276,9 +276,6 @@ export function showPruneInfoModal(data) {
             const imageName = img.tags && img.tags.length > 0
               ? img.tags[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')
               : `&lt;untagged&gt; (${img.id.substring(7, 19)})`;
-
-            console.log('Image name:', imageName); // DODAJ TO
-
             details += `<li>- ${imageName} (${formatSize(img.size)})</li>`;
           });
 

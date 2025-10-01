@@ -133,7 +133,7 @@ class StatusRenderer {
 class CellRenderer {
   static renderName(container, cell) {
     const nameSpan = cell.querySelector('[data-content="container-name"]');
-    
+
     if (container.custom_url) {
       const url = this._normalizeUrl(container.custom_url);
       const tooltipUrl = url.replace(/^https?:\/\//, '');
@@ -175,11 +175,63 @@ class CellRenderer {
         sourceLink.classList.add('hidden');
       }
     }
+
+    const registryLink = clone.querySelector('[data-content="registry-link"]');
+    if (registryLink) {
+      const registryUrl = this.getRegistryUrl(container.image);
+      if (registryUrl) {
+        registryLink.href = registryUrl;
+        registryLink.classList.remove('hidden');
+        registryLink.setAttribute('data-tooltip', 'View in registry');
+      } else {
+        registryLink.classList.add('hidden');
+      }
+    }
+  }
+
+
+  static getRegistryUrl(imageName) {
+    if (!imageName) return null;
+
+    const withoutTag = imageName.split(':')[0];
+    const parts = withoutTag.split('/');
+
+    if (parts.length <= 2 && (parts.length === 1 || !parts[0].includes('.'))) {
+      const namespace = parts.length === 2 ? parts[0] : 'library';
+      const repo = parts[parts.length - 1];
+      return `https://hub.docker.com/r/${namespace}/${repo}`;
+    }
+
+    const registryHost = parts[0];
+    const repoPath = parts.slice(1).join('/');
+
+    switch (registryHost) {
+      case 'lscr.io':
+        return `https://github.com/${parts[1]}/docker-${parts.slice(2).join('%2F')}/pkgs/container/${parts.slice(2).join('%2F')}`;
+
+      case 'ghcr.io':
+        const ghcrUser = parts[1];
+        const ghcrRepo = parts.slice(2).join('/');
+        return `https://github.com/${ghcrUser}/${ghcrRepo}/pkgs/container/${ghcrRepo}`;
+
+
+      case 'quay.io':
+        return `https://quay.io/repository/${repoPath}`;
+
+      case 'public.ecr.aws':
+        return `https://gallery.ecr.aws/${parts[1]}/${parts.slice(2).join('/')}`;
+
+      case 'registry.gitlab.com':
+        return `https://gitlab.com/${parts[1]}/${parts[2]}/container_registry`;
+
+      default:
+        return null;
+    }
   }
 
   static renderUpdateIndicator(container, clone) {
     const indicator = clone.querySelector('[data-content="update-indicator"]');
-    
+
     if (container.update_available) {
       indicator.classList.remove('hidden');
       indicator.classList.add('update-available-indicator');
@@ -199,7 +251,7 @@ class CellRenderer {
 
   static renderTags(container, cell) {
     if (container.tags?.length) {
-      const sortedTags = [...container.tags].sort((a, b) => 
+      const sortedTags = [...container.tags].sort((a, b) =>
         a.toLowerCase().localeCompare(b.toLowerCase())
       );
       cell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
@@ -220,11 +272,11 @@ class CellRenderer {
 
     cell.innerHTML = container.ports.map(p => {
       const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
-      
+
       if (p.is_custom || !p.container_port) {
         return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
       }
-      
+
       return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
     }).join('');
   }
@@ -267,7 +319,7 @@ class TableRenderer {
       return;
     }
 
-    const hasAnyTraefikRoutes = window.traefikEnabled !== false && 
+    const hasAnyTraefikRoutes = window.traefikEnabled !== false &&
       containers.some(c => c.traefik_routes?.length);
 
     const fragment = document.createDocumentFragment();
@@ -328,11 +380,11 @@ class ColumnVisibilityManager {
   static update() {
     for (const [columnName, mapping] of Object.entries(COLUMN_MAPPINGS)) {
       const isVisible = state.columnVisibility[columnName];
-      
+
       document.querySelectorAll(mapping.selector).forEach(el => {
         el.classList.toggle('column-hidden', !isVisible);
       });
-      
+
       document.querySelectorAll(`.${mapping.cellClass}`).forEach(el => {
         el.classList.toggle('column-hidden', !isVisible);
       });
@@ -351,7 +403,7 @@ class ColumnVisibilityManager {
 class ColumnOrderManager {
   static updateFromDOM() {
     const items = document.querySelectorAll('#column-list .draggable');
-    state.columnOrder.splice(0, state.columnOrder.length, 
+    state.columnOrder.splice(0, state.columnOrder.length,
       ...Array.from(items).map(item => item.dataset.column));
   }
 
@@ -556,7 +608,7 @@ export function updateColumnVisibility() {
 export function initColumnDragAndDrop() {
   ColumnOrderManager.load();
   ColumnOrderManager.reorderMenuItems();
-  
+
   if (dragDropHandler) {
     dragDropHandler = null;
   }

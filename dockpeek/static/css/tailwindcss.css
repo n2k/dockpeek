@@ -1064,7 +1064,7 @@ body.dark-mode #search-input:focus {
   text-overflow: ellipsis;
   display: inline-block;
 }
-.source-link:not(.hidden) {
+.source-link:not(.hidden), .registry-link:not(.hidden) {
   color: #99a1af !important;
   align-items: center;
   text-decoration: none;
@@ -1074,16 +1074,16 @@ body.dark-mode #search-input:focus {
 svg {
   pointer-events: none;
 }
-.source-link svg {
+.source-link svg, .registry-link svg {
   display: block;
 }
-.source-link:hover {
+.source-link:hover, .registry-link:hover {
   color: #2b7fff !important;
 }
-body.dark-mode .source-link {
+body.dark-mode .source-link, body.dark-mode .registry-link {
   color: #474c55 !important;
 }
-body.dark-mode .source-link:hover {
+body.dark-mode .source-link:hover, body.dark-mode .registry-link:hover {
   color: #2b7fff !important;
 }
 .server-column [data-content="server-name"] {

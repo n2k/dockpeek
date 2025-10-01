@@ -45,6 +45,7 @@ export function setupServerUI() {
       button.addEventListener('click', () => {
         state.currentServerFilter = button.dataset.server;
         updateDisplay();
+        initPruneInfo();
       });
     });
   } else {
@@ -52,7 +53,6 @@ export function setupServerUI() {
   }
 
   updateActiveButton();
-  initPruneInfo();
 }
 
 export function updateActiveButton() {

@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -125,7 +126,7 @@ class LinkHostnameResolver:
 
 
 class DockerClientFactory:
-    def __init__(self, timeout: float = 5.0):
+    def __init__(self, timeout: float = 2.0):
         self.timeout = timeout
     
     def create_client(self, url: str) -> DockerClient:
@@ -231,13 +232,25 @@ class DockerClientDiscovery:
         return hosts
     
     def _perform_discovery(self) -> List[DockerHost]:
-        configs = EnvironmentConfigParser.parse()
-        
-        if not configs:
-            return [self._create_fallback_host()]
-        
-        hosts = [self._create_host_from_config(config) for config in configs]
-        return hosts
+         configs = EnvironmentConfigParser.parse()
+
+         if not configs:
+             return [self._create_fallback_host()]
+
+         hosts = []
+         with ThreadPoolExecutor(max_workers=len(configs)) as executor:
+             future_to_host = {executor.submit(self._create_host_from_config, config): config for config in configs}
+             for future in as_completed(future_to_host):
+                 try:
+                     host_result = future.result()
+                     hosts.append(host_result)
+                 except Exception as e:
+                     config = future_to_host[future]
+                     logger.error(f"Error processing host {config.name}: {e}")
+                     hosts.append(self._create_inactive_host(config))
+
+         hosts.sort(key=lambda h: h.order)
+         return hosts
     
     def _create_host_from_config(self, config: DockerHostConfig) -> DockerHost:
         try:

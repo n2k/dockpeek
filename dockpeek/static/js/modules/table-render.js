@@ -162,10 +162,10 @@ class CellRenderer {
     }
   }
 
-  static renderImage(container, cell) {
+  static renderImage(container, cell, clone) {
     cell.textContent = container.image;
 
-    const sourceLink = cell.nextElementSibling?.querySelector('[data-content="source-link"]');
+    const sourceLink = clone.querySelector('[data-content="source-link"]');
     if (sourceLink) {
       if (container.source_url) {
         sourceLink.href = container.source_url;
@@ -298,7 +298,7 @@ class TableRenderer {
 
     const imageCell = clone.querySelector('[data-content="image"]');
     imageCell.classList.add('table-cell-image');
-    CellRenderer.renderImage(container, imageCell);
+    CellRenderer.renderImage(container, imageCell, clone);
 
     CellRenderer.renderUpdateIndicator(container, clone);
 

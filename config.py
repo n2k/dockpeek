@@ -2,7 +2,6 @@ import os
 from datetime import timedelta
 
 class Config:
-    """Główna klasa konfiguracyjna."""
     SECRET_KEY = os.environ.get("SECRET_KEY")
     if not SECRET_KEY:
         raise RuntimeError("ERROR: SECRET_KEY environment variable is not set.")

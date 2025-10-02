@@ -9,12 +9,14 @@ import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClear
 import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './modules/modals.js';
 import { initEventListeners } from './modules/events.js';
 import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
+import { updateContainerStats } from './modules/container-stats.js';
 
 const tableRenderer = new TableRenderer('container-row-template', 'container-rows');
 let dragDropHandler = null;
 
 export function renderTable() {
   tableRenderer.render(state.filteredAndSortedContainers);
+  updateContainerStats(state.filteredAndSortedContainers);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

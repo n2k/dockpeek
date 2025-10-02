@@ -4,4 +4,4 @@ Flask-Login
 werkzeug
 docker
 packaging
-gunicorn # (opcjonalnie, do wdrożeń produkcyjnych)
+gunicorn

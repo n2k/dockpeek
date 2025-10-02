@@ -54,19 +54,21 @@ body.dark-mode .container {
 }
 
 .swarm-indicator {
-    color: #98a1ab;
+  color: #98a1ab;
 }
 
 body.dark-mode .swarm-indicator {
-    color: #6e7781;
+  color: #6e7781;
 }
-.swarm-mode #filter-running-checkbox:checked + .slider {
+
+.swarm-mode #filter-running-checkbox:checked+.slider {
   background-color: #ef323e !important;
 }
 
-body.dark-mode.swarm-mode #filter-running-checkbox:checked + .slider {
+body.dark-mode.swarm-mode #filter-running-checkbox:checked+.slider {
   background-color: #cf313b !important;
 }
+
 .logo-title {
   margin-right: 1em;
   color: #e1e4e8;
@@ -351,6 +353,7 @@ body.dark-mode #search-input:focus {
   text-overflow: ellipsis;
   display: inline-block;
 }
+
 .source-link:not(.hidden),
 .registry-link:not(.hidden) {
   color: #99a1af !important;
@@ -653,6 +656,7 @@ body.dark-mode input[type="text"] {
 body.dark-mode #search-input::placeholder {
   color: #41464b;
 }
+
 body.dark-mode #refresh-button {
   background-color: #21262d;
   color: #97a1ab;
@@ -718,6 +722,7 @@ body.dark-mode .modal-content {
   background-color: #d7d7d7;
   color: #24292e;
 }
+
 body.dark-mode .modal-cancel-button {
   background-color: #33373d;
   color: #c9d1d9;
@@ -830,30 +835,32 @@ body.dark-mode #updates-list .no-updates-message {
 }
 
 #updates-modal.no-update #updates-list {
-  background-color: #f5fff5; 
+  background-color: #f5fff5;
   border: 0;
 }
+
 body.dark-mode #updates-modal.no-update #updates-list {
-  background-color: #0d1117; 
+  background-color: #0d1117;
 }
 
 
 .green-ok-button {
-    background-color: oklab(0.63 -0.16 0.1);
-    color: #fff;
+  background-color: oklab(0.63 -0.16 0.1);
+  color: #fff;
 }
 
 .green-ok-button:hover {
-    background-color: oklab(0.72 -0.19 0.11);
+  background-color: oklab(0.72 -0.19 0.11);
 }
 
 body.dark-mode .green-ok-button {
-    background-color: oklab(0.63 -0.16 0.1);
+  background-color: oklab(0.63 -0.16 0.1);
 }
 
 body.dark-mode .green-ok-button:hover {
-    background-color: oklab(0.72 -0.19 0.11);
+  background-color: oklab(0.72 -0.19 0.11);
 }
+
 .progress-container {
   padding: 1rem 0;
 }
@@ -874,6 +881,7 @@ body.dark-mode .green-ok-button:hover {
   margin-bottom: 15px;
   border: 0;
 }
+
 body.dark-mode .progress-bar {
   background-color: var(--bg-secondary, #21262d);
 }
@@ -895,10 +903,12 @@ body.dark-mode .progress-bar {
   border: 0;
   word-break: break-all;
 }
-body.dark-mode  .current-container {
+
+body.dark-mode .current-container {
   color: var(--text-secondary, #acb1b9);
   background: var(--bg-secondary, #0d1117);
 }
+
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -1310,6 +1320,120 @@ body.dark-mode .column-menu-item {
 
 body.dark-mode .column-menu-item span {
   color: #c9d1d9;
+}
+
+/* Dodaj do tailwindcss.css lub osobnego pliku CSS */
+.container-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.stat-item {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.stat-running {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.stat-healthy {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.stat-stopped {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.stat-unhealthy {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.stat-paused {
+  background-color: #fef3c7;
+  color: #bd6e3e;
+}
+
+.stat-other {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.dark-mode .stat-running {
+  background-color: #14532d;
+  color: #bbf7d0;
+}
+
+.dark-mode .stat-healthy {
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.dark-mode .stat-stopped {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+.dark-mode .stat-unhealthy {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+.dark-mode .stat-paused {
+  background-color: #78350f;
+  color: #e7c981;
+}
+
+.dark-mode .stat-restarting {
+  background-color: #831843;
+  color: #fbcfe8;
+}
+
+.dark-mode .stat-other {
+  background-color: #312e81;
+  color: #c7d2fe;
+}
+
+
+.stat-detail {
+  font-weight: 400;
+  opacity: 0.85;
+  font-size: 0.92em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.stat-total {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+
+.dark-mode .stat-total {
+  background-color: #4b5563;
+  color: #e5e7eb;
+}
+
+.stat-item {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-item svg {
+  flex-shrink: 0;
 }
 
 /* Column visibility classes */

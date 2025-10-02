@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { updateSwarmIndicator,  isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from '../app.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
+import { updateContainerStats } from './container-stats.js';
 
 export function setupServerUI() {
   const serverFilterContainer = document.getElementById("server-filter-container");
@@ -107,9 +108,11 @@ export function updateDisplay() {
   const mainTable = document.getElementById("main-table");
 
   let workingData = [...state.allContainersData];
+  let statsData = [...state.allContainersData];
 
   if (state.currentServerFilter !== "all") {
     workingData = workingData.filter(c => c.server === state.currentServerFilter);
+    statsData = statsData.filter(c => c.server === state.currentServerFilter);
   }
 
   // Swarm mode: repurpose toggle to "Show Problems"
@@ -303,6 +306,7 @@ export function updateDisplay() {
   renderTable();
   updateActiveButton();
   updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
+  updateContainerStats(statsData);
 }
 
 export function filterByStackAndServer(stack, server) {

@@ -828,10 +828,10 @@ body.dark-mode .container {
 body.dark-mode .swarm-indicator {
   color: #6e7781;
 }
-.swarm-mode #filter-running-checkbox:checked + .slider {
+.swarm-mode #filter-running-checkbox:checked+.slider {
   background-color: #ef323e !important;
 }
-body.dark-mode.swarm-mode #filter-running-checkbox:checked + .slider {
+body.dark-mode.swarm-mode #filter-running-checkbox:checked+.slider {
   background-color: #cf313b !important;
 }
 .logo-title {
@@ -1785,6 +1785,98 @@ body.dark-mode .column-menu-item {
 }
 body.dark-mode .column-menu-item span {
   color: #c9d1d9;
+}
+.container-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+.stat-item {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  display: inline-block;
+}
+.stat-running {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.stat-healthy {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+.stat-stopped {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+.stat-unhealthy {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.stat-paused {
+  background-color: #fef3c7;
+  color: #bd6e3e;
+}
+.stat-other {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+.dark-mode .stat-running {
+  background-color: #14532d;
+  color: #bbf7d0;
+}
+.dark-mode .stat-healthy {
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+}
+.dark-mode .stat-stopped {
+  background-color: #374151;
+  color: #d1d5db;
+}
+.dark-mode .stat-unhealthy {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+.dark-mode .stat-paused {
+  background-color: #78350f;
+  color: #e7c981;
+}
+.dark-mode .stat-restarting {
+  background-color: #831843;
+  color: #fbcfe8;
+}
+.dark-mode .stat-other {
+  background-color: #312e81;
+  color: #c7d2fe;
+}
+.stat-detail {
+  font-weight: 400;
+  opacity: 0.85;
+  font-size: 0.92em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.stat-total {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+.dark-mode .stat-total {
+  background-color: #4b5563;
+  color: #e5e7eb;
+}
+.stat-item {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stat-item svg {
+  flex-shrink: 0;
 }
 .column-hidden {
   display: none !important;

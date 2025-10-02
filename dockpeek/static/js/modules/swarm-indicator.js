@@ -1,5 +1,5 @@
 
-import { state } from '../app.js';
+import { state } from './state.js';
 /**
  * @param {Array} swarmServers
  * @param {string} currentServerFilter 

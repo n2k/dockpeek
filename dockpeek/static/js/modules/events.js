@@ -1,9 +1,11 @@
 import { fetchContainerData, checkForUpdates, updateExportLink, installUpdate } from './data-fetch.js';
-import { updateDisplay, clearSearch, filterByStackAndServer } from './filters.js';
+import { updateDisplay, clearSearch, filterByStackAndServer, parseAdvancedSearch, toggleClearButton } from './filters.js';
 import { toggleThemeMenu, setTheme } from './ui-utils.js';
-import { updateColumnVisibility, updateTableColumnOrder, reorderColumnMenuItems, saveColumnOrder } from './table-render.js';
+import { updateColumnVisibility } from './column-visibility.js';
+import * as ColumnOrder from './column-order.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
-import { state } from '../app.js';
+import { state } from './state.js';
+
 
 export function initEventListeners() {
   const refreshButton = document.getElementById('refresh-button');
@@ -156,9 +158,9 @@ export function initEventListeners() {
       });
 
       state.columnOrder.splice(0, state.columnOrder.length, 'name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status');
-      reorderColumnMenuItems();
-      saveColumnOrder();
-      updateTableColumnOrder();
+      ColumnOrder.reorderMenuItems()
+      ColumnOrder.save()
+      ColumnOrder.updateTableOrder()
       localStorage.setItem('columnVisibility', JSON.stringify(state.columnVisibility));
       updateColumnVisibility();
       console.log('Columns reset complete:', state.columnVisibility);
@@ -196,49 +198,4 @@ export function initEventListeners() {
   });
 
   updateExportLink();
-}
-
-function toggleClearButton() {
-  const searchInput = document.getElementById("search-input");
-  const clearSearchButton = document.getElementById("clear-search-button");
-  if (searchInput.value.trim() !== '') {
-    clearSearchButton.classList.remove('hidden');
-  } else {
-    clearSearchButton.classList.add('hidden');
-  }
-}
-
-function parseAdvancedSearch(searchTerm) {
-  const filters = {
-    tags: [],
-    ports: [],
-    stacks: [],
-    general: []
-  };
-
-  const terms = searchTerm.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-
-  terms.forEach(term => {
-    term = term.trim();
-    if (!term) return;
-
-    if (term.startsWith('#')) {
-      filters.tags.push(term.substring(1).toLowerCase());
-    } else if (term.startsWith(':')) {
-      filters.ports.push(term.substring(1));
-    } else if (term.startsWith('stack:')) {
-      let stackValue = term.substring(6);
-      if (stackValue.startsWith('"') && stackValue.endsWith('"')) {
-        stackValue = stackValue.slice(1, -1);
-      }
-      filters.stacks.push(stackValue.toLowerCase());
-    } else {
-      if (term.startsWith('"') && term.endsWith('"')) {
-        term = term.slice(1, -1);
-      }
-      filters.general.push(term.toLowerCase());
-    }
-  });
-
-  return filters;
 }

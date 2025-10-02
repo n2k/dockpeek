@@ -1,4 +1,5 @@
-import { state } from '../app.js';
+
+import { state } from './state.js';
 import { showPruneInfoModal, showPruneResultModal } from './modals.js';
 
 export async function initPruneInfo() {

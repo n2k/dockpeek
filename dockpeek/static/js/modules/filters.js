@@ -1,6 +1,7 @@
-import { state } from '../app.js';
+
+import { state } from './state.js';
 import { updateSwarmIndicator,  isSwarmMode } from './swarm-indicator.js';
-import { renderTable } from './table-render.js';
+import { renderTable } from '../app.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
 
 export function setupServerUI() {

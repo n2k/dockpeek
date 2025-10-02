@@ -1,0 +1,134 @@
+import { state } from './state.js';
+import { getRegistryUrl } from './registry-urls.js';
+
+export function renderName(container, cell) {
+  const nameSpan = cell.querySelector('[data-content="container-name"]');
+
+  if (container.custom_url) {
+    const url = normalizeUrl(container.custom_url);
+    const tooltipUrl = url.replace(/^https?:\/\//, '');
+    nameSpan.innerHTML = `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800" data-tooltip="${tooltipUrl}">${container.name}</a>`;
+  } else {
+    nameSpan.textContent = container.name;
+  }
+}
+
+export function renderServer(container, clone) {
+  const serverCell = clone.querySelector('[data-content="server-name"]').closest('td');
+  const serverSpan = serverCell.querySelector('[data-content="server-name"]');
+  serverSpan.textContent = container.server;
+
+  const serverData = state.allContainersData.find(s => s.name === container.server);
+  if (serverData?.url) {
+    serverSpan.setAttribute('data-tooltip', serverData.url);
+  }
+}
+
+export function renderStack(container, cell) {
+  if (container.stack) {
+    cell.innerHTML = `<a href="#" class="stack-link text-blue-600 hover:text-blue-800 cursor-pointer" data-stack="${container.stack}" data-server="${container.server}">${container.stack}</a>`;
+  } else {
+    cell.textContent = '';
+  }
+}
+
+export function renderImage(container, cell, clone) {
+  cell.textContent = container.image;
+
+  const sourceLink = clone.querySelector('[data-content="source-link"]');
+  if (sourceLink) {
+    if (container.source_url) {
+      sourceLink.href = container.source_url;
+      sourceLink.classList.remove('hidden');
+      sourceLink.setAttribute('data-tooltip', container.source_url);
+    } else {
+      sourceLink.classList.add('hidden');
+    }
+  }
+
+  const registryLink = clone.querySelector('[data-content="registry-link"]');
+  if (registryLink) {
+    const registryUrl = getRegistryUrl(container.image);
+    if (registryUrl) {
+      registryLink.href = registryUrl;
+      registryLink.classList.remove('hidden');
+      registryLink.setAttribute('data-tooltip', 'View in registry');
+    } else {
+      registryLink.classList.add('hidden');
+    }
+  }
+}
+
+export function renderUpdateIndicator(container, clone) {
+  const indicator = clone.querySelector('[data-content="update-indicator"]');
+
+  if (container.update_available) {
+    indicator.classList.remove('hidden');
+    indicator.classList.add('update-available-indicator');
+    indicator.setAttribute('data-server', container.server);
+    indicator.setAttribute('data-container', container.name);
+    indicator.setAttribute('data-tooltip', `Click to update ${container.name}`);
+    indicator.style.cursor = 'pointer';
+  } else {
+    indicator.classList.add('hidden');
+    indicator.classList.remove('update-available-indicator');
+    indicator.removeAttribute('data-server');
+    indicator.removeAttribute('data-container');
+    indicator.removeAttribute('data-tooltip');
+    indicator.style.cursor = '';
+  }
+}
+
+export function renderTags(container, cell) {
+  if (container.tags?.length) {
+    const sortedTags = [...container.tags].sort((a, b) =>
+      a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+    cell.innerHTML = `<div class="tags-container">${sortedTags.map(tag =>
+      `<span class="tag-badge" data-tag="${tag}">${tag}</span>`
+    ).join('')}</div>`;
+  } else {
+    cell.innerHTML = '';
+  }
+}
+
+export function renderPorts(container, cell) {
+  if (!container.ports.length) {
+    cell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
+    return;
+  }
+
+  const arrowSvg = `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle"><path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  cell.innerHTML = container.ports.map(p => {
+    const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
+
+    if (p.is_custom || !p.container_port) {
+      return `<div class="custom-port flex items-center mb-1">${badge}</div>`;
+    }
+
+    return `<div class="flex items-center mb-1">${badge}${arrowSvg}<small class="text-secondary">${p.container_port}</small></div>`;
+  }).join('');
+}
+
+export function renderTraefik(container, cell, hasAnyRoutes) {
+  if (!hasAnyRoutes) {
+    cell.classList.add('hidden');
+    return;
+  }
+
+  cell.classList.remove('hidden');
+
+  if (container.traefik_routes?.length) {
+    cell.innerHTML = container.traefik_routes.map(route => {
+      const displayUrl = route.url.replace(/^https?:\/\//, '');
+      return `<div class="traefik-route mb-1"><div class="inline-block"><a href="${route.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm"><span class="traefik-text">${displayUrl}</span></a></div></div>`;
+    }).join('');
+  } else {
+    cell.innerHTML = `<span class="status-none text-sm">none</span>`;
+  }
+}
+
+function normalizeUrl(url) {
+  return url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//) ? url : `https://${url}`;
+}

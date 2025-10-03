@@ -13,6 +13,7 @@ export function setupServerUI() {
 
   if (servers.length > 1) {
     mainTable.classList.remove('table-single-server');
+    serverFilterContainer.classList.remove('hidden');
 
     servers.sort((a, b) => {
       if (a.status !== 'inactive' && b.status === 'inactive') return -1;
@@ -52,6 +53,7 @@ export function setupServerUI() {
     });
   } else {
     mainTable.classList.add('table-single-server');
+    serverFilterContainer.classList.add('hidden');
   }
 
   updateActiveButton();

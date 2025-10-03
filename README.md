@@ -44,12 +44,12 @@ Customize how your containers are displayed with custom labels:
 
 <div align="center">
   
-![Dockpeek Night mode screenshot](screenshots\screenshot_dark_v1.6.5.png)
+![Dockpeek Night mode screenshot](screenshots/screenshot_dark_v1.6.5.png)
 
 <details>
 <summary><strong>Dockpeek Light mode screenshot</strong></summary>
 
-![Dockpeek Light mode screenshot](screenshots\screenshot_light_v1.6.5.png)
+![Dockpeek Light mode screenshot](screenshots/screenshot_light_v1.6.5.png)
 
 </details>
 

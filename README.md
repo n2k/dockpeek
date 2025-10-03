@@ -15,7 +15,7 @@
 
 <h3>Quick Access & One-Click Updates for Your Docker Containers</h3>
 
-<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for speed and simplicity.
+<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for efficiency and simplicity.
 With Dockpeek, you can instantly access container web interfaces, monitor ports, and apply updates in a single click.
 It also auto-detects Traefik labels to display container addresses, helping you keep everything organized — all from one clean and intuitive interface.</p>
 </div>
@@ -198,8 +198,8 @@ services:
 | Variable                      | Default       | Description                                            |
 | ----------------------------- | ------------- | ------------------------------------------------------ |
 | `DISABLE_AUTH`                | `false`       | Set to `true` to disable authentication                |
-| `TRAEFIK_LABELS`              | `true`        | Show Traefik integration column                        |
-| `TAGS`                        | `true`        | Enable container tagging feature                       |
+| `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik integration column                              |
+| `TAGS`                        | `true`        | Set to `false` to disable container tagging                     |
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
 | `DOCKER_HOST_NAME`            | `default`     | Display name for the primary server in the UI          |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
@@ -214,7 +214,8 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 | `DOCKER_HOST_N_NAME`            | Display name in the dashboard            |
 | `DOCKER_HOST_N_PUBLIC_HOSTNAME` | Optional public hostname for links       |
 
-> [!IMPORTANT] > **Important Configuration Requirements:**
+> [!IMPORTANT] 
+> **Important Configuration Requirements:**
 >
 > - `SECRET_KEY` must always be set - dockpeek will not function without it
 > - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
@@ -246,7 +247,7 @@ services:
 | `dockpeek.ports` | Show additional ports | `dockpeek.ports=8080,9090`      |
 | `dockpeek.https` | Force HTTPS for ports | `dockpeek.https=9002,3000`      |
 | `dockpeek.link`  | Custom container link | `dockpeek.link=https://app.com` |
-| `dockpeek.tags`  | Organization tags     | `dockpeek.tags=web,prod`        |
+| `dockpeek.tags`  | tags                  | `dockpeek.tags=web,prod`        |
 
 <br>
 
@@ -398,10 +399,10 @@ networks:
 >
 > ```yaml
 > environment:
->   - ALLOW_START=1 # Start containers after update
->   - ALLOW_STOP=1 # Stop containers for update
->   - ALLOW_RESTARTS=1 # Restart containers if needed
->   - NETWORKS=1 # Connect containers to networks
+>   - ALLOW_START=1 
+>   - ALLOW_STOP=1 
+>   - ALLOW_RESTARTS=1 
+>   - NETWORKS=1 
 > ```
 >
 > The update feature works with all supported connection methods (local socket, remote socket-proxy, and multi-host configurations).

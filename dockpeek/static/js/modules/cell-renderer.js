@@ -52,7 +52,7 @@ export function renderImage(container, cell, clone) {
     if (registryUrl) {
       registryLink.href = registryUrl;
       registryLink.classList.remove('hidden');
-      registryLink.setAttribute('data-tooltip', 'View in registry');
+      registryLink.setAttribute('data-tooltip', 'Open in registry');
     } else {
       registryLink.classList.add('hidden');
     }

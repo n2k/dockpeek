@@ -1,4 +1,5 @@
 import { updateDisplay } from './filters.js';
+import { state } from './state.js';
 
 export function showUpdatesModal(updatedContainers) {
   const updatesList = document.getElementById("updates-list");
@@ -109,11 +110,10 @@ export function showProgressModal(total) {
   progressModal.classList.remove('hidden');
 
   const cancelHandler = () => {
-    import('../app.js').then(({ state }) => {
-      state.isCheckingForUpdates = false;
-      hideProgressModal();
-    });
+    state.isCheckingForUpdates = false;
+    hideProgressModal();
   };
+
 
   cancelButton.removeEventListener('click', cancelHandler);
   cancelButton.addEventListener('click', cancelHandler);

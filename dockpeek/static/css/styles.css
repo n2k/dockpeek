@@ -1330,6 +1330,22 @@ body.dark-mode .prune-badge {
   background-color: #364153;
 }
 
+.prune-details-list {
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #105cd9;
+  white-space: break-spaces;
+  word-break: break-all;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+body.dark-mode .prune-details-list {
+  color: #5797ff;
+}
+
+
 .container-stats {  
   display: flex;
   flex-wrap: wrap;
@@ -1447,6 +1463,8 @@ body.dark-mode .prune-badge {
 .stat-item svg {
   flex-shrink: 0;
 }
+
+
 
 /* Column visibility classes */
 .column-hidden {

@@ -1,6 +1,6 @@
 
 import { state } from './state.js';
-import { updateSwarmIndicator,  isSwarmMode } from './swarm-indicator.js';
+import { updateSwarmIndicator, isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from '../app.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
 import { updateContainerStats } from './container-stats.js';
@@ -120,16 +120,16 @@ export function updateDisplay() {
   // Swarm mode: repurpose toggle to "Show Problems"
   const swarmMode = isSwarmMode();
   const filterLabel = document.getElementById('filter-running-label');
-  const filterContainer = filterRunningCheckbox.parentElement; // Define filterContainer
-  
+  const filterContainer = filterRunningCheckbox.parentElement;
+
   if (swarmMode) {
     filterLabel.textContent = 'Show Problems';
     filterLabel.setAttribute('data-tooltip', 'Show only services where not all replicas are running');
     filterContainer.classList.add('swarm-mode');
   } else {
     filterLabel.textContent = 'Running only';
-    filterLabel.setAttribute('data-tooltip', 'Show only running and healthy containers'); // Add tooltip for regular mode
-    filterContainer.classList.remove('swarm-mode'); // Remove swarm-mode class in regular mode
+    filterLabel.setAttribute('data-tooltip', 'Show only running and healthy containers');
+    filterContainer.classList.remove('swarm-mode');
   }
 
   filterContainer.classList.remove('hidden');
@@ -288,17 +288,21 @@ export function updateDisplay() {
     }
   });
 
-  const uniqueServers = [...new Set(workingData.map(c => c.server))];
+  const isMultiServerConfig = state.allServersData.length > 1;
+  const isServerFilterActive = state.currentServerFilter !== "all";
+
+  const shouldHideServerColumn = !isMultiServerConfig || isServerFilterActive;
+
   const serverHeaders = document.querySelectorAll('.server-column');
   serverHeaders.forEach(header => {
-    if (uniqueServers.length <= 1) {
+    if (shouldHideServerColumn) {
       header.classList.add('hidden');
     } else {
       header.classList.remove('hidden');
     }
   });
 
-  if (uniqueServers.length <= 1) {
+  if (shouldHideServerColumn) {
     mainTable.classList.add('table-single-server');
   } else {
     mainTable.classList.remove('table-single-server');

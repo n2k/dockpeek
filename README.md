@@ -10,6 +10,8 @@
   [![License](https://img.shields.io/github/license/dockpeek/dockpeek?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/blob/main/LICENSE)
   [![Package Registry](https://img.shields.io/badge/package-ghcr.io-blue?style=flat-square&logo=github)](https://github.com/dockpeek/dockpeek/pkgs/container/dockpeek)
   [![Docker Image Size](https://img.shields.io/docker/image-size/dockpeek/dockpeek/latest?style=flat-square&logo=docker)](https://hub.docker.com/r/dockpeek/dockpeek)
+  [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/dockpeek)
+
 
 <h3>Quick Access & One-Click Updates for Your Docker Containers</h3>
 
@@ -42,7 +44,14 @@ Customize how your containers are displayed with custom labels:
 
 <div align="center">
   
-![Dockpeek Night mode screenshot](screenshot_v1.6.2.png)
+![Dockpeek Night mode screenshot](screenshots\screenshot_dark_v1.6.5.png)
+
+<details>
+<summary><strong>Dockpeek Light mode screenshot</strong></summary>
+
+![Dockpeek Light mode screenshot](screenshots\screenshot_light_v1.6.5.png)
+
+</details>
 
 </div>
 

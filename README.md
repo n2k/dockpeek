@@ -43,19 +43,25 @@ Customize how your containers are displayed with custom labels:
 <br>
 
 <div align="center">
-  
+ 
 ![Dockpeek Night mode screenshot](screenshots/screenshot_dark_v1.6.5.png)
 
 <details>
-<summary><strong>Checking for uppdates screenshot</strong></summary>
+<summary><strong>Checking for updates</strong></summary>
 
-![Dockpeek Light mode screenshot](screenshots/screenshot_dark_check_update_v1.6.5.png)
+![Dockpeek Checking for updates](screenshots/screenshot_dark_check_update_v1.6.5.png)
 
 </details>
 
+<details>
+<summary><strong>Updates available</strong></summary>
+
+![Dockpeek Updates available](screenshots/screenshot_dark_updates_available_v1.6.5.png)
+
+</details>
 
 <details>
-<summary><strong>Dockpeek Light mode screenshot</strong></summary>
+<summary><strong>Light mode</strong></summary>
 
 ![Dockpeek Light mode screenshot](screenshots/screenshot_light_v1.6.5.png)
 

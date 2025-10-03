@@ -53,5 +53,6 @@ Thumbs.db
 *.sqlite
 
 # Project specific
+screenshots/
 tailwind.config.js
 docker-compose-dev*.yml

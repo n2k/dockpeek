@@ -739,6 +739,13 @@
       }
     }
   }
+  .hover\:underline {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+  }
   .focus\:border-transparent {
     &:focus {
       border-color: transparent;
@@ -1331,11 +1338,10 @@ body.dark-mode .modal-cancel-button:hover {
   min-height: 0;
 }
 #updates-list {
-  background-color: #f8f9fa;
+  background-color: #fbfbfb;
   padding: 0 1rem;
   border-radius: 0.7rem;
-  border: 1px solid #e1e4e8;
-  max-height: 500px;
+  border: 1px solid #f4f4f4;
   overflow-y: auto;
   flex: 1;
 }
@@ -1345,7 +1351,7 @@ body.dark-mode .modal-cancel-button:hover {
   gap: 0.5rem;
   white-space: nowrap;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #e1e4e8;
+  border-bottom: 1px solid #ececec;
 }
 #updates-list li:last-child {
   border-bottom: none;
@@ -1363,7 +1369,7 @@ body.dark-mode .modal-cancel-button:hover {
   flex-shrink: 0;
 }
 #updates-list .image-name {
-  color: #a6b4c3;
+  color: #707375;
   font-style: italic;
   font-size: 0.8rem;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -1377,7 +1383,7 @@ body.dark-mode .modal-cancel-button:hover {
 }
 body.dark-mode #updates-list {
   background-color: #21262d;
-  border-color: #30363d;
+  border-color: #292d35;
 }
 body.dark-mode #updates-list li {
   border-bottom-color: #30363d;
@@ -1788,9 +1794,14 @@ body.dark-mode .column-menu-item span {
 }
 .prune-badge {
   background-color: #b3b3b3;
+  color: #fff;
+}
+#prune-info-message {
+  overflow-y: auto;
 }
 body.dark-mode .prune-badge {
   background-color: #364153;
+  color: #acacac;
 }
 .prune-details-list {
   display: inline;
@@ -2197,6 +2208,40 @@ label[for="filter-running-checkbox"] {
   label[for="filter-running-checkbox"] {
     display: inline;
   }
+}
+body.dark-mode ::-webkit-scrollbar {
+  width: 12px;
+}
+body.dark-mode ::-webkit-scrollbar-track {
+  background: #171b22;
+}
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 6px;
+}
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+body.dark-mode {
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #171b22;
+}
+body ::-webkit-scrollbar {
+  width: 12px;
+}
+body ::-webkit-scrollbar-track {
+  background: #f6f8fa;
+}
+body ::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+  border-radius: 6px;
+}
+body ::-webkit-scrollbar-thumb:hover {
+  background: #b0b7be;
+}
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d7de #f6f8fa;
 }
 @property --tw-rotate-x {
   syntax: "*";

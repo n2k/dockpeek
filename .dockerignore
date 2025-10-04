@@ -4,24 +4,18 @@
 
 # Environment / Secrets
 .env
+.env.*
 *.key
 *.pem
 
-# Dependencies / Build
-node_modules
-__pycache__
-*.pyc
-*.pyo
-.pytest_cache
-.coverage
-.build
-.Releases
-.develop
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
 
 # IDE / Editor
 .vscode
 .idea
-.ideas
 
 # OS files
 .DS_Store
@@ -52,7 +46,28 @@ Thumbs.db
 *.sql
 *.sqlite
 
+# Dependencies / Build / Cache
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage/
+dist/
+build/
+.cache/
+.next/
+out/
+
 # Project specific
+.build/
+.develop/
+.ideas/
+.Releases/
 screenshots/
-tailwind.config.js
-docker-compose-dev*.yml
+
+# Documentation
+README.md
+LICENSE
+docs/
+*.md

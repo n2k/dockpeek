@@ -1,6 +1,23 @@
+# Environment / Secrets
 .env
+.env.*
 *.key
 *.pem
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archives / Binaries
 *.com
 *.class
 *.dll
@@ -14,24 +31,25 @@
 *.rar
 *.tar
 *.zip
+
+# Logs / Dumps
 *.log
 *.sql
 *.sqlite
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-#FOLDERS
+
+# Dependencies / Build
+node_modules/
+dist/
+build/
+*.css.map
+
+# Project specific
 .build/
 .develop/
 .ideas/
 .Releases/
-node_modules/
-#Added
-tailwind.config.js
 docker-compose-dev*.yml
-package-lock.json
-package.json
+
+# Cache
+.cache/
+.npm/

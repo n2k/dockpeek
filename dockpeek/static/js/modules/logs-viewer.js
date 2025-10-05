@@ -216,7 +216,7 @@ export class LogsViewer {
     }
   }
 
-  formatLogLine(line) {
+    formatLogLine(line) {
     if (!line.trim()) return '';
     
     // Parse timestamp if present
@@ -224,7 +224,7 @@ export class LogsViewer {
     const match = line.match(timestampRegex);
     
     if (match) {
-      const timestamp = match[1];
+      const timestamp = this.formatTimestamp(match[1]);
       const content = match[2];
       const colorizedContent = this.colorizeLogLine(content);
       return `<div class="log-line"><span class="log-timestamp">${timestamp}</span> ${colorizedContent}</div>`;
@@ -233,6 +233,23 @@ export class LogsViewer {
       return `<div class="log-line">${colorizedContent}</div>`;
     }
   }
+
+  formatTimestamp(isoString) {
+    try {
+      const date = new Date(isoString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      
+      return `<span class="log-date">${year}-${month}-${day}</span> <span class="log-time">${hours}:${minutes}:${seconds}</span>`;
+    } catch (e) {
+      return isoString;
+    }
+  }
+
 
   colorizeLogLine(line) {
     // Error levels

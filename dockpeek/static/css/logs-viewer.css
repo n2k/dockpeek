@@ -317,6 +317,13 @@ body.dark-mode .logs-control-btn:hover {
   border-color: #41454b;
 }
 
+
+body.dark-mode .logs-control-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
 body.dark-mode .logs-search-input {
   background: #21262d;
   color: #c9d1d9;

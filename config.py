@@ -26,4 +26,4 @@ class Config:
     
     DOCKER_TIMEOUT = 5
     
-    LOG_LEVEL = "INFO"
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")

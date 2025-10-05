@@ -156,11 +156,19 @@ export class LogsViewer {
     this.showLoading();
     
     await this.fetchLogs();
+    await this.startStreaming();
   }
 
   close() {
     this.stopStreaming();
     this.modal.classList.add('hidden');
+    this.logsContent.innerHTML = '';
+    const searchInput = document.getElementById('logs-search-input');
+    searchInput.value = '';
+    document.getElementById('logs-search-clear').classList.add('hidden');
+    this.updateLineCount(0);
+    this.updateStatus('');
+    
     this.currentServer = null;
     this.currentContainer = null;
   }
@@ -375,7 +383,9 @@ export class LogsViewer {
     const pre = this.logsContent.querySelector('.logs-pre');
     if (!pre) return;
     
-    const text = pre.textContent;
+    const lines = pre.querySelectorAll('.log-line');
+    const text = Array.from(lines).map(line => line.textContent).join('\n');
+    
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -386,6 +396,7 @@ export class LogsViewer {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+
 
   handleSearch(query) {
     const clearBtn = document.getElementById('logs-search-clear');

@@ -10,6 +10,8 @@ from .get_data import get_all_data
 from .update_manager import update_container
 from .docker_utils import discover_docker_clients
 from .update import update_checker
+from .logs_manager import get_container_logs, stream_container_logs
+from flask import Response
 
 main_bp = Blueprint('main', __name__)
 
@@ -386,6 +388,72 @@ def prune_images():
         'total_size': total_size,
         'servers': server_results
     })
+
+@main_bp.route("/get-container-logs", methods=["POST"])
+@conditional_login_required
+def get_logs():
+    """Pobiera logi kontenera."""
+    request_data = request.get_json() or {}
+    server_name = request_data.get('server_name')
+    container_name = request_data.get('container_name')
+    tail = request_data.get('tail', 500)
+    
+    if not server_name or not container_name:
+        return jsonify({"error": "Missing server_name or container_name"}), 400
+    
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+    
+    if not server:
+        return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
+    
+    result = get_container_logs(
+        server['client'], 
+        container_name, 
+        tail=tail,
+        timestamps=True,
+        follow=False
+    )
+    
+    if result['success']:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
+
+
+@main_bp.route("/stream-container-logs", methods=["GET"])
+@conditional_login_required
+def stream_logs():
+    """Streamuje logi kontenera na żywo."""
+    server_name = request.args.get('server_name')
+    container_name = request.args.get('container_name')
+    tail = int(request.args.get('tail', 100))
+    
+    if not server_name or not container_name:
+        return jsonify({"error": "Missing server_name or container_name"}), 400
+    
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+    
+    if not server:
+        return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
+    
+    def generate():
+        try:
+            for log_line in stream_container_logs(server['client'], container_name, tail):
+                yield f"data: {log_line}\n\n"
+        except Exception as e:
+            current_app.logger.error(f"Stream error: {e}")
+            yield f"data: Error: {str(e)}\n\n"
+    
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
 
 @main_bp.route("/export/json")
 @conditional_login_required

@@ -1,9 +1,10 @@
 @import "./fonts.css";
 @import "tailwindcss";
+@import "./logs-viewer.css";
 
 body {
   font-family: "Inter", sans-serif;
-  background-color: #f6f8fa;
+  background-color: #0b4580;
   color: #24292e;
 }
 

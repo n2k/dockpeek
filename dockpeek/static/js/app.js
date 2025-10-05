@@ -10,6 +10,7 @@ import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './m
 import { initEventListeners } from './modules/events.js';
 import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
 import { updateContainerStats } from './modules/container-stats.js';
+import { logsViewer } from './modules/logs-viewer.js';
 
 const tableRenderer = new TableRenderer('container-row-template', 'container-rows');
 let dragDropHandler = null;
@@ -17,6 +18,22 @@ let dragDropHandler = null;
 export function renderTable() {
   tableRenderer.render(state.filteredAndSortedContainers);
   updateContainerStats(state.filteredAndSortedContainers);
+}
+
+
+export function initLogsButtons() {
+  document.addEventListener('click', (e) => {
+    const logsButton = e.target.closest('.logs-button');
+    if (logsButton) {
+      e.preventDefault();
+      const serverName = logsButton.dataset.server;
+      const containerName = logsButton.dataset.container;
+      
+      if (serverName && containerName) {
+        logsViewer.open(serverName, containerName);
+      }
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -30,4 +47,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initSwarmIndicator();
   fetchContainerData();
   initEventListeners();
+  initLogsButtons();
 });

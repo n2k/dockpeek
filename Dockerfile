@@ -23,7 +23,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gevent
 
 COPY . .
 
@@ -32,4 +32,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
 
-CMD ["gunicorn", "--workers", "2", "--threads", "10", "--bind", "0.0.0.0:8000", "--timeout", "600", "run:app"]
+CMD ["gunicorn", "--workers", "2", "--worker-class", "gevent", "--worker-connections", "1000", "--bind", "0.0.0.0:8000", "--timeout", "0", "--graceful-timeout", "30", "run:app"]

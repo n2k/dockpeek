@@ -305,7 +305,7 @@ export class LogsViewer {
   async startStreaming() {
     this.stopStreaming();
     const tailSelect = document.getElementById('logs-tail-select');
-    const tail = Math.min(parseInt(tailSelect.value) || 0, 10);
+    const tail = Math.min(parseInt(tailSelect.value) || 100, 100);
     
     this.isStreaming = true;
     this.updateStreamButton();
@@ -325,8 +325,11 @@ export class LogsViewer {
       this.updateStatus('Stream disconnected');
     };
     
-    this.updateStatus('Streaming live...');
-  }
+    this.eventSource.onopen = () => {
+      this.updateStatus('Streaming live...');
+    };
+}
+
 
   stopStreaming() {
     if (this.eventSource) {
@@ -335,8 +338,8 @@ export class LogsViewer {
     }
     this.isStreaming = false;
     this.updateStreamButton();
-    this.updateStatus('Stream stopped');
-  }
+}
+
 
   appendLogLine(line) {
     const pre = this.logsContent.querySelector('.logs-pre');

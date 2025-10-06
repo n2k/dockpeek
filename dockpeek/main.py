@@ -424,7 +424,6 @@ def get_logs():
 @main_bp.route("/stream-container-logs", methods=["GET"])
 @conditional_login_required
 def stream_logs():
-    """Streamuje logi kontenera na żywo."""
     server_name = request.args.get('server_name')
     container_name = request.args.get('container_name')
     tail = int(request.args.get('tail', 100))
@@ -442,18 +441,24 @@ def stream_logs():
         try:
             for log_line in stream_container_logs(server['client'], container_name, tail):
                 yield f"data: {log_line}\n\n"
+        except GeneratorExit:
+            current_app.logger.info(f"Stream closed for {container_name}")
+            raise
         except Exception as e:
             current_app.logger.error(f"Stream error: {e}")
             yield f"data: Error: {str(e)}\n\n"
     
-    return Response(
+    response = Response(
         generate(),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no'
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
         }
     )
+    response.timeout = None
+    return response
 
 @main_bp.route("/export/json")
 @conditional_login_required

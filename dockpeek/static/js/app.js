@@ -7,10 +7,9 @@ import { updateColumnVisibility } from './modules/column-visibility.js';
 import { fetchContainerData, checkForUpdates, updateExportLink } from './modules/data-fetch.js';
 import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClearButton, clearSearch, setupServerUI, updateActiveButton } from './modules/filters.js';
 import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './modules/modals.js';
-import { initEventListeners } from './modules/events.js';
+import { initEventListeners, initLogsButtons } from './modules/events.js';
 import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
 import { updateContainerStats } from './modules/container-stats.js';
-import { logsViewer } from './modules/logs-viewer.js';
 
 const tableRenderer = new TableRenderer('container-row-template', 'container-rows');
 let dragDropHandler = null;
@@ -20,21 +19,6 @@ export function renderTable() {
   updateContainerStats(state.filteredAndSortedContainers);
 }
 
-
-export function initLogsButtons() {
-  document.addEventListener('click', (e) => {
-    const logsButton = e.target.closest('.logs-button');
-    if (logsButton) {
-      e.preventDefault();
-      const serverName = logsButton.dataset.server;
-      const containerName = logsButton.dataset.container;
-      
-      if (serverName && containerName) {
-        logsViewer.open(serverName, containerName);
-      }
-    }
-  });
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   initCustomTooltips();

@@ -182,10 +182,11 @@ export function hideUpdateInProgressModal() {
     modal.classList.add('hidden');
   }
 }
-export function showUpdateSuccessModal(containerName) {
+export function showUpdateSuccessModal(containerName, serverName) {
   const modal = document.getElementById('update-success-modal');
   const messageEl = document.getElementById('update-success-message');
   const okButton = document.getElementById('update-success-ok-button');
+  const buttonsContainer = okButton.parentElement;
 
   if (messageEl) {
     messageEl.innerHTML = `Container <strong>"${containerName}"</strong> has been successfully updated!`;
@@ -195,8 +196,20 @@ export function showUpdateSuccessModal(containerName) {
     modal.classList.remove('hidden');
   }
 
+  const viewLogsBtn = document.createElement('button');
+  viewLogsBtn.className = 'px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium view-logs-btn';
+  viewLogsBtn.dataset.server = serverName;
+  viewLogsBtn.dataset.container = containerName;
+  viewLogsBtn.textContent = 'View Logs';
+
+  buttonsContainer.innerHTML = '';
+  buttonsContainer.appendChild(viewLogsBtn);
+  buttonsContainer.appendChild(okButton);
+
   const okHandler = () => {
     modal.classList.add('hidden');
+    buttonsContainer.innerHTML = '';
+    buttonsContainer.appendChild(okButton);
     okButton.removeEventListener('click', okHandler);
     modal.removeEventListener('click', backdropHandler);
   };
@@ -211,10 +224,11 @@ export function showUpdateSuccessModal(containerName) {
   modal.addEventListener('click', backdropHandler);
 }
 
-export function showUpdateErrorModal(containerName, errorMessage) {
+export function showUpdateErrorModal(containerName, errorMessage, serverName) {
   const modal = document.getElementById('update-error-modal');
   const messageEl = document.getElementById('update-error-message');
   const okButton = document.getElementById('update-error-ok-button');
+  const buttonsContainer = okButton.parentElement;
 
   if (messageEl) {
     messageEl.innerHTML = errorMessage.replace(/\n/g, '<br>');
@@ -224,8 +238,20 @@ export function showUpdateErrorModal(containerName, errorMessage) {
     modal.classList.remove('hidden');
   }
 
+  const viewLogsBtn = document.createElement('button');
+  viewLogsBtn.className = 'px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium view-logs-btn';
+  viewLogsBtn.dataset.server = serverName;
+  viewLogsBtn.dataset.container = containerName;
+  viewLogsBtn.textContent = 'View Logs';
+
+  buttonsContainer.innerHTML = '';
+  buttonsContainer.appendChild(viewLogsBtn);
+  buttonsContainer.appendChild(okButton);
+
   const okHandler = () => {
     modal.classList.add('hidden');
+    buttonsContainer.innerHTML = '';
+    buttonsContainer.appendChild(okButton);
     okButton.removeEventListener('click', okHandler);
     modal.removeEventListener('click', backdropHandler);
   };

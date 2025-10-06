@@ -307,7 +307,7 @@ export async function installUpdate(serverName, containerName) {
     }
 
     const { showUpdateSuccessModal } = await import('./modals.js');
-    showUpdateSuccessModal(containerName);
+    showUpdateSuccessModal(containerName, serverName);
     state.allContainersData.forEach(container => {
       if (container.server === serverName && container.name === containerName) {
         container.update_available = false;
@@ -319,7 +319,7 @@ export async function installUpdate(serverName, containerName) {
   } catch (error) {
     console.error('Update failed:', error);
     const { showUpdateErrorModal } = await import('./modals.js');
-    showUpdateErrorModal(containerName, error.message);
+    showUpdateErrorModal(containerName, error.message, serverName);
   } finally {
     hideUpdateInProgressModal();
   }

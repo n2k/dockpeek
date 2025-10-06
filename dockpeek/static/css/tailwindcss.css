@@ -803,6 +803,10 @@
   font-weight: 800;
   src: url('/static/fonts/inter/inter-v19-latin-800.woff2') format('woff2');
 }
+.logs-button svg {
+  width: 16px;
+  height: 16px;
+}
 .logs-modal-content {
   background: #ffffff;
   border-radius: 0.7rem;

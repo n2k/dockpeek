@@ -126,11 +126,13 @@ class LinkHostnameResolver:
 
 
 class DockerClientFactory:
-    def __init__(self, timeout: float = 1.0):
+    def __init__(self, timeout: float = 0.2, long_timeout: float = 60.0):
         self.timeout = timeout
+        self.long_timeout = long_timeout
     
-    def create_client(self, url: str) -> DockerClient:
-        return DockerClient(base_url=url, timeout=self.timeout)
+    def create_client(self, url: str, use_long_timeout: bool = False) -> DockerClient:
+        timeout = self.long_timeout if use_long_timeout else self.timeout
+        return DockerClient(base_url=url, timeout=timeout)
     
     def create_default_client(self) -> DockerClient:
         return docker.from_env(timeout=self.timeout)

@@ -1,4 +1,8 @@
 /* Logs Modal */
+.logs-button svg {
+    width: 16px;
+    height: 16px;
+}
 
 .logs-modal-content {
   background: #ffffff;

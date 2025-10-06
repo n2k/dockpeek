@@ -1,4 +1,5 @@
 import json
+import docker
 from datetime import datetime
 from functools import wraps
 from flask import (
@@ -361,7 +362,9 @@ def prune_images():
                 if image.id not in used_images:
                     try:
                         size = image.attrs.get('Size', 0)
-                        server['client'].images.remove(image.id, force=True)
+                        long_client = docker.DockerClient(base_url=server['url'], timeout=60)
+                        long_client.images.remove(image.id, force=True)
+                        long_client.close()
                         removed_count += 1
                         removed_size += size
                     except Exception as e:

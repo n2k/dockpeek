@@ -331,6 +331,7 @@ export class LogsViewer {
 }
 
 
+
   stopStreaming() {
     if (this.eventSource) {
       this.eventSource.close();
@@ -338,8 +339,8 @@ export class LogsViewer {
     }
     this.isStreaming = false;
     this.updateStreamButton();
-}
-
+    this.updateStatus('Stream stopped');
+  }
 
   appendLogLine(line) {
     const pre = this.logsContent.querySelector('.logs-pre');

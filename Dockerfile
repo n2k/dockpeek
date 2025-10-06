@@ -19,17 +19,36 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="Dockpeek" \
       org.opencontainers.image.description="Docker container monitoring and management tool"
 
+# Instalacja zależności systemowych przed instalacją Pythona
+RUN apt-get update && apt-get install -y \
+    curl \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
+# Kopiowanie tylko requirements.txt dla lepszego cache'owania warstw
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt gevent
+# Instalacja zależności Pythona
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Kopiowanie reszty aplikacji (jako ostatnie dla cache'u)
 COPY . .
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+  CMD curl -fsS http://localhost:8000/health || exit 1
 
-CMD ["gunicorn", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--bind", "0.0.0.0:8000", "--timeout", "0", "--graceful-timeout", "30", "run:app"]
+CMD ["sh", "-c", "gunicorn \
+    --workers ${WORKERS:-4} \
+    --worker-class gevent \
+    --worker-connections 1000 \
+    --bind 0.0.0.0:8000 \
+    --timeout 300 \
+    --graceful-timeout 30 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    run:app"]

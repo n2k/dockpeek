@@ -303,6 +303,7 @@ export class LogsViewer {
   }
 
   async startStreaming() {
+    this.stopStreaming();
     const tailSelect = document.getElementById('logs-tail-select');
     const tail = Math.min(parseInt(tailSelect.value) || 0, 10);
     

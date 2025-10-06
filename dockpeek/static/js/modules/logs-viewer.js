@@ -146,6 +146,9 @@ export class LogsViewer {
   }
 
   async open(serverName, containerName) {
+
+    this.stopStreaming();
+    
     this.currentServer = serverName;
     this.currentContainer = containerName;
     
@@ -156,7 +159,6 @@ export class LogsViewer {
     this.showLoading();
     
     await this.fetchLogs();
-    await this.startStreaming();
   }
 
   close() {
@@ -302,7 +304,7 @@ export class LogsViewer {
 
   async startStreaming() {
     const tailSelect = document.getElementById('logs-tail-select');
-    const tail = Math.min(parseInt(tailSelect.value) || 100, 100);
+    const tail = Math.min(parseInt(tailSelect.value) || 0, 10);
     
     this.isStreaming = true;
     this.updateStreamButton();

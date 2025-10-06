@@ -47,7 +47,7 @@ def get_container_logs(client, container_name, tail=500, timestamps=True, follow
         }
 
 
-def stream_container_logs(client, container_name, tail=100):
+def stream_container_logs(client, container_name, tail=10):
     """
     Generator do streamowania logów kontenera.
     

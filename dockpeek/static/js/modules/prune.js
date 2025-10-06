@@ -1,9 +1,14 @@
-
 import { state } from './state.js';
 import { showPruneInfoModal, showPruneResultModal } from './modals.js';
 
 export async function initPruneInfo() {
   try {
+    if (state.pruneInfoCache && state.pruneInfoCache.server_name === state.currentServerFilter) {
+      console.log('Using cached prune info');
+      updatePruneBadge(state.pruneInfoCache.total_count);
+      return;
+    }
+
     const response = await fetch('/get-prune-info', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -13,13 +18,20 @@ export async function initPruneInfo() {
     if (!response.ok) throw new Error('Failed to get prune info');
 
     const data = await response.json();
+
+    state.pruneInfoCache = {
+      server_name: state.currentServerFilter,
+      total_count: data.total_count,
+      total_size: data.total_size,
+      servers: data.servers
+    };
+
     updatePruneBadge(data.total_count);
   } catch (error) {
     console.error('Error getting prune info:', error);
     alert('Failed to get image information. Please try again.');
   }
 }
-
 
 export async function handlePruneImages() {
   try {
@@ -32,7 +44,14 @@ export async function handlePruneImages() {
     if (!response.ok) throw new Error('Failed to get prune info');
 
     const data = await response.json();
-    
+
+    state.pruneInfoCache = {
+      server_name: state.currentServerFilter,
+      total_count: data.total_count,
+      total_size: data.total_size,
+      servers: data.servers
+    };
+
     updatePruneBadge(data.total_count);
 
     try {
@@ -59,6 +78,7 @@ async function performPrune() {
 
     const data = await response.json();
     showPruneResultModal(data);
+    state.pruneInfoCache = null;
     updatePruneBadge(0);
   } catch (error) {
     console.error('Error pruning images:', error);

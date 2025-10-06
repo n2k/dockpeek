@@ -3,6 +3,7 @@ export const state = {
   allServersData: [],
   filteredAndSortedContainers: [],
   swarmServers: [],
+  pruneInfoCache: null,
   currentSortColumn: "name",
   currentSortDirection: "asc",
   currentServerFilter: "all",

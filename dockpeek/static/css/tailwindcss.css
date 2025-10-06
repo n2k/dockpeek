@@ -811,7 +811,7 @@
   background: #ffffff;
   border-radius: 0.7rem;
   width: 90vw;
-  max-width: 1400px;
+  max-width: 1600px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -942,14 +942,15 @@
   background: #1e1e1e;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.3;
 }
 .logs-pre {
   margin: 0;
-  padding: 16px;
+  padding: 5px;
   color: #d4d4d4;
   white-space: pre-wrap;
   word-wrap: break-word;
+  min-height: 100px;
 }
 .log-line {
   padding: 2px 0;

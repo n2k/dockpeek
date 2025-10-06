@@ -19,7 +19,6 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="Dockpeek" \
       org.opencontainers.image.description="Docker container monitoring and management tool"
 
-# Instalacja zależności systemowych przed instalacją Pythona
 RUN apt-get update && apt-get install -y \
     curl \
     --no-install-recommends \
@@ -27,13 +26,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Kopiowanie tylko requirements.txt dla lepszego cache'owania warstw
 COPY requirements.txt .
 
-# Instalacja zależności Pythona
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiowanie reszty aplikacji (jako ostatnie dla cache'u)
+# Skopiuj plik konfiguracyjny Gunicorna
+COPY gunicorn.conf.py .
+
+# Skopiuj resztę aplikacji
 COPY . .
 
 EXPOSE 8000
@@ -41,14 +41,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
   CMD curl -fsS http://localhost:8000/health || exit 1
 
-CMD ["sh", "-c", "gunicorn \
-    --workers ${WORKERS:-4} \
-    --worker-class gevent \
-    --worker-connections 1000 \
-    --bind 0.0.0.0:8000 \
-    --timeout 300 \
-    --graceful-timeout 30 \
-    --access-logfile - \
-    --error-logfile - \
-    --log-level info \
-    run:app"]
+# Użyj pliku konfiguracyjnego do uruchomienia Gunicorna
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "run:app"]

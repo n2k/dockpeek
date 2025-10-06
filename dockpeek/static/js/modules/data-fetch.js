@@ -3,6 +3,8 @@ import { state } from './state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
 import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
+import { setCachedServerStatus } from './filters.js';
+
 
 let originalButtonHTML = '';
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +24,7 @@ export async function fetchContainerData() {
     const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
 
     state.allServersData.splice(0, state.allServersData.length, ...servers);
+    setCachedServerStatus(servers);
     state.allContainersData.splice(0, state.allContainersData.length, ...containers);
 
     state.swarmServers = swarm_servers;

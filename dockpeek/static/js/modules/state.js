@@ -1,6 +1,11 @@
 export const state = {
   allContainersData: [],
   allServersData: [],
+  serverStatusCache: {
+    data: null,
+    timestamp: 0,
+    ttl: 30000
+  },
   filteredAndSortedContainers: [],
   swarmServers: [],
   pruneInfoCache: null,

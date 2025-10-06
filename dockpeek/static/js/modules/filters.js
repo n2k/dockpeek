@@ -5,12 +5,31 @@ import { renderTable } from '../app.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
 import { updateContainerStats } from './container-stats.js';
 
+export function getCachedServerStatus() {
+  const cache = state.serverStatusCache;
+  const now = Date.now();
+
+  if (cache.data && (now - cache.timestamp) < cache.ttl) {
+    return cache.data;
+  }
+  return null;
+}
+
+export function setCachedServerStatus(servers) {
+  state.serverStatusCache.data = servers;
+  state.serverStatusCache.timestamp = Date.now();
+}
 export function setupServerUI() {
   const serverFilterContainer = document.getElementById("server-filter-container");
   const mainTable = document.getElementById("main-table");
   serverFilterContainer.innerHTML = '';
-  const servers = [...state.allServersData];
-
+  let servers = getCachedServerStatus();
+  if (!servers) {
+    servers = [...state.allServersData];
+    setCachedServerStatus(servers);
+  } else {
+    servers = [...servers];
+  }
   if (servers.length > 1) {
     mainTable.classList.remove('table-single-server');
     serverFilterContainer.classList.remove('hidden');

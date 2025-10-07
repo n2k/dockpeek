@@ -21,9 +21,10 @@ export function initEventListeners() {
   const containerRowsBody = document.getElementById("container-rows");
 
   refreshButton.addEventListener("click", () => {
+    state.pruneInfoCache = null;
     fetchContainerData();
     initPruneInfo();
-});
+  });
 
   checkUpdatesButton.addEventListener("click", checkForUpdates);
 
@@ -204,33 +205,33 @@ export function initLogsButtons() {
   document.addEventListener('click', (e) => {
     const logsButton = e.target.closest('.logs-button');
     const viewLogsBtn = e.target.closest('.view-logs-btn');
-    
+
     if (logsButton) {
       e.preventDefault();
       const serverName = logsButton.dataset.server;
       const containerName = logsButton.dataset.container;
-      
+
       if (serverName && containerName) {
         logsViewer.open(serverName, containerName);
       }
     }
-    
+
     if (viewLogsBtn) {
       e.preventDefault();
       const serverName = viewLogsBtn.dataset.server;
       const containerName = viewLogsBtn.dataset.container;
-      
+
       if (serverName && containerName) {
         const successModal = document.getElementById('update-success-modal');
         const errorModal = document.getElementById('update-error-modal');
-        
+
         if (successModal && !successModal.classList.contains('hidden')) {
           successModal.classList.add('hidden');
         }
         if (errorModal && !errorModal.classList.contains('hidden')) {
           errorModal.classList.add('hidden');
         }
-        
+
         logsViewer.open(serverName, containerName);
       }
     }

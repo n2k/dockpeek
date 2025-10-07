@@ -3,6 +3,7 @@ import { renderStatus } from './status-renderer.js';
 import { updateColumnVisibility, updateFirstAndLastVisibleColumns } from './column-visibility.js';
 import { updateTableOrder } from './column-order.js';
 
+
 export class TableRenderer {
   constructor(templateId, bodyId) {
     this.template = document.getElementById(templateId);
@@ -13,7 +14,7 @@ export class TableRenderer {
     this.body.innerHTML = '';
 
     if (!containers.length) {
-      this.body.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
+      this.body.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-gray-500">No containers found matching your criteria.</td></tr>`;
       return;
     }
 
@@ -60,31 +61,11 @@ export class TableRenderer {
     statusCell.classList.add('table-cell-status');
     const { span, className } = renderStatus(container);
     statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${className}`;
-      
-    // Create wrapper for status and logs button
-    const statusWrapper = document.createElement('div');
-    statusWrapper.className = 'flex items-center justify-between gap-2';
-      
-    // Add logs button
-    const logsButton = document.createElement('button');
-    logsButton.className = 'logs-button text-gray-500 hover:text-blue-600 p-1 rounded transition-colors';
-    logsButton.setAttribute('data-server', container.server);
-    logsButton.setAttribute('data-container', container.name);
-    logsButton.setAttribute('data-tooltip', 'View logs');
-    logsButton.setAttribute('aria-label', 'View container logs');
-    logsButton.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
-        <polyline points="10 9 9 9 8 9"></polyline>
-      </svg>
-    `;
-    statusWrapper.appendChild(logsButton);
-    statusWrapper.appendChild(span);
-      
-    statusCell.appendChild(statusWrapper);
+    statusCell.appendChild(span);
+
+    const logsCell = clone.querySelector('[data-content="logs"]');
+    logsCell.classList.add('table-cell-logs');
+    CellRenderer.renderLogs(container, logsCell);
 
     const portsCell = clone.querySelector('[data-content="ports"]');
     portsCell.classList.add('table-cell-ports');

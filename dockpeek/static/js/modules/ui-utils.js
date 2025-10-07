@@ -2,7 +2,7 @@ export function showLoadingIndicator() {
   const refreshButton = document.getElementById('refresh-button');
   const containerRowsBody = document.getElementById("container-rows");
   refreshButton.classList.add('loading');
-  containerRowsBody.innerHTML = `<tr><td colspan="8"><div class="loader"></div></td></tr>`;
+  containerRowsBody.innerHTML = `<tr><td colspan=9"><div class="loader"></div></td></tr>`;
 }
 
 export function hideLoadingIndicator() {
@@ -13,7 +13,7 @@ export function hideLoadingIndicator() {
 export function displayError(message) {
   const containerRowsBody = document.getElementById("container-rows");
   hideLoadingIndicator();
-  containerRowsBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">${message}</td></tr>`;
+  containerRowsBody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">${message}</td></tr>`;
 }
 
 export function initCustomTooltips() {

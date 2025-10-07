@@ -195,6 +195,18 @@
                   </div>
                 </label>
               </div>
+
+
+              <div class="column-menu-item draggable" data-column="logs">
+                <div class="drag-handle">⋮⋮</div>
+                <label for="toggle-logs">
+                  <span>Logs</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="toggle-logs" checked>
+                    <span class="slider"></span>
+                  </div>
+                </label>
+              </div>
             </div>
 
             <div class="column-menu-reset text-sm">
@@ -252,6 +264,12 @@
               data-sort-column="status">
               Status
             </th>
+            <th
+              class="table-cell-logs py-3 px-2 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 logs-column"
+              data-sort-column="logs">
+              
+            </th>
+
           </tr>
         </thead>
         <tbody id="container-rows">
@@ -338,7 +356,8 @@
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </svg>
         <span>Prune Images</span>
-        <span id="prune-badge" class="hidden ml-1 px-2 py-0.5 text-xs bg-gray-700 text-gray-200 rounded-full prune-badge"></span>
+        <span id="prune-badge"
+          class="hidden ml-1 px-2 py-0.5 text-xs bg-gray-700 text-gray-200 rounded-full prune-badge"></span>
       </button>
     </div>
   </footer>
@@ -406,6 +425,8 @@
       <td class="py-3 px-4 border-b border-gray-200 table-cell-tags" data-content="tags">
       </td>
       <td class="py-3 px-4 border-b border-gray-200 table-cell-status" data-content="status">
+      </td>
+      <td class="py-3 px-2 border-b border-gray-200 table-cell-logs" data-content="logs">
       </td>
     </tr>
   </template>

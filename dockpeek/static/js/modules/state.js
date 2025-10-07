@@ -15,7 +15,7 @@ export const state = {
   isDataLoaded: false,
   isCheckingForUpdates: false,
   updateCheckController: null,
-  columnOrder: ['name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'status'],
+  columnOrder: ['name', 'stack', 'logs', 'server', 'ports', 'traefik', 'image', 'tags', 'status'],
   columnVisibility: {
     name: true,
     server: true,
@@ -24,6 +24,7 @@ export const state = {
     tags: true,
     status: true,
     ports: true,
-    traefik: true
+    traefik: true,
+    logs: true
   }
 };

@@ -43,5 +43,6 @@ export const COLUMN_MAPPINGS = {
   tags: { selector: '[data-sort-column="tags"]', cellClass: 'table-cell-tags' },
   status: { selector: '[data-sort-column="status"]', cellClass: 'table-cell-status' },
   ports: { selector: '[data-sort-column="ports"]', cellClass: 'table-cell-ports' },
-  traefik: { selector: '.traefik-column', cellClass: 'table-cell-traefik' }
+  traefik: { selector: '.traefik-column', cellClass: 'table-cell-traefik' },
+  logs: { selector: '[data-sort-column="logs"]', cellClass: 'table-cell-logs' }
 };

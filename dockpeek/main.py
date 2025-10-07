@@ -440,15 +440,17 @@ def stream_logs():
     if not server:
         return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
     
+    logger = current_app.logger
+    
     def generate():
         try:
             for log_line in stream_container_logs(server['client'], container_name, tail):
                 yield f"data: {log_line}\n\n"
         except GeneratorExit:
-            current_app.logger.info(f"Stream closed for {container_name}")
+            logger.info(f"Stream closed for {container_name}")
             raise
         except Exception as e:
-            current_app.logger.error(f"Stream error: {e}")
+            logger.error(f"Stream error: {e}")
             yield f"data: Error: {str(e)}\n\n"
     
     response = Response(

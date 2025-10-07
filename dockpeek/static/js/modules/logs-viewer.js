@@ -69,6 +69,20 @@ export class LogsViewer {
             </div>
             
             <div class="logs-controls-right">
+              <label class="logs-checkbox-label">
+                <input type="checkbox" id="logs-wrap-checkbox" checked>
+                <span>Wrap lines</span>
+              </label>
+              
+              <select id="logs-fontsize-select" class="logs-select">
+                <option value="11">Font: 11px</option>
+                <option value="12">Font: 12px</option>
+                <option value="13" selected>Font: 13px</option>
+                <option value="14">Font: 14px</option>
+                <option value="15">Font: 15px</option>
+                <option value="16">Font: 16px</option>
+              </select>
+              
               <button id="logs-download-btn" class="logs-control-btn" data-tooltip="Download logs">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -102,7 +116,7 @@ export class LogsViewer {
         </div>
       </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     this.modal = document.getElementById('logs-modal');
     this.logsContent = document.getElementById('logs-content');
@@ -115,28 +129,41 @@ export class LogsViewer {
     document.getElementById('logs-stream-btn').addEventListener('click', () => this.toggleStreaming());
     document.getElementById('logs-clear-btn').addEventListener('click', () => this.clearLogs());
     document.getElementById('logs-download-btn').addEventListener('click', () => this.downloadLogs());
-    
+  
+    const wrapCheckbox = document.getElementById('logs-wrap-checkbox');
+    wrapCheckbox.addEventListener('change', (e) => {
+      const pre = this.logsContent.querySelector('.logs-pre');
+      if (pre) {
+        pre.style.whiteSpace = e.target.checked ? 'pre-wrap' : 'pre';
+      }
+    });
+
+    const fontSizeSelect = document.getElementById('logs-fontsize-select');
+    fontSizeSelect.addEventListener('change', (e) => {
+      this.logsContent.style.fontSize = e.target.value + 'px';
+    });
+
     const autoScrollCheckbox = document.getElementById('logs-autoscroll-checkbox');
     autoScrollCheckbox.addEventListener('change', (e) => {
       this.autoScroll = e.target.checked;
     });
-    
+
     const tailSelect = document.getElementById('logs-tail-select');
     tailSelect.addEventListener('change', () => this.refresh());
-    
+
     const searchInput = document.getElementById('logs-search-input');
     searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
-    
+
     document.getElementById('logs-search-clear').addEventListener('click', () => {
       searchInput.value = '';
       this.handleSearch('');
     });
-    
+
     // Close on overlay click
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.close();
     });
-    
+
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
@@ -148,16 +175,16 @@ export class LogsViewer {
   async open(serverName, containerName) {
 
     this.stopStreaming();
-    
+
     this.currentServer = serverName;
     this.currentContainer = containerName;
-    
+
     document.getElementById('logs-container-name').textContent = containerName;
     document.getElementById('logs-server-name').textContent = `Server: ${serverName}`;
-    
+
     this.modal.classList.remove('hidden');
     this.showLoading();
-    
+
     await this.fetchLogs();
   }
 
@@ -170,7 +197,7 @@ export class LogsViewer {
     document.getElementById('logs-search-clear').classList.add('hidden');
     this.updateLineCount(0);
     this.updateStatus('');
-    
+
     this.currentServer = null;
     this.currentContainer = null;
   }
@@ -190,7 +217,7 @@ export class LogsViewer {
   async fetchLogs() {
     const tailSelect = document.getElementById('logs-tail-select');
     const tail = tailSelect.value === 'all' ? 10000 : parseInt(tailSelect.value);
-    
+
     try {
       const response = await fetch('/get-container-logs', {
         method: 'POST',
@@ -201,9 +228,9 @@ export class LogsViewer {
           tail: tail
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         this.displayLogs(data.logs);
         this.updateLineCount(data.lines);
@@ -220,19 +247,19 @@ export class LogsViewer {
     const lines = logsText.split('\n');
     const logsHTML = lines.map(line => this.formatLogLine(line)).join('');
     this.logsContent.innerHTML = `<pre class="logs-pre">${logsHTML}</pre>`;
-    
+
     if (this.autoScroll) {
       this.scrollToBottom();
     }
   }
 
-    formatLogLine(line) {
+  formatLogLine(line) {
     if (!line.trim()) return '';
-    
+
     // Parse timestamp if present
     const timestampRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(.*)$/;
     const match = line.match(timestampRegex);
-    
+
     if (match) {
       const timestamp = this.formatTimestamp(match[1]);
       const content = match[2];
@@ -253,7 +280,7 @@ export class LogsViewer {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
-      
+
       return `<span class="log-date">${year}-${month}-${day}</span> <span class="log-time">${hours}:${minutes}:${seconds}</span>`;
     } catch (e) {
       return isoString;
@@ -278,13 +305,13 @@ export class LogsViewer {
     if (/SUCCESS|OK/i.test(line)) {
       return `<span class="log-success">${this.escapeHtml(line)}</span>`;
     }
-    
+
     // HTTP status codes
     line = line.replace(/\b([2]\d{2})\b/g, '<span class="log-http-2xx">$1</span>');
     line = line.replace(/\b([3]\d{2})\b/g, '<span class="log-http-3xx">$1</span>');
     line = line.replace(/\b([4]\d{2})\b/g, '<span class="log-http-4xx">$1</span>');
     line = line.replace(/\b([5]\d{2})\b/g, '<span class="log-http-5xx">$1</span>');
-    
+
     return this.escapeHtml(line);
   }
 
@@ -306,29 +333,29 @@ export class LogsViewer {
     this.stopStreaming();
     const tailSelect = document.getElementById('logs-tail-select');
     const tail = Math.min(parseInt(tailSelect.value) || 100, 100);
-    
+
     this.isStreaming = true;
     this.updateStreamButton();
-    
+
     const url = `/stream-container-logs?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}`;
-    
+
     this.eventSource = new EventSource(url);
-    
+
     this.eventSource.onmessage = (event) => {
       const line = event.data;
       this.appendLogLine(line);
     };
-    
+
     this.eventSource.onerror = (error) => {
       console.error('Stream error:', error);
       this.stopStreaming();
       this.updateStatus('Stream disconnected');
     };
-    
+
     this.eventSource.onopen = () => {
       this.updateStatus('Streaming live...');
     };
-}
+  }
 
 
 
@@ -347,17 +374,17 @@ export class LogsViewer {
     if (pre) {
       const formattedLine = this.formatLogLine(line);
       pre.insertAdjacentHTML('beforeend', formattedLine);
-      
+
       // Limit number of lines in memory
       const lines = pre.querySelectorAll('.log-line');
       if (lines.length > 5000) {
         lines[0].remove();
       }
-      
+
       if (this.autoScroll) {
         this.scrollToBottom();
       }
-      
+
       this.updateLineCount(lines.length);
     }
   }
@@ -365,7 +392,7 @@ export class LogsViewer {
   updateStreamButton() {
     const btn = document.getElementById('logs-stream-btn');
     const text = document.getElementById('logs-stream-text');
-    
+
     if (this.isStreaming) {
       btn.classList.add('active');
       text.textContent = 'Stop Stream';
@@ -389,10 +416,10 @@ export class LogsViewer {
   downloadLogs() {
     const pre = this.logsContent.querySelector('.logs-pre');
     if (!pre) return;
-    
+
     const lines = pre.querySelectorAll('.log-line');
     const text = Array.from(lines).map(line => line.textContent).join('\n');
-    
+
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -408,9 +435,9 @@ export class LogsViewer {
   handleSearch(query) {
     const clearBtn = document.getElementById('logs-search-clear');
     clearBtn.classList.toggle('hidden', !query);
-    
+
     const lines = this.logsContent.querySelectorAll('.log-line');
-    
+
     if (!query) {
       lines.forEach(line => {
         line.style.display = '';
@@ -418,7 +445,7 @@ export class LogsViewer {
       });
       return;
     }
-    
+
     const lowerQuery = query.toLowerCase();
     lines.forEach(line => {
       const text = line.textContent.toLowerCase();

@@ -10,9 +10,11 @@ from flask_login import login_required, current_user
 from .get_data import get_all_data
 from .update_manager import update_container
 from .docker_utils import discover_docker_clients
+from .docker_utils import create_streaming_client
 from .update import update_checker
 from .logs_manager import get_container_logs, stream_container_logs
 from flask import Response
+
 
 main_bp = Blueprint('main', __name__)
 
@@ -440,11 +442,12 @@ def stream_logs():
     if not server:
         return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
     
+    stream_client = create_streaming_client(server['url'])
     logger = current_app.logger
     
     def generate():
         try:
-            for log_line in stream_container_logs(server['client'], container_name, tail):
+            for log_line in stream_container_logs(stream_client, container_name, tail):
                 yield f"data: {log_line}\n\n"
         except GeneratorExit:
             logger.info(f"Stream closed for {container_name}")
@@ -452,6 +455,11 @@ def stream_logs():
         except Exception as e:
             logger.error(f"Stream error: {e}")
             yield f"data: Error: {str(e)}\n\n"
+        finally:
+            try:
+                stream_client.close()
+            except:
+                pass
     
     response = Response(
         generate(),

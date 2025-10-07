@@ -256,7 +256,25 @@ def update_container_route():
         else:
             current_app.logger.error(f"Update error for {container_name}: {str(e)}")
             return jsonify({"error": str(e)}), 500
-    
+
+
+
+def parse_image_name(image_name):
+    if ':' in image_name:
+        base_name, tag = image_name.rsplit(':', 1)
+    else:
+        base_name, tag = image_name, 'latest'
+    return base_name, tag
+
+def get_image_creation_time(image):
+    created_str = image.attrs.get('Created', '')
+    if created_str:
+        try:
+            return datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+        except:
+            pass
+    return None
+
 @main_bp.route("/get-prune-info", methods=["POST"])
 @conditional_login_required
 def get_prune_info():
@@ -277,10 +295,23 @@ def get_prune_info():
         try:
             all_images = server['client'].images.list()
             used_images = set()
+            container_images_info = {}
             
             for container in server['client'].containers.list(all=True):
                 image_id = container.image.id
                 used_images.add(image_id)
+                
+                image_name = container.attrs.get('Config', {}).get('Image', '')
+                if image_name:
+                    base_name, tag = parse_image_name(image_name)
+                    key = f"{base_name}:{tag}"
+                    creation_time = get_image_creation_time(container.image)
+                    
+                    if key not in container_images_info or (creation_time and container_images_info[key]['created'] and creation_time > container_images_info[key]['created']):
+                        container_images_info[key] = {
+                            'id': image_id,
+                            'created': creation_time
+                        }
             
             unused_images = []
             unused_size = 0
@@ -302,17 +333,31 @@ def get_prune_info():
                                 tags = [f"{repo_name}:<none>"]
                             else:
                                 tags = ["<none>:<none>"]
-                                       
+                    
+                    pending_update = False
+                    image_created = get_image_creation_time(image)
+                    
+                    for tag in tags:
+                        if tag != "<none>:<none>":
+                            if tag in container_images_info:
+                                used_image_info = container_images_info[tag]
+                                if image_created and used_image_info['created']:
+                                    if image_created > used_image_info['created']:
+                                        pending_update = True
+                                        break
+                    
                     unused_images.append({
                         'id': image.id,
                         'tags': tags,
-                        'size': size
+                        'size': size,
+                        'pending_update': pending_update
                     })
-                    unused_size += size
-
+                    
+                    if not pending_update:
+                        unused_size += size
             
             if unused_images:
-                count = len(unused_images)
+                count = sum(1 for img in unused_images if not img['pending_update'])
                 total_count += count
                 total_size += unused_size
                 
@@ -352,25 +397,52 @@ def prune_images():
         try:
             all_images = server['client'].images.list()
             used_images = set()
+            container_images_info = {}
             
             for container in server['client'].containers.list(all=True):
                 image_id = container.image.id
                 used_images.add(image_id)
+                
+                image_name = container.attrs.get('Config', {}).get('Image', '')
+                if image_name:
+                    base_name, tag = parse_image_name(image_name)
+                    key = f"{base_name}:{tag}"
+                    creation_time = get_image_creation_time(container.image)
+                    
+                    if key not in container_images_info or (creation_time and container_images_info[key]['created'] and creation_time > container_images_info[key]['created']):
+                        container_images_info[key] = {
+                            'id': image_id,
+                            'created': creation_time
+                        }
             
             removed_count = 0
             removed_size = 0
             
             for image in all_images:
                 if image.id not in used_images:
-                    try:
-                        size = image.attrs.get('Size', 0)
-                        long_client = docker.DockerClient(base_url=server['url'], timeout=60)
-                        long_client.images.remove(image.id, force=True)
-                        long_client.close()
-                        removed_count += 1
-                        removed_size += size
-                    except Exception as e:
-                        current_app.logger.warning(f"Could not remove image {image.id}: {e}")
+                    pending_update = False
+                    image_created = get_image_creation_time(image)
+                    
+                    tags = image.tags if image.tags else []
+                    for tag in tags:
+                        if tag != "<none>:<none>":
+                            if tag in container_images_info:
+                                used_image_info = container_images_info[tag]
+                                if image_created and used_image_info['created']:
+                                    if image_created > used_image_info['created']:
+                                        pending_update = True
+                                        break
+                    
+                    if not pending_update:
+                        try:
+                            size = image.attrs.get('Size', 0)
+                            long_client = docker.DockerClient(base_url=server['url'], timeout=60)
+                            long_client.images.remove(image.id, force=True)
+                            long_client.close()
+                            removed_count += 1
+                            removed_size += size
+                        except Exception as e:
+                            current_app.logger.warning(f"Could not remove image {image.id}: {e}")
             
             total_count += removed_count
             total_size += removed_size

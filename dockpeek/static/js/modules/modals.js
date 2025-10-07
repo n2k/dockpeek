@@ -289,7 +289,14 @@ export function showPruneInfoModal(data) {
     messageEl.innerHTML = `<p class="text-center">No unused images found. All images are currently in use!</p>`;
     confirmBtn.style.display = 'none';
   } else {
+    const pendingCount = data.servers.reduce((sum, server) =>
+      sum + (server.images?.filter(img => img.pending_update).length || 0), 0);
+
     let details = `<p class="mb-3"><strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''} found, taking up <strong>${formatSize(data.total_size)}</strong> of disk space.</p>`;
+
+    if (pendingCount > 0) {
+      details += `<p class="mb-3 text-sm text-orange-600"><strong>Note:</strong> ${pendingCount} image${pendingCount > 1 ? 's are' : ' is'} marked as pending update and will not be removed.</p>`;
+    }
 
     if (data.servers && data.servers.length > 0) {
       details += '<div class="text-sm text-left mt-3"><strong>Details:</strong><ul class="mt-2 space-y-1 prune-details-list">';
@@ -302,9 +309,10 @@ export function showPruneInfoModal(data) {
             const imageName = img.tags && img.tags.length > 0
               ? img.tags[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')
               : `&lt;untagged&gt; (${img.id.substring(7, 19)})`;
-            details += `<li>- ${imageName} (${formatSize(img.size)})</li>`;
+            const imageClass = img.pending_update ? 'text-orange-500 font-medium' : '';
+            const pendingLabel = img.pending_update ? ' <span class="text-orange-500">[pending update - will not be removed]</span>' : '';
+            details += `<li class="${imageClass}">- ${imageName} (${formatSize(img.size)})${pendingLabel}</li>`;
           });
-
           details += '</ul>';
         }
 

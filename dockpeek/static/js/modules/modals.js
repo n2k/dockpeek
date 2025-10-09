@@ -295,7 +295,7 @@ export function showPruneInfoModal(data) {
     let details = `<p class="mb-3"><strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''} found, taking up <strong>${formatSize(data.total_size)}</strong> of disk space.</p>`;
 
     if (pendingCount > 0) {
-      details += `<p class="mb-3 text-sm text-orange-600"><strong>Note:</strong> ${pendingCount} image${pendingCount > 1 ? 's are' : ' is'} marked as pending update and will not be removed.</p>`;
+      details += `<p class="mb-3 text-sm text-orange-500"><strong>Note:</strong> ${pendingCount} image${pendingCount > 1 ? 's are' : ' is'} marked as pending update and will not be removed.</p>`;
     }
 
     if (data.servers && data.servers.length > 0) {
@@ -304,13 +304,18 @@ export function showPruneInfoModal(data) {
         details += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})`;
 
         if (server.images && server.images.length > 0) {
-          details += '<ul class="ml-4 mt-1 text-xs text-gray-600">';
-          server.images.forEach(img => {
+          const sortedImages = [...server.images].sort((a, b) => {
+            if (a.pending_update === b.pending_update) return 0;
+            return a.pending_update ? 1 : -1;
+          });
+
+          details += '<ul class="ml-4 mt-1 text-xs text-gray-700">';
+          sortedImages.forEach(img => {
             const imageName = img.tags && img.tags.length > 0
               ? img.tags[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')
               : `&lt;untagged&gt; (${img.id.substring(7, 19)})`;
             const imageClass = img.pending_update ? 'text-orange-500 font-medium' : '';
-            const pendingLabel = img.pending_update ? ' <span class="text-orange-500">[pending update - will not be removed]</span>' : '';
+            const pendingLabel = img.pending_update ? ' <span class="text-orange-500">[pending update]</span>' : '';
             details += `<li class="${imageClass}">- ${imageName} (${formatSize(img.size)})${pendingLabel}</li>`;
           });
           details += '</ul>';

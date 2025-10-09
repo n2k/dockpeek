@@ -159,7 +159,7 @@ export function initEventListeners() {
         }
       });
 
-      state.columnOrder.splice(0, state.columnOrder.length, 'name', 'stack', 'logs', 'server', 'ports', 'traefik', 'image', 'tags', 'status');
+      state.columnOrder.splice(0, state.columnOrder.length, 'name', 'stack', 'server', 'ports', 'traefik', 'image', 'tags', 'logs', 'status');
       ColumnOrder.reorderMenuItems()
       ColumnOrder.save()
       ColumnOrder.updateTableOrder()

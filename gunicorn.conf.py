@@ -2,31 +2,33 @@ import os
 
 workers = int(os.environ.get('WORKERS', '4'))
 worker_class = 'gevent'
-worker_connections = 1000
+worker_connections = 1024
 bind = '0.0.0.0:8000'
 timeout = 300
 graceful_timeout = 30
-keepalive = 75  # Important for SSE connections
-# accesslog = '-'
-# errorlog = '-'
-# loglevel = 'info'
-# 
-# # Prevent request buffering for SSE streams
-# sendfile = False
-# # Allow larger number of pending connections
-# backlog = 2048
-
+keepalive = 75 
+accesslog = '-'
+errorlog = '-'
+loglevel = 'info'
+sendfile = False
+backlog = 2048
 # --- ASCII Art ---
 def get_dockpeek_art():
     version = os.environ.get('VERSION', 'dev')
-    return f"""                                                               
-██████╗  ██████╗  ██████╗██╗  ██╗██████╗ ███████╗███████╗██╗  ██╗
-██╔══██╗██╔═══██╗██╔════╝██║ ██╔╝██╔══██╗██╔════╝██╔════╝██║ ██╔╝
-██║  ██║██║   ██║██║     █████╔╝ ██████╔╝█████╗  █████╗  █████╔╝ 
-██║  ██║██║   ██║██║     ██╔═██╗ ██╔═══╝ ██╔══╝  ██╔══╝  ██╔═██╗ 
-██████╔╝╚██████╔╝╚██████╗██║  ██╗██║     ███████╗███████╗██║  ██╗
-╚═════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝
-══════════════════════════════════════════  Version: {version} ══════
+    return f"""
+--  
+--     _         _               _   
+--   _| |___ ___| |_ ___ ___ ___| |_ 
+--  | . | . |  _| '_| . | -_| -_| '_|
+--  |___|___|___|_|_|  _|___|___|_|_|
+--                  |_|              
+--                                                               
+══════ Version: {version}                
+══════ https://github.com/dockpeek/dockpeek     
+--
+════ Starting {workers} workers with {worker_class} worker class...
+════ Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s
+════ Worker connections: {worker_connections}
 """
 
 # --- Server Hooks ---

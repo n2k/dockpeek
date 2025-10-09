@@ -1,4 +1,3 @@
-```markdown
 # Building DockPeek
 
 This guide explains how to build and run DockPeek from source.

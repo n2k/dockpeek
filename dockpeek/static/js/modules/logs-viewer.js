@@ -339,7 +339,7 @@ export class LogsViewer {
     this.isStreaming = true;
     this.updateStreamButton();
 
-    const url = `/stream-container-logs?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}`;
+    const url = `${apiUrl('/stream-container-logs')}?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}`;
 
     this.eventSource = new EventSource(url);
 

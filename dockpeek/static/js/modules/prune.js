@@ -15,7 +15,7 @@ export async function initPruneInfo() {
 
     updatePruneBadge('...');
 
-    const response = await fetch('/get-prune-info', {
+    const response = await fetch(apiUrl('/get-prune-info'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_name: 'all' })
@@ -48,7 +48,7 @@ export async function initPruneInfo() {
     try {
       updatePruneBadge('...');
 
-      const response = await fetch('/get-prune-info', {
+      const response = await fetch(apiUrl('/get-prune-info'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ server_name: state.currentServerFilter })
@@ -82,7 +82,7 @@ export async function initPruneInfo() {
 
   async function performPrune() {
     try {
-      const response = await fetch('/prune-images', {
+      const response = await fetch(apiUrl('/prune-images'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ server_name: state.currentServerFilter })

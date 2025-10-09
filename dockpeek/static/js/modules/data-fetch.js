@@ -18,7 +18,7 @@ export async function fetchContainerData() {
   showLoadingIndicator();
   loadFilterStates();
   try {
-    const response = await fetch("/data");
+    const response = await fetch(apiUrl("/data"));
     if (!response.ok) throw createResponseError(response);
 
     const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
@@ -129,7 +129,7 @@ async function checkUpdatesIndividually() {
 
   try {
     console.log('Fetching containers list...');
-    const containersResponse = await fetch("/get-containers-list", {
+    const containersResponse = await fetch(apiUrl("/get-containers-list"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ server_filter: state.currentServerFilter })
@@ -167,7 +167,7 @@ async function checkUpdatesIndividually() {
       let cancelled = false;
 
       try {
-        const response = await fetch("/check-single-update", {
+        const response = await fetch(apiUrl("/check-single-update"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -267,7 +267,7 @@ export function updateExportLink() {
   const exportLink = document.getElementById('export-json-link');
   if (exportLink) {
     const serverParam = state.currentServerFilter === 'all' ? 'all' : encodeURIComponent(state.currentServerFilter);
-    exportLink.href = `/export/json?server=${serverParam}`;
+    exportLink.href = `${apiUrl('/export/json')}?server=${serverParam}`;
   }
 }
 
@@ -292,7 +292,7 @@ export async function installUpdate(serverName, containerName) {
 
   showUpdateInProgressModal(containerName);
   try {
-    const response = await fetch('/update-container', {
+    const response = await fetch(apiUrl('/update-container'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

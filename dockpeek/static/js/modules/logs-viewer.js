@@ -219,7 +219,7 @@ export class LogsViewer {
     const tail = tailSelect.value === 'all' ? 10000 : parseInt(tailSelect.value);
 
     try {
-      const response = await fetch('/get-container-logs', {
+      const response = await fetch(apiUrl('/get-container-logs'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

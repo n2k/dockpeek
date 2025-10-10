@@ -212,7 +212,7 @@ export function initLogsButtons() {
       const containerName = logsButton.dataset.container;
 
       if (serverName && containerName) {
-        logsViewer.open(serverName, containerName);
+        logsViewer.open(serverName, containerName, false);
       }
     }
 
@@ -232,7 +232,7 @@ export function initLogsButtons() {
           errorModal.classList.add('hidden');
         }
 
-        logsViewer.open(serverName, containerName);
+        logsViewer.open(serverName, containerName, true);
       }
     }
   });

@@ -74,13 +74,9 @@ def check_updates():
             containers = server['client'].containers.list(all=True)
             total_containers += len(containers)
         except Exception:
-            pass
-    
-    current_app.logger.info(f"Starting update check for {total_containers} containers")
-    
+            pass    
     for server in active_servers:
         if update_checker.is_cancelled:
-            current_app.logger.info("Update check cancelled at server level.")
             was_cancelled = True
             break
             
@@ -88,16 +84,11 @@ def check_updates():
             containers = server['client'].containers.list(all=True)
             for container in containers:
                 if update_checker.is_cancelled:
-                    current_app.logger.info(f"Update check cancelled at container {container.name}. Processed {processed_containers}/{total_containers}")
                     was_cancelled = True
                     break
                 
                 processed_containers += 1
                 key = f"{server['name']}:{container.name}"
-                
-                if processed_containers == 1 or processed_containers % 10 == 0 or processed_containers == total_containers:
-                    current_app.logger.info(f"Checking updates: {processed_containers}/{total_containers} - {key}")
-                
                 try:
                     update_available = update_checker.check_image_updates(
                         server['client'], container, server['name']
@@ -108,7 +99,6 @@ def check_updates():
                     current_app.logger.error(f"Error during update check for {key}: {e}")
                 
                 if update_checker.is_cancelled:
-                    current_app.logger.info(f"Update check cancelled after processing {key}")
                     was_cancelled = True
                     break
                     
@@ -117,11 +107,6 @@ def check_updates():
         
         if was_cancelled:
             break
-
-    if was_cancelled:
-        current_app.logger.info(f"Update check cancelled. Processed {processed_containers}/{total_containers} containers")
-    else:
-        current_app.logger.info(f"Update check completed. Processed {processed_containers}/{total_containers} containers")
 
     return jsonify({
         "updates": updates, 
@@ -135,7 +120,6 @@ def check_updates():
 @main_bp.route("/check-single-update", methods=["POST"])
 @conditional_login_required
 def check_single_update():
-    """Sprawdza aktualizację dla pojedynczego kontenera."""
     update_checker.start_check()
     request_data = request.get_json() or {}
     server_name = request_data.get('server_name')
@@ -164,10 +148,6 @@ def check_single_update():
         )
         
         key = f"{server_name}:{container_name}" 
-        if update_available:
-            current_app.logger.debug(f"⬆️ Update available for {key}")
-        else:
-            current_app.logger.debug(f"✅ Container {key} is up to date")
         return jsonify({
             "key": key,
             "update_available": update_available,
@@ -183,7 +163,6 @@ def check_single_update():
 @main_bp.route("/get-containers-list", methods=["POST"])  
 @conditional_login_required
 def get_containers_list():
-    """Zwraca listę kontenerów do sprawdzenia bez sprawdzania aktualizacji."""
     request_data = request.get_json() or {}
     server_filter = request_data.get('server_filter', 'all')
     
@@ -216,7 +195,6 @@ def get_containers_list():
 @main_bp.route("/update-check-status", methods=["GET"])
 @conditional_login_required
 def get_update_check_status():
-    """Zwraca status sprawdzania aktualizacji."""
     return jsonify({
         "is_cancelled": update_checker.is_cancelled,
         "cache_stats": update_checker.get_cache_stats()
@@ -232,7 +210,6 @@ def cancel_updates():
 @main_bp.route("/update-container", methods=["POST"])
 @conditional_login_required
 def update_container_route():
-    """Uruchamia proces aktualizacji dla pojedynczego kontenera."""
     data = request.get_json()
     server_name = data.get('server_name')
     container_name = data.get('container_name')
@@ -469,7 +446,6 @@ def prune_images():
 @main_bp.route("/get-container-logs", methods=["POST"])
 @conditional_login_required
 def get_logs():
-    """Pobiera logi kontenera."""
     request_data = request.get_json() or {}
     server_name = request_data.get('server_name')
     container_name = request_data.get('container_name')

@@ -203,9 +203,9 @@ class UpdateChecker:
             result = container_image_id != updated_image.id
             
             if result: 
-                logger.info(f"[{server_name}] Update available for {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
+                logger.info(f"⬆[{server_name}] Update available for ⬆️ {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
             else: 
-                logger.info(f"[{server_name}] Image up to date: {base_name}:{current_tag}")
+                logger.info(f"[{server_name}] Image up to date: ✅ {base_name}:{current_tag}")
             
             return result
             
@@ -214,7 +214,7 @@ class UpdateChecker:
                 logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
                 return False
             
-            logger.info(f"[{server_name}] Cannot pull {base_name}:{current_tag} - built locally or private repository: {pull_error}")
+            logger.info(f"[{server_name}] Cannot pull {base_name}:{current_tag} - built locally or private repository")
             return False
     
     def _pull_image(self, client, base_name, tag):

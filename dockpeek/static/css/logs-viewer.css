@@ -189,6 +189,17 @@
   border-left-color: #fbbf24;
 }
 
+.log-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.log-link:hover {
+  color: #2563eb;
+  text-decoration: none;
+}
+
 .log-timestamp {
   color: #858585;
   font-size: 12px;

@@ -5,19 +5,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_container_logs(client, container_name, tail=500, timestamps=True, follow=False):
-    """
-    Pobiera logi kontenera.
-    
-    Args:
-        client: Docker client
-        container_name: Nazwa kontenera
-        tail: Liczba ostatnich linii (default 500)
-        timestamps: Czy dołączać timestampy (default True)
-        follow: Czy streamować logi na żywo (default False)
-    
-    Returns:
-        dict: Słownik z logami lub błędem
-    """
     try:
         container = client.containers.get(container_name)
         
@@ -28,7 +15,6 @@ def get_container_logs(client, container_name, tail=500, timestamps=True, follow
             stream=False
         )
         
-        # Dekodowanie logów z bytes do string
         logs_text = logs.decode('utf-8', errors='replace')
         
         return {

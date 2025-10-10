@@ -1,17 +1,45 @@
 import os
 
 workers = int(os.environ.get('WORKERS', '4'))
+
 worker_class = 'gevent'
 worker_connections = 1024
 bind = '0.0.0.0:8000'
-timeout = 300
+
+# Timeouts
+timeout = 600
 graceful_timeout = 30
-keepalive = 75 
+keepalive = 75
+
+# Logging
 accesslog = '-'
 errorlog = '-'
-loglevel = 'info'
+loglevel = 'warning'
+
+# Performance
 sendfile = False
 backlog = 2048
+max_requests = 1000 
+max_requests_jitter = 50 
+
+# Security
+limit_request_line = 4094
+limit_request_fields = 100
+limit_request_field_size = 8190
+
+
+# --- Gunicorn Config Info ---
+def get_config_info():
+    return f"""
+════ Gunicorn Configuration:
+-- Workers: {workers} ({worker_class})
+-- Bind: {bind}
+-- Timeout: {timeout}s | Graceful: {graceful_timeout}s | Keepalive: {keepalive}s
+-- Worker connections: {worker_connections} | Backlog: {backlog}
+-- Max requests: {max_requests} ±{max_requests_jitter}
+-- Log level: {loglevel}
+"""
+
 # --- ASCII Art ---
 def get_dockpeek_art():
     version = os.environ.get('VERSION', 'dev')
@@ -23,23 +51,26 @@ def get_dockpeek_art():
 --  |___|___|___|_|_|  _|___|___|_|_|
 --                  |_|              
 --                                                               
-══════ Version: {version}                
-══════ https://github.com/dockpeek/dockpeek     
---
-════ Starting {workers} workers with {worker_class} worker class...
-════ Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s
-════ Worker connections: {worker_connections}
+══ Version: {version}                
+════ https://github.com/dockpeek/dockpeek  
+
+══ To support dev visit:
+════ https://buymeacoffee.com/dockpeek
 """
+
 
 # --- Server Hooks ---
 def when_ready(server):
+    print(get_config_info())
     print(get_dockpeek_art())
-#    server.log.info(f"Starting {workers} workers with {worker_class} worker class...")
-#    server.log.info(f"Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s")
-#    server.log.info(f"Worker connections: {worker_connections}")
+    server.log.info("Gunicorn server is ready. Spawning workers...")
+
 
 def worker_exit(server, worker):
     server.log.info(f"Worker {worker.pid} exited")
 
 def worker_abort(worker):
-    worker.log.warning(f"Worker {worker.pid} aborted (may have been handling a long-running request)")
+    worker.log.warning(f"Worker {worker.pid} aborted")
+
+def on_exit(server):
+    server.log.warning("Shutting down Gunicorn")

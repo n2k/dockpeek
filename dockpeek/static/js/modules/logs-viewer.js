@@ -129,7 +129,7 @@ export class LogsViewer {
     document.getElementById('logs-stream-btn').addEventListener('click', () => this.toggleStreaming());
     document.getElementById('logs-clear-btn').addEventListener('click', () => this.clearLogs());
     document.getElementById('logs-download-btn').addEventListener('click', () => this.downloadLogs());
-  
+
     const wrapCheckbox = document.getElementById('logs-wrap-checkbox');
     wrapCheckbox.addEventListener('change', (e) => {
       const pre = this.logsContent.querySelector('.logs-pre');
@@ -172,8 +172,7 @@ export class LogsViewer {
     });
   }
 
-  async open(serverName, containerName) {
-
+  async open(serverName, containerName, autoStream = false) {
     this.stopStreaming();
 
     this.currentServer = serverName;
@@ -185,7 +184,11 @@ export class LogsViewer {
     this.modal.classList.remove('hidden');
     this.showLoading();
 
-    await this.fetchLogs();
+    if (autoStream) {
+      await this.startStreaming();
+    } else {
+      await this.fetchLogs();
+    }
   }
 
   close() {
@@ -289,30 +292,39 @@ export class LogsViewer {
 
 
   colorizeLogLine(line) {
-    // Error levels
-    if (/ERROR|ERRO|ERR/i.test(line)) {
-      return `<span class="log-error">${this.escapeHtml(line)}</span>`;
-    }
-    if (/WARN|WARNING/i.test(line)) {
-      return `<span class="log-warning">${this.escapeHtml(line)}</span>`;
-    }
-    if (/INFO/i.test(line)) {
-      return `<span class="log-info">${this.escapeHtml(line)}</span>`;
-    }
-    if (/DEBUG|TRACE/i.test(line)) {
-      return `<span class="log-debug">${this.escapeHtml(line)}</span>`;
-    }
-    if (/SUCCESS|OK/i.test(line)) {
-      return `<span class="log-success">${this.escapeHtml(line)}</span>`;
-    }
+    // Escape HTML first
+    let escapedLine = this.escapeHtml(line);
 
     // HTTP status codes
-    line = line.replace(/\b([2]\d{2})\b/g, '<span class="log-http-2xx">$1</span>');
-    line = line.replace(/\b([3]\d{2})\b/g, '<span class="log-http-3xx">$1</span>');
-    line = line.replace(/\b([4]\d{2})\b/g, '<span class="log-http-4xx">$1</span>');
-    line = line.replace(/\b([5]\d{2})\b/g, '<span class="log-http-5xx">$1</span>');
+    escapedLine = escapedLine.replace(/\b([2]\d{2})\b/g, '<span class="log-http-2xx">$1</span>');
+    escapedLine = escapedLine.replace(/\b([3]\d{2})\b/g, '<span class="log-http-3xx">$1</span>');
+    escapedLine = escapedLine.replace(/\b([4]\d{2})\b/g, '<span class="log-http-4xx">$1</span>');
+    escapedLine = escapedLine.replace(/\b([5]\d{2})\b/g, '<span class="log-http-5xx">$1</span>');
 
-    return this.escapeHtml(line);
+    // Make URLs clickable
+    escapedLine = escapedLine.replace(
+      /(https?:\/\/[^\s<]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" class="log-link">$1</a>'
+    );
+
+    // Wrap in log level spans (after URL processing)
+    if (/ERROR|ERRO|ERR/i.test(line)) {
+      return `<span class="log-error">${escapedLine}</span>`;
+    }
+    if (/WARN|WARNING/i.test(line)) {
+      return `<span class="log-warning">${escapedLine}</span>`;
+    }
+    if (/INFO/i.test(line)) {
+      return `<span class="log-info">${escapedLine}</span>`;
+    }
+    if (/DEBUG|TRACE/i.test(line)) {
+      return `<span class="log-debug">${escapedLine}</span>`;
+    }
+    if (/SUCCESS|OK/i.test(line)) {
+      return `<span class="log-success">${escapedLine}</span>`;
+    }
+
+    return escapedLine;
   }
 
   escapeHtml(text) {
@@ -332,7 +344,7 @@ export class LogsViewer {
   async startStreaming() {
     this.stopStreaming();
     this.clearLogs();
-    
+
     const tailSelect = document.getElementById('logs-tail-select');
     const tail = Math.min(parseInt(tailSelect.value) || 100, 100);
 

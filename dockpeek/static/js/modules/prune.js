@@ -1,3 +1,4 @@
+import { apiUrl } from './config.js';
 import { state } from './state.js';
 import { showPruneInfoModal, showPruneResultModal } from './modals.js';
 

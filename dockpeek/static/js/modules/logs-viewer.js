@@ -1,5 +1,5 @@
 // modules/logs-viewer.js
-
+import { apiUrl } from './config.js';
 export class LogsViewer {
   constructor() {
     this.modal = null;

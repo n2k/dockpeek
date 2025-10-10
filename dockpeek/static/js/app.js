@@ -1,3 +1,4 @@
+import { apiUrl } from './modules/config.js';
 import { state } from './modules/state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError, initCustomTooltips, initTheme } from './modules/ui-utils.js';
 import { TableRenderer } from './modules/table-renderer.js';

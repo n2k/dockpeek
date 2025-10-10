@@ -1,3 +1,4 @@
+import { apiUrl } from './config.js';
 import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from './state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';

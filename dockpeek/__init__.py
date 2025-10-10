@@ -20,13 +20,6 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    @app.before_request
-    def handle_proxy_prefix():
-        from flask import request
-        script_name = request.environ.get('HTTP_X_FORWARDED_PREFIX', '')
-        if script_name:
-            request.environ['SCRIPT_NAME'] = script_name
-
     login_manager.init_app(app)
     cors.init_app(app)
     

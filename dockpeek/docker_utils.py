@@ -126,7 +126,7 @@ class LinkHostnameResolver:
 
 
 class DockerClientFactory:
-    def __init__(self, timeout: float = 0.2, long_timeout: float = 60.0):
+    def __init__(self, timeout: float = 0.5, long_timeout: float = 60.0):
         self.timeout = timeout
         self.long_timeout = long_timeout
     

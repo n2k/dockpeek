@@ -8,7 +8,7 @@ def create_app(config_class=Config):
     log_level = getattr(logging, config_class.LOG_LEVEL.upper(), logging.INFO)
     logging.basicConfig(
         level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='[%(levelname)s] - %(message)s'
     )
     
     if log_level > logging.DEBUG:

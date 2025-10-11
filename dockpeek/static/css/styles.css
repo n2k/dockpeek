@@ -1327,13 +1327,13 @@ body.dark-mode .column-menu-item span {
   color: #fff;
 }
 
-#prune-info-message{
+#prune-info-message {
   overflow-y: auto;
 }
 
 body.dark-mode .prune-badge {
   background-color: #364153;
-  color: #acacac;  
+  color: #acacac;
 }
 
 .prune-details-list {
@@ -1352,14 +1352,14 @@ body.dark-mode .prune-details-list {
 }
 
 
-.container-stats {  
+.container-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   font-size: 0.875rem;
 }
 
-.dark-mode .container-stats {  
+.dark-mode .container-stats {
   opacity: 80%;
 }
 
@@ -1870,28 +1870,30 @@ label[for="filter-running-checkbox"] {
   }
 
 
-}/* WebKit (Chrome, Safari, Edge) */
+}
+
+/* WebKit (Chrome, Safari, Edge) */
 body.dark-mode ::-webkit-scrollbar {
-  width: 12px; 
+  width: 12px;
 }
 
 body.dark-mode ::-webkit-scrollbar-track {
-  background: #171b22; 
+  background: #171b22;
 }
 
 body.dark-mode ::-webkit-scrollbar-thumb {
   background: #30363d;
-  border-radius: 6px; 
+  border-radius: 6px;
 }
 
 body.dark-mode ::-webkit-scrollbar-thumb:hover {
-  background: #484f58; 
+  background: #484f58;
 }
 
 /* Dla Firefox */
 body.dark-mode {
-  scrollbar-width: thin; 
-  scrollbar-color: #30363d #171b22; 
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #171b22;
 }
 
 body ::-webkit-scrollbar {
@@ -1914,4 +1916,8 @@ body ::-webkit-scrollbar-thumb:hover {
 body {
   scrollbar-width: thin;
   scrollbar-color: #d0d7de #f6f8fa;
+}
+
+.hidden {
+  display: none;
 }

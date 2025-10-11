@@ -1,7 +1,7 @@
 /* Logs Modal */
 .logs-button svg {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .logs-modal-content {
@@ -137,10 +137,6 @@
 }
 
 .logs-search-clear {
-  position: absolute;
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
   padding: 4px 8px;
   font-size: 20px;
   color: #626c78;
@@ -151,6 +147,74 @@
 
 .logs-search-clear:hover {
   color: #364153;
+}
+
+/* Search controls */
+.logs-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.logs-search-controls {
+  position: absolute;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logs-search-count {
+  font-size: 13px;
+  color: #6b7280;
+  padding: 0 8px;
+  white-space: nowrap;
+  min-width: 50px;
+  text-align: center;
+}
+
+.logs-search-nav {
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  transition: all 0.15s;
+}
+
+.logs-search-nav:hover {
+  color: #364153;
+}
+
+.logs-search-nav:active {
+  color: #364153;
+}
+
+.logs-search-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Search highlights */
+mark.search-highlight {
+  background-color: #a5975e;
+  color: #1e1e1e;
+  padding: 1px 0;
+  border-radius: 2px;
+}
+
+mark.search-highlight-active {
+  background-color: #fbbf24;
+  color: #000;
+  padding: 1px 0;
+  border-radius: 2px;
+  outline: 2px solid #f59e0bb0;
+  outline-offset: 1px;
 }
 
 /* Content */
@@ -207,7 +271,7 @@
 }
 
 .log-date {
-  color: #858585; 
+  color: #858585;
 }
 
 .log-time {
@@ -309,6 +373,7 @@ body.dark-mode .logs-controls {
   background: #171b22;
   border-bottom: none;
 }
+
 body.dark-mode .logs-header {
   border-bottom: none;
 }
@@ -401,11 +466,12 @@ body.dark-mode .logs-checkbox-label {
 }
 
 @media (max-height: 640px) {
-    .logs-header,
-    .logs-search-bar,
-    .logs-footer,
-    #logs-download-btn,
-    #logs-fontsize-select {
-        display: none;
-    }
+
+  .logs-header,
+  .logs-search-bar,
+  .logs-footer,
+  #logs-download-btn,
+  #logs-fontsize-select {
+    display: none;
+  }
 }

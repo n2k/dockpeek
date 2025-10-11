@@ -9,6 +9,8 @@ export class LogsViewer {
     this.currentServer = null;
     this.currentContainer = null;
     this.autoScroll = true;
+    this.searchMatches = [];
+    this.currentMatchIndex = -1;
     this.initModal();
   }
 
@@ -96,7 +98,20 @@ export class LogsViewer {
           
           <div class="logs-search-bar">
             <input type="text" id="logs-search-input" placeholder="Search in logs..." class="logs-search-input">
-            <button id="logs-search-clear" class="logs-search-clear hidden">×</button>
+            <div class="logs-search-controls">
+              <button id="logs-search-clear" class="logs-search-clear hidden">×</button>
+              <span id="logs-search-count" class="logs-search-count hidden">0/0</span>
+              <button id="logs-search-prev" class="logs-search-nav hidden" title="Previous (Shift+Enter)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button id="logs-search-next" class="logs-search-nav hidden" title="Next (Enter)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
           </div>
           
           <div id="logs-content" class="logs-content">
@@ -153,10 +168,28 @@ export class LogsViewer {
 
     const searchInput = document.getElementById('logs-search-input');
     searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.navigateToPrevMatch();
+        } else {
+          this.navigateToNextMatch();
+        }
+      }
+    });
 
     document.getElementById('logs-search-clear').addEventListener('click', () => {
       searchInput.value = '';
       this.handleSearch('');
+    });
+
+    document.getElementById('logs-search-prev').addEventListener('click', () => {
+      this.navigateToPrevMatch();
+    });
+
+    document.getElementById('logs-search-next').addEventListener('click', () => {
+      this.navigateToNextMatch();
     });
 
     // Close on overlay click
@@ -198,11 +231,16 @@ export class LogsViewer {
     const searchInput = document.getElementById('logs-search-input');
     searchInput.value = '';
     document.getElementById('logs-search-clear').classList.add('hidden');
+    document.getElementById('logs-search-count').classList.add('hidden');
+    document.getElementById('logs-search-prev').classList.add('hidden');
+    document.getElementById('logs-search-next').classList.add('hidden');
     this.updateLineCount(0);
     this.updateStatus('');
 
     this.currentServer = null;
     this.currentContainer = null;
+    this.searchMatches = [];
+    this.currentMatchIndex = -1;
   }
 
   showLoading() {
@@ -290,7 +328,6 @@ export class LogsViewer {
     }
   }
 
-
   colorizeLogLine(line) {
     // Escape HTML first
     let escapedLine = this.escapeHtml(line);
@@ -371,8 +408,6 @@ export class LogsViewer {
     };
   }
 
-
-
   stopStreaming() {
     if (this.eventSource) {
       this.eventSource.close();
@@ -419,6 +454,8 @@ export class LogsViewer {
   clearLogs() {
     this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
     this.updateLineCount(0);
+    this.searchMatches = [];
+    this.currentMatchIndex = -1;
   }
 
   async refresh() {
@@ -445,32 +482,208 @@ export class LogsViewer {
     URL.revokeObjectURL(url);
   }
 
-
   handleSearch(query) {
     const clearBtn = document.getElementById('logs-search-clear');
-    clearBtn.classList.toggle('hidden', !query);
+    const countSpan = document.getElementById('logs-search-count');
+    const prevBtn = document.getElementById('logs-search-prev');
+    const nextBtn = document.getElementById('logs-search-next');
 
-    const lines = this.logsContent.querySelectorAll('.log-line');
+    // Reset
+    this.searchMatches = [];
+    this.currentMatchIndex = -1;
 
     if (!query) {
-      lines.forEach(line => {
-        line.style.display = '';
-        line.classList.remove('search-highlight');
-      });
+      clearBtn.classList.add('hidden');
+      countSpan.classList.add('hidden');
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      this.clearSearchHighlights();
       return;
     }
 
+    clearBtn.classList.remove('hidden');
+
+    // Find all matches
+    const lines = this.logsContent.querySelectorAll('.log-line');
     const lowerQuery = query.toLowerCase();
-    lines.forEach(line => {
-      const text = line.textContent.toLowerCase();
-      if (text.includes(lowerQuery)) {
-        line.style.display = '';
-        line.classList.add('search-highlight');
-      } else {
-        line.style.display = 'none';
-        line.classList.remove('search-highlight');
+
+    lines.forEach((line, lineIndex) => {
+      const textContent = line.textContent;
+      const lowerText = textContent.toLowerCase();
+      
+      let startIndex = 0;
+      while (true) {
+        const matchIndex = lowerText.indexOf(lowerQuery, startIndex);
+        if (matchIndex === -1) break;
+        
+        this.searchMatches.push({
+          lineElement: line,
+          lineIndex: lineIndex,
+          startIndex: matchIndex,
+          endIndex: matchIndex + query.length
+        });
+        
+        startIndex = matchIndex + 1;
       }
     });
+
+    // Update UI
+    if (this.searchMatches.length > 0) {
+      countSpan.classList.remove('hidden');
+      prevBtn.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+      this.currentMatchIndex = 0;
+      this.highlightAllMatches(query);
+      this.updateSearchCount();
+      this.scrollToCurrentMatch();
+    } else {
+      countSpan.classList.add('hidden');
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      countSpan.textContent = '0/0';
+      this.clearSearchHighlights();
+    }
+  }
+
+  highlightAllMatches(query) {
+  this.clearSearchHighlights();
+  
+  const escapedQuery = this.escapeRegex(query);
+  let globalMatchIndex = 0;
+
+  const linesWithMatches = new Set();
+  this.searchMatches.forEach(match => linesWithMatches.add(match.lineElement));
+
+  linesWithMatches.forEach(line => {
+    if (!line.dataset.originalHtml) {
+      line.dataset.originalHtml = line.innerHTML;
+    }
+
+    const walker = document.createTreeWalker(
+      line,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    const replacements = [];
+    let node;
+    
+    while (node = walker.nextNode()) {
+      const text = node.textContent;
+      const regex = new RegExp(escapedQuery, 'gi');
+      let match;
+      const nodeMatches = [];
+      
+      while ((match = regex.exec(text)) !== null) {
+        nodeMatches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0]
+        });
+      }
+
+      if (nodeMatches.length > 0) {
+        replacements.push({ node, matches: nodeMatches });
+      }
+    }
+
+    replacements.forEach(({ node, matches }) => {
+      const text = node.textContent;
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+
+      matches.forEach(m => {
+        if (m.start > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
+        }
+
+        const mark = document.createElement('mark');
+        mark.className = globalMatchIndex === this.currentMatchIndex 
+          ? 'search-highlight-active' 
+          : 'search-highlight';
+        mark.dataset.matchIndex = globalMatchIndex;
+        mark.textContent = m.text;
+        fragment.appendChild(mark);
+
+        globalMatchIndex++;
+        lastIndex = m.end;
+      });
+
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+      }
+
+      node.parentNode.replaceChild(fragment, node);
+    });
+  });
+}
+
+  clearSearchHighlights() {
+    const lines = this.logsContent.querySelectorAll('.log-line');
+    lines.forEach((line) => {
+      if (line.dataset.originalHtml) {
+        line.innerHTML = line.dataset.originalHtml;
+        delete line.dataset.originalHtml;
+      }
+    });
+  }
+
+  navigateToNextMatch() {
+    if (this.searchMatches.length === 0) return;
+    
+    this.currentMatchIndex = (this.currentMatchIndex + 1) % this.searchMatches.length;
+    this.updateSearchCount();
+    this.updateActiveHighlight();
+    this.scrollToCurrentMatch();
+  }
+
+  navigateToPrevMatch() {
+    if (this.searchMatches.length === 0) return;
+    
+    this.currentMatchIndex = (this.currentMatchIndex - 1 + this.searchMatches.length) % this.searchMatches.length;
+    this.updateSearchCount();
+    this.updateActiveHighlight();
+    this.scrollToCurrentMatch();
+  }
+
+  updateActiveHighlight() {
+    // Remove all active highlights
+    this.logsContent.querySelectorAll('mark.search-highlight-active').forEach(el => {
+      el.classList.remove('search-highlight-active');
+      el.classList.add('search-highlight');
+    });
+
+    // Add active highlight to current match
+    const marks = this.logsContent.querySelectorAll('mark[data-match-index]');
+    marks.forEach(mark => {
+      const idx = parseInt(mark.dataset.matchIndex);
+      if (idx === this.currentMatchIndex) {
+        mark.classList.remove('search-highlight');
+        mark.classList.add('search-highlight-active');
+      }
+    });
+  }
+
+  updateSearchCount() {
+    const countSpan = document.getElementById('logs-search-count');
+    if (this.searchMatches.length > 0) {
+      countSpan.textContent = `${this.currentMatchIndex + 1}/${this.searchMatches.length}`;
+    } else {
+      countSpan.textContent = '0/0';
+    }
+  }
+
+  scrollToCurrentMatch() {
+    if (this.currentMatchIndex >= 0 && this.currentMatchIndex < this.searchMatches.length) {
+      const match = this.searchMatches[this.currentMatchIndex];
+      const line = match.lineElement;
+      
+      line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   scrollToBottom() {

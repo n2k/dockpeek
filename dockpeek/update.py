@@ -1,3 +1,4 @@
+import os
 import logging
 from datetime import datetime, timedelta
 from threading import Lock
@@ -80,6 +81,31 @@ class UpdateChecker:
         self._cancellation = CancellationToken()
         self._pull_timeout = 300
         self._executor = ThreadPoolExecutor(max_workers=1)
+        self._floating_tag_mode = os.getenv('UPDATE_FLOATING_TAGS', 'disabled').lower()
+    
+    def _resolve_floating_tag(self, current_tag: str) -> str:
+        if self._floating_tag_mode == 'disabled' or current_tag == 'latest':
+            return current_tag
+
+        if self._floating_tag_mode == 'latest':
+            return 'latest'
+
+        version_part = current_tag.split('-')[0]
+        suffix = '-' + '-'.join(current_tag.split('-')[1:]) if '-' in current_tag else ''
+
+        if self._floating_tag_mode == 'major':
+            parts = version_part.split('.')
+            if len(parts) >= 1 and parts[0].isdigit():
+                return f"{parts[0]}{suffix}"
+            return current_tag
+
+        if self._floating_tag_mode == 'minor':
+            parts = version_part.split('.')
+            if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
+                return f"{parts[0]}.{parts[1]}{suffix}"
+            return current_tag
+
+        return current_tag
         
     @property
     def is_cancelled(self):
@@ -158,12 +184,16 @@ class UpdateChecker:
                 return cached_result
             
             base_name, current_tag = self._parse_image_name(image_name)
+            resolved_tag = self._resolve_floating_tag(current_tag)
+
+            if resolved_tag != current_tag:
+                logger.info(f"[{server_name}] Checking floating tag: {current_tag} → {resolved_tag}")
             
             if self._cancellation.is_cancelled():
                 logger.info(f"Update check cancelled before pulling {base_name}:{current_tag} on {server_name}")
                 return False
             
-            result = self._pull_and_compare(client, container_image_id, base_name, current_tag, server_name)
+            result = self._pull_and_compare(client, container_image_id, base_name, resolved_tag, server_name)
             self.set_cache_result(cache_key, result)
             return result
                 

@@ -17,7 +17,7 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.url="https://github.com/dockpeek/dockpeek" \
       org.opencontainers.image.documentation="https://github.com/dockpeek/dockpeek#readme" \
       org.opencontainers.image.title="Dockpeek" \
-      org.opencontainers.image.description="Docker container monitoring and management tool"
+      org.opencontainers.image.description="Quick Access & One-Click Updates for Your Containers"
 
 RUN apt-get update && apt-get install -y \
     curl \
@@ -30,10 +30,8 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Skopiuj plik konfiguracyjny Gunicorna
 COPY gunicorn.conf.py .
 
-# Skopiuj resztę aplikacji
 COPY . .
 
 EXPOSE 8000
@@ -41,5 +39,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
   CMD curl -fsS http://localhost:8000/health || exit 1
 
-# Użyj pliku konfiguracyjnego do uruchomienia Gunicorna
 CMD ["gunicorn", "-c", "gunicorn.conf.py", "run:app"]

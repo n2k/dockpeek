@@ -198,8 +198,11 @@ services:
 | Variable                      | Default       | Description                                            |
 | ----------------------------- | ------------- | ------------------------------------------------------ |
 | `DISABLE_AUTH`                | `false`       | Set to `true` to disable authentication                |
-| `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik integration column                              |
-| `TAGS`                        | `true`        | Set to `false` to disable container tagging                     |
+| `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik column      |
+| `TAGS`                        | `true`        | Set to `false` to hide tags column           |
+| `UPDATE_FLOATING_TAGS`        | `disabled`    | Update check mode: `latest`, `major` (e.g., `8.3.3` → `8`), or `minor` (e.g., `8.3.3` → `8.3`) (default: exact tags) |
+| `TRUST_PROXY_HEADERS`         | `false`       | Set to `true` to enable proxy header support (X-Forwarded-*) |
+| `TRUSTED_PROXY_COUNT`         | `1`           | Number of trusted proxies when `TRUST_PROXY_HEADERS=true` |
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
 | `DOCKER_HOST_NAME`            | `default`     | Display name for the primary server in the UI          |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
@@ -381,6 +384,39 @@ networks:
 > labels:
 >   - "dockpeek.ports=8096,8920"
 > ```
+
+</details>
+
+<details>
+<summary><strong>How do I check updates for pinned versions like 8.2.2-alpine?</strong></summary>
+
+> Use the `UPDATE_FLOATING_TAGS` environment variable:
+>
+> ```yaml
+> environment:
+>   - UPDATE_FLOATING_TAGS=minor  # Checks 8.2-alpine instead of exact 8.2.2-alpine
+> ```
+>
+> Available modes:
+> - `latest` - always checks the `latest` tag
+> - `major` - for `8.2.2` checks `8`
+> - `minor` - for `8.2.2` checks `8.2`
+> - `disabled` (default) - checks exact tag
+
+</details>
+
+<details>
+<summary><strong>How do I enable X-Forwarded-* headers behind a proxy?</strong></summary>
+
+> Enable proxy header support with these environment variables:
+>
+> ```yaml
+> environment:
+>   - TRUST_PROXY_HEADERS=true
+>   - TRUSTED_PROXY_COUNT=1  # Number of proxies between client and dockpeek
+> ```
+>
+> This allows dockpeek to correctly handle X-Forwarded-* headers (including X-Forwarded-Prefix for subpath deployments) from proxies like Traefik, Nginx, or Caddy.
 
 </details>
 

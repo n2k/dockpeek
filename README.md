@@ -44,8 +44,15 @@ Customize how your containers are displayed with custom labels:
 <br>
 
 <div align="center">
- 
+
 ![Dockpeek Night mode screenshot](screenshots/screenshot_dark_v1.6.5.png)
+
+<details>
+<summary><strong>Container logs view</strong></summary>
+
+![Dockpeek Container logs screenshot](screenshots/screenshot_dark_logs_v1.6.6.png)
+
+</details>
 
 <details>
 <summary><strong>Checking for updates</strong></summary>
@@ -69,6 +76,7 @@ Customize how your containers are displayed with custom labels:
 </details>
 
 </div>
+
 
 <br>
 
@@ -427,7 +435,7 @@ networks:
 > Use the `:free` search syntax to find the next available port:
 >
 > - **`:free`** — Returns the next free port after the lowest occupied port  
-> - **`:free 3240`** — Returns the next free port starting from port 5000 or higher
+> - **`:free 3240`** — Returns the next free port starting from port 3240 or higher
 >
 > The search works per server when a specific server is selected, or across all servers when "All" is selected.  
 >

@@ -16,7 +16,7 @@
 <h3>Quick Access & One-Click Updates for Your Docker Containers</h3>
 
 <p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for efficiency and simplicity.
-With Dockpeek, you can instantly access container web interfaces, monitor ports, and apply updates in a single click.
+With Dockpeek, you can instantly access container web interfaces, view logs, monitor ports, and apply updates in a single click.
 It also auto-detects Traefik labels to display container addresses, helping you keep everything organized — all from one clean and intuitive interface.</p>
 </div>
 
@@ -24,6 +24,7 @@ It also auto-detects Traefik labels to display container addresses, helping you 
 ## ✨ Key Features
 
 * **Port Mapping Overview** — Instantly see all running containers and their published ports
+* **Real-Time Log Viewer** — Monitor container logs in real-time
 * **Traefik Integration** — Auto-detect and display container addresses from Traefik labels
 * **One-Click Access** — Jump directly into containerized web interfaces
 * **Multi-Host Management** — Manage multiple Docker hosts in one place
@@ -392,16 +393,17 @@ networks:
 
 > Use the `UPDATE_FLOATING_TAGS` environment variable:
 >
-> ```yaml
-> environment:
->   - UPDATE_FLOATING_TAGS=minor  # Checks 8.2-alpine instead of exact 8.2.2-alpine
-> ```
->
 > Available modes:
 > - `latest` - always checks the `latest` tag
 > - `major` - for `8.2.2` checks `8`
 > - `minor` - for `8.2.2` checks `8.2`
 > - `disabled` (default) - checks exact tag
+>
+> ```yaml
+> environment:
+>   - UPDATE_FLOATING_TAGS=major  # Checks 8-alpine instead of exact 8.2.2-alpine
+> ```
+
 
 </details>
 

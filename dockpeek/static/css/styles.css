@@ -249,7 +249,7 @@ body.dark-mode #search-input:focus {
 .free-port-result {
   position: absolute;
   bottom: 100%;
-  left: 0;
+  left: 1.4em;
   margin-bottom: 8px;
   padding: 8px 16px;
   background: white;

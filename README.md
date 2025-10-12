@@ -421,29 +421,24 @@ networks:
 > This allows dockpeek to correctly handle X-Forwarded-* headers (including X-Forwarded-Prefix for subpath deployments) from proxies like Traefik, Nginx, or Caddy.
 
 </details>
-
 <details>
-<summary><strong>How do I clear the search filter?</strong></summary>
+<summary><strong>How do I search for available ports?</strong></summary>
 
-> Click on the "Dockpeek" logo/title at the top of the page to reset the search and return to the full container view.
+> Use the `:free` search syntax to find the next available port:
+>
+> - **`:free`** — Returns the next free port after the lowest occupied port  
+> - **`:free 3240`** — Returns the next free port starting from port 5000 or higher
+>
+> The search works per server when a specific server is selected, or across all servers when "All" is selected.  
+>
+> Click the copy button next to the result to copy the port number to your clipboard.
 
 </details>
 
 <details>
-<summary><strong>Which environment variables are required for updates when using Docker socket-proxy?</strong></summary>
+<summary><strong>How do I clear the search filter?</strong></summary>
 
-> 
-> **For socket-proxy setups, ensure these permissions are enabled:**
->
-> ```yaml
-> environment:
->   - ALLOW_START=1 
->   - ALLOW_STOP=1 
->   - ALLOW_RESTARTS=1 
->   - NETWORKS=1 
-> ```
->
-> The update feature works with all supported connection methods (local socket, remote socket-proxy, and multi-host configurations).
+> Click the **Dockpeek** title at the top of the page to reset the search and return to the full container view.
 
 </details>
 
@@ -452,7 +447,7 @@ networks:
 ---
 
 <div align="center">
-  <sub>Made with ❤️ for the self-hosted & open-source community</sub>  
+  <sub>Made with ❤️ for the self-hosted and open-source community</sub>  
   <br>
   <a href="https://github.com/dockpeek/dockpeek/issues">Report a bug</a> •
   <a href="https://github.com/dockpeek/dockpeek/releases">Check releases</a>

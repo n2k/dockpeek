@@ -435,7 +435,7 @@ networks:
 > Use the `:free` search syntax to find the next available port:
 >
 > - **`:free`** — Returns the next free port after the lowest occupied port  
-> - **`:free 3240`** — Returns the next free port starting from port 3240 or higher
+> - **`:free 3420`** — Returns the next free port starting from port 3420 or higher
 >
 > The search works per server when a specific server is selected, or across all servers when "All" is selected.  
 >

@@ -68,8 +68,10 @@ export function setupServerUI() {
         state.currentServerFilter = button.dataset.server;
         updateDisplay();
         initPruneInfo();
+
       });
     });
+
   } else {
     mainTable.classList.add('table-single-server');
     serverFilterContainer.classList.add('hidden');
@@ -102,7 +104,7 @@ export function parseAdvancedSearch(searchTerm) {
 
     if (term.startsWith('#')) {
       filters.tags.push(term.substring(1).toLowerCase());
-    } else if (term.startsWith(':')) {
+    } else if (term.startsWith(':') && !term.startsWith(':free')) {
       filters.ports.push(term.substring(1));
     } else if (term.startsWith('stack:')) {
       let stackValue = term.substring(6);
@@ -153,7 +155,6 @@ export function updateDisplay() {
 
   filterContainer.classList.remove('hidden');
 
-
   if (filterRunningCheckbox.checked) {
     if (swarmMode) {
       // Only show services where running < desired replicas
@@ -181,8 +182,47 @@ export function updateDisplay() {
 
   const searchTerm = searchInput.value.trim();
 
-  if (searchTerm) {
-    const filters = parseAdvancedSearch(searchTerm);
+  // Handle :free port search FIRST
+  const freeMatch = searchTerm.match(/:free\s*(\d+)?/);
+  if (freeMatch) {
+    const occupiedPorts = new Set();
+
+    // Filter by current server before collecting ports
+    const containersToCheck = state.currentServerFilter === "all"
+      ? state.allContainersData
+      : state.allContainersData.filter(c => c.server === state.currentServerFilter);
+
+    containersToCheck.forEach(container => {
+      container.ports.forEach(p => {
+        const port = parseInt(p.host_port, 10);
+        if (!isNaN(port)) occupiedPorts.add(port);
+      });
+    });
+
+    const sortedPorts = Array.from(occupiedPorts).sort((a, b) => a - b);
+    const startPortValue = freeMatch[1] ? parseInt(freeMatch[1], 10) : (sortedPorts.length > 0 ? sortedPorts[0] : 1000);
+
+    let freePort = startPortValue;
+    for (const port of sortedPorts) {
+      if (port >= startPortValue) {
+        if (port === freePort) {
+          freePort++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    showFreePortResult(freePort);
+  } else {
+    hideFreePortResult();
+  }
+
+  // Remove :free from search term before normal filtering
+  const cleanSearchTerm = searchTerm.replace(/:free\s*\d*/g, '').trim();
+
+  if (cleanSearchTerm) {
+    const filters = parseAdvancedSearch(cleanSearchTerm);
 
     workingData = workingData.filter(container => {
       if (filters.tags.length > 0) {
@@ -362,4 +402,61 @@ export function clearSearch() {
   clearSearchButton.classList.add('hidden');
   searchInput.focus();
   updateDisplay();
+}
+
+export function showFreePortResult(port) {
+  let resultDiv = document.getElementById('free-port-result');
+  if (!resultDiv) {
+    resultDiv = document.createElement('div');
+    resultDiv.id = 'free-port-result';
+    resultDiv.className = 'free-port-result';
+    const searchInput = document.getElementById('search-input');
+    searchInput.parentElement.appendChild(resultDiv);
+  }
+
+  resultDiv.innerHTML = `
+    <div class="free-port-content">
+      <span class="free-port-label">Next free port:</span>
+      <code class="free-port-number">${port}</code>
+      <button class="copy-port-button" data-tooltip="Copy to clipboard" onclick="copyFreePort(${port})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  resultDiv.classList.remove('hidden');
+}
+
+// Add to window for onclick access
+window.copyFreePort = function(port) {
+  navigator.clipboard.writeText(port.toString()).then(() => {
+    const btns = document.querySelectorAll('.copy-port-button');
+    btns.forEach(btn => {
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        `;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+};
+
+export function hideFreePortResult() {
+  const resultDiv = document.getElementById('free-port-result');
+  if (resultDiv) {
+    resultDiv.classList.add('hidden');
+  }
 }

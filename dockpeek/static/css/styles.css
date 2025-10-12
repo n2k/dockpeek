@@ -245,6 +245,76 @@ body.dark-mode #search-input:focus {
   color: #bbbfc5;
 }
 
+
+.free-port-result {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 2px solid #91bbff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.dark-mode .free-port-result {
+  background: #1f2937;
+  border-color: #3b82f6;
+}
+
+.free-port-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.free-port-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.dark-mode .free-port-label {
+  color: #d1d5db;
+}
+
+.free-port-number {
+  background: #f3f4f6;
+  color: #1f2937;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dark-mode .free-port-number {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+.copy-port-button {
+  padding: 6px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-port-button:hover {
+  background: #2563eb;
+}
+
+.copy-port-button.copied {
+  background: #10b981;
+}
+
 #refresh-button {
   display: flex;
   justify-content: center;

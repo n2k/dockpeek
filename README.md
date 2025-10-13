@@ -13,10 +13,10 @@
   [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/dockpeek)
 
 
-<h3>Quick Access & One-Click Updates for Your Docker Containers</h3>
+<h3>Quick Access & Easy Updates for Your Docker Containers</h3>
 
-<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard built for efficiency and simplicity.
-With Dockpeek, you can instantly access container web interfaces, view logs, monitor ports, and apply updates in a single click.
+<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard designed for efficiency and simplicity.
+With dockpeek, you can instantly access container web interfaces, view logs, monitor ports, and apply updates in a single click.
 It also auto-detects Traefik labels to display container addresses, helping you keep everything organized — all from one clean and intuitive interface.</p>
 </div>
 

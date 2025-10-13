@@ -1,4 +1,3 @@
-
 import { state } from './state.js';
 import { updateSwarmIndicator, isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from '../app.js';
@@ -19,6 +18,7 @@ export function setCachedServerStatus(servers) {
   state.serverStatusCache.data = servers;
   state.serverStatusCache.timestamp = Date.now();
 }
+
 export function setupServerUI() {
   const serverFilterContainer = document.getElementById("server-filter-container");
   const mainTable = document.getElementById("main-table");
@@ -157,7 +157,6 @@ export function updateDisplay() {
 
   if (filterRunningCheckbox.checked) {
     if (swarmMode) {
-      // Only show services where running < desired replicas
       workingData = workingData.filter(c => {
         if (typeof c.status === 'string') {
           const m = c.status.match(/^running \((\d+)\/(\d+)\)$/);
@@ -166,7 +165,6 @@ export function updateDisplay() {
             const desired = parseInt(m[2], 10);
             return running < desired;
           }
-          // Also show 'no-tasks' as a problem
           if (c.status === 'no-tasks') return true;
         }
         return false;
@@ -182,12 +180,10 @@ export function updateDisplay() {
 
   const searchTerm = searchInput.value.trim();
 
-  // Handle :free port search FIRST
   const freeMatch = searchTerm.match(/:free\s*(\d+)?/);
   if (freeMatch) {
     const occupiedPorts = new Set();
 
-    // Filter by current server before collecting ports
     const containersToCheck = state.currentServerFilter === "all"
       ? state.allContainersData
       : state.allContainersData.filter(c => c.server === state.currentServerFilter);
@@ -404,8 +400,78 @@ export function clearSearch() {
   updateDisplay();
 }
 
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    console.warn('Clipboard API failed, trying fallback:', err);
+  }
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    textArea.setAttribute('readonly', '');
+    document.body.appendChild(textArea);
+
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      const range = document.createRange();
+      range.selectNodeContents(textArea);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      textArea.setSelectionRange(0, 999999);
+    } else {
+      textArea.select();
+    }
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('All copy methods failed:', err);
+    return false;
+  }
+}
+
+function handleCopyPortClick(event) {
+  const button = event.currentTarget;
+  const port = button.getAttribute('data-port');
+
+  if (!port) {
+    console.error('No port data found');
+    return;
+  }
+
+  copyToClipboard(port).then(success => {
+    if (!success) {
+      alert(`Port: ${port}\n\nCould not copy to clipboard. Please copy manually.`);
+      return;
+    }
+
+    const originalHTML = button.innerHTML;
+    button.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    `;
+    button.classList.add('copied');
+
+    setTimeout(() => {
+      button.innerHTML = originalHTML;
+      button.classList.remove('copied');
+    }, 2000);
+  });
+}
+
 export function showFreePortResult(port) {
   let resultDiv = document.getElementById('free-port-result');
+
   if (!resultDiv) {
     resultDiv = document.createElement('div');
     resultDiv.id = 'free-port-result';
@@ -418,7 +484,7 @@ export function showFreePortResult(port) {
     <div class="free-port-content">
       <span class="free-port-label">Next free port:</span>
       <code class="free-port-number">${port}</code>
-      <button class="copy-port-button" data-tooltip="Copy to clipboard" onclick="copyFreePort(${port})">
+      <button class="copy-port-button" data-tooltip="Copy to clipboard" data-port="${port}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -428,31 +494,12 @@ export function showFreePortResult(port) {
   `;
 
   resultDiv.classList.remove('hidden');
+  const copyButton = resultDiv.querySelector('.copy-port-button');
+  if (copyButton) {
+    copyButton.removeEventListener('click', handleCopyPortClick);
+    copyButton.addEventListener('click', handleCopyPortClick);
+  }
 }
-
-// Add to window for onclick access
-window.copyFreePort = function(port) {
-  navigator.clipboard.writeText(port.toString()).then(() => {
-    const btns = document.querySelectorAll('.copy-port-button');
-    btns.forEach(btn => {
-      btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      `;
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        `;
-        btn.classList.remove('copied');
-      }, 2000);
-    });
-  });
-};
 
 export function hideFreePortResult() {
   const resultDiv = document.getElementById('free-port-result');

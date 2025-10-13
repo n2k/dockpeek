@@ -205,6 +205,9 @@
   .absolute {
     position: absolute;
   }
+  .fixed {
+    position: fixed;
+  }
   .relative {
     position: relative;
   }
@@ -1375,7 +1378,7 @@ body.dark-mode #search-input:focus {
 .free-port-result {
   position: absolute;
   bottom: 100%;
-  left: 1.4em;
+  left: 0;
   margin-bottom: 8px;
   padding: 8px 16px;
   background: white;

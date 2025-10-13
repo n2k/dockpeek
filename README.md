@@ -352,6 +352,22 @@ networks:
 
 <br>
 
+
+<details>
+<summary><strong>Why do I see "Swarm mode" and no containers?</strong></summary>
+
+> Dockpeek detected that Docker is running in **Swarm mode**, which changes how containers are managed (as "services" instead of standalone containers).  
+>
+> If you’re **not intentionally using Docker Swarm**, you can safely leave swarm mode with:
+>
+> ```bash
+> docker swarm leave --force
+> ```
+>
+> After running this command, refresh Dockpeek — your regular containers should appear again.
+
+</details>
+
 <details>
 <summary><strong>How do I search for containers by port?</strong></summary>
 
@@ -360,7 +376,21 @@ networks:
 </details>
 
 <details>
-<summary><strong>When does Dockpeek use HTTPS automatically?</strong></summary>
+<summary><strong>How do I search for available ports?</strong></summary>
+
+> Use the `:free` search syntax to find the next available port:
+>
+> - **`:free`** — Returns the next free port after the lowest occupied port  
+> - **`:free 3420`** — Returns the next free port starting from port 3420 or higher
+>
+> The search works per server when a specific server is selected, or across all servers when "All" is selected.  
+>
+> Click the copy button next to the result to copy the port number to your clipboard.
+
+</details>
+
+<details>
+<summary><strong>When does dockpeek use HTTPS automatically?</strong></summary>
 
 > Dockpeek automatically uses HTTPS for:
 >
@@ -385,7 +415,7 @@ networks:
 </details>
 
 <details>
-<summary><strong>How do I show ports for containers without port mapping?</strong></summary>
+<summary><strong>How can I add ports for containers without port mapping?</strong></summary>
 
 > Some containers (like those using host networking or behind reverse proxies) don't expose ports through Docker's standard port mapping. Use the `dockpeek.ports` label:
 >
@@ -393,21 +423,6 @@ networks:
 > labels:
 >   - "dockpeek.ports=8096,8920"
 > ```
-
-</details>
-
-<details>
-<summary><strong>Why do I see "Swarm mode" and no containers?</strong></summary>
-
-> Dockpeek detected that Docker is running in **Swarm mode**, which changes how containers are managed (as "services" instead of standalone containers).  
->
-> If you’re **not intentionally using Docker Swarm**, you can safely leave swarm mode with:
->
-> ```bash
-> docker swarm leave --force
-> ```
->
-> After running this command, refresh Dockpeek — your regular containers should appear again.
 
 </details>
 
@@ -427,7 +442,6 @@ networks:
 >   - UPDATE_FLOATING_TAGS=major  # Checks 8-alpine instead of exact 8.2.2-alpine
 > ```
 
-
 </details>
 
 <details>
@@ -441,27 +455,14 @@ networks:
 >   - TRUSTED_PROXY_COUNT=1  # Number of proxies between client and dockpeek
 > ```
 >
-> This allows dockpeek to correctly handle X-Forwarded-* headers (including X-Forwarded-Prefix for subpath deployments) from proxies like Traefik, Nginx, or Caddy.
-
-</details>
-<details>
-<summary><strong>How do I search for available ports?</strong></summary>
-
-> Use the `:free` search syntax to find the next available port:
->
-> - **`:free`** — Returns the next free port after the lowest occupied port  
-> - **`:free 3420`** — Returns the next free port starting from port 3420 or higher
->
-> The search works per server when a specific server is selected, or across all servers when "All" is selected.  
->
-> Click the copy button next to the result to copy the port number to your clipboard.
+> This allows dockpeek to correctly handle X-Forwarded-* headers (including X-Forwarded-Prefix for subpath deployments) from proxies.
 
 </details>
 
 <details>
 <summary><strong>How do I clear the search filter?</strong></summary>
 
-> Click the **Dockpeek** title at the top of the page to reset the search and return to the full container view.
+> Click the **dockpeek** title at the top of the page to reset the search and return to the full container view.
 
 </details>
 

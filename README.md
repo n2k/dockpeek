@@ -397,6 +397,21 @@ networks:
 </details>
 
 <details>
+<summary><strong>Why do I see "Swarm mode" and no containers?</strong></summary>
+
+> Dockpeek detected that Docker is running in **Swarm mode**, which changes how containers are managed (as "services" instead of standalone containers).  
+>
+> If you’re **not intentionally using Docker Swarm**, you can safely leave swarm mode with:
+>
+> ```bash
+> docker swarm leave --force
+> ```
+>
+> After running this command, refresh Dockpeek — your regular containers should appear again.
+
+</details>
+
+<details>
 <summary><strong>How do I check updates for pinned versions like 8.2.2-alpine?</strong></summary>
 
 > Use the `UPDATE_FLOATING_TAGS` environment variable:
@@ -457,6 +472,5 @@ networks:
 <div align="center">
   <sub>Made with ❤️ for the self-hosted and open-source community</sub>  
   <br>
-  <a href="https://github.com/dockpeek/dockpeek/issues">Report a bug</a> •
   <a href="https://github.com/dockpeek/dockpeek/releases">Check releases</a>
 </div>

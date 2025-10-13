@@ -89,7 +89,7 @@ The easiest way to get started with Dockpeek:
 ```yaml
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
       - SECRET_KEY=your_secure_secret_key # Required: Set a secure secret key
@@ -111,7 +111,7 @@ For enhanced security, use a socket proxy to limit Docker API access:
 ```yaml
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     container_name: dockpeek
     environment:
       - SECRET_KEY=your_secure_secret_key
@@ -156,7 +156,7 @@ Manage multiple Docker hosts from a single dashboard:
 ```yaml
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     container_name: dockpeek
     restart: unless-stopped
     ports:
@@ -275,7 +275,7 @@ Dockpeek natively supports Docker Swarm, You can deploy Dockpeek as a stack, wit
 ```yaml
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     environment:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin

@@ -234,7 +234,6 @@ class ContainerUpdater:
         self.timeouts = timeouts or {
             'api': 300,
             'stop': 60,
-            'health': 120
         }
         self.original_timeout = None
         
@@ -292,12 +291,8 @@ class ContainerUpdater:
         
         if 'com.docker.compose.project' in validator.labels:
             project = validator.labels['com.docker.compose.project']
-            logger.debug(f"Container '{container.name}' is part of Compose project '{project}'")
-        
-        health_config = container.attrs.get('Config', {}).get('Healthcheck')
-        if health_config and health_config.get('Test'):
-            logger.info(f"Container '{container.name}' has health check - will monitor during update")
-    
+            logger.debug(f"Container '{container.name}' is part of Compose project '{project}'")        
+   
     def _get_image_info(self, container) -> Tuple[str, str]:
         image_name = container.attrs.get('Config', {}).get('Image')
         container_image_id = container.attrs.get('Image', '')
@@ -407,9 +402,17 @@ class ContainerUpdater:
         logger.info(f"[{self.server_name}] Starting new container")
         new_container.start()
         
-        logger.info(f"[{self.server_name}] Waiting for health check...")
-        if not self._wait_for_health(new_container):
-            raise ContainerUpdateError("Container failed to start properly within timeout")
+        logger.info(f"[{self.server_name}] Verifying container started...")
+        time.sleep(2)
+        try:
+            new_container.reload()
+            if new_container.status != 'running':
+                raise ContainerUpdateError(f"Container failed to start properly (status: {new_container.status})")
+        except Exception as e:
+            if isinstance(e, ContainerUpdateError):
+                raise
+            logger.warning(f"[{self.server_name}] Could not verify status: {e}")
+
         
         logger.info(f"[{self.server_name}] Container running successfully")
         return new_container
@@ -438,37 +441,6 @@ class ContainerUpdater:
                 logger.info(f"Connected to network: {network_name}")
             except Exception as e:
                 logger.warning(f"Failed to connect to {network_name}: {e}")
-    
-    def _wait_for_health(self, container) -> bool:
-        start_time = time.time()
-        check_interval = 2
-        timeout = self.timeouts['health']
-        
-        while time.time() - start_time < timeout:
-            try:
-                container.reload()
-                status = container.status
-                
-                logger.debug(f"Container {container.name} status: {status}")
-                
-                if status == 'running':
-                    health = container.attrs.get('State', {}).get('Health', {})
-                    if health.get('Status') == 'healthy' or not health:
-                        return True
-                    elif health.get('Status') == 'unhealthy':
-                        logger.warning(f"Container {container.name} is unhealthy")
-                        return False
-                elif status in ['exited', 'dead']:
-                    logger.error(f"Container {container.name} has exited or died")
-                    return False
-                
-                time.sleep(check_interval)
-            except Exception as e:
-                logger.warning(f"Error checking health: {e}")
-                time.sleep(check_interval)
-        
-        logger.warning(f"Health check timed out after {timeout}s")
-        return False
     
     def _cleanup_backup(self, backup_container, backup_name: str):
         if not backup_container:

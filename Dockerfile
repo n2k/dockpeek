@@ -17,7 +17,7 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.url="https://github.com/dockpeek/dockpeek" \
       org.opencontainers.image.documentation="https://github.com/dockpeek/dockpeek#readme" \
       org.opencontainers.image.title="Dockpeek" \
-      org.opencontainers.image.description="Quick Access & One-Click Updates for Your Containers"
+      org.opencontainers.image.description="Quick Access & Easy Updates for Your Docker Containers"
 
 RUN apt-get update && apt-get install -y \
     curl \

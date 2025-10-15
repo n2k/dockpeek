@@ -1,7 +1,3 @@
-/**
- * Application configuration
- */
-
 const getApiPrefix = () => {
   const meta = document.querySelector('meta[name="api-prefix"]');
   return meta ? meta.content : '';
@@ -9,10 +5,15 @@ const getApiPrefix = () => {
 
 export const apiUrl = (path) => {
   const prefix = getApiPrefix();
-  if (prefix && path.startsWith('/')) {
-    return prefix + path;
+  if (!prefix) {
+    return path.startsWith('/') ? path : '/' + path;
   }
-  return prefix + (path.startsWith('/') ? '' : '/') + path;
+  
+  const cleanPrefix = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+  
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  
+  return cleanPrefix + cleanPath;
 };
 
 window.apiUrl = apiUrl;

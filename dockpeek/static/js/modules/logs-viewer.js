@@ -352,37 +352,47 @@ export class LogsViewer {
   }
 
   colorizeLogLine(line) {
-    // Escape HTML first
-    let escapedLine = this.escapeHtml(line);
+  let escapedLine = this.escapeHtml(line);
 
-    // numbers 
-    escapedLine = escapedLine.replace(/\d+/g, '<span class="log-number">$&</span>');
+  const urls = [];
+  const urlPlaceholder = '___URL_PLACEHOLDER_';
+  
+  escapedLine = escapedLine.replace(
+    /\b(https?:\/\/[^\s<]+)/g,
+    (match) => {
+      urls.push(match);
+      return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+    }
+  );
 
-    // Make URLs clickable
-    escapedLine = escapedLine.replace(
-      /(https?:\/\/[^\s<]+)/g,
-      '<a href="$1" target="_blank" rel="noopener noreferrer" class="log-link">$1</a>'
-    );
+  escapedLine = escapedLine.replace(/\b\d+\b/g, '<span class="log-number">$&</span>');
 
-    // Wrap in log level spans (after URL processing)
-    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(line)) {
-      return `<span class="log-error">${escapedLine}</span>`;
+  escapedLine = escapedLine.replace(
+    new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
+    (match, index) => {
+      const url = urls[parseInt(index)];
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="log-link">${url}</a>`;
     }
-    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(line)) {
-      return `<span class="log-warning">${escapedLine}</span>`;
-    }
-    if (/\b(INFO)\b|\[(INFO)\]/i.test(line)) {
-      return `<span class="log-info">${escapedLine}</span>`;
-    }
-    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(line)) {
-      return `<span class="log-debug">${escapedLine}</span>`;
-    }
-    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(line)) {
-      return `<span class="log-success">${escapedLine}</span>`;
-    }
+  );
 
-    return escapedLine;
+  if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(line)) {
+    return `<span class="log-error">${escapedLine}</span>`;
   }
+  if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(line)) {
+    return `<span class="log-warning">${escapedLine}</span>`;
+  }
+  if (/\b(INFO)\b|\[(INFO)\]/i.test(line)) {
+    return `<span class="log-info">${escapedLine}</span>`;
+  }
+  if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(line)) {
+    return `<span class="log-debug">${escapedLine}</span>`;
+  }
+  if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(line)) {
+    return `<span class="log-success">${escapedLine}</span>`;
+  }
+
+  return escapedLine;
+}
 
   escapeHtml(text) {
     const div = document.createElement('div');

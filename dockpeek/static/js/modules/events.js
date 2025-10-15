@@ -210,9 +210,10 @@ export function initLogsButtons() {
       e.preventDefault();
       const serverName = logsButton.dataset.server;
       const containerName = logsButton.dataset.container;
+      const isSwarm = state.swarmServers.includes(serverName);
 
       if (serverName && containerName) {
-        logsViewer.open(serverName, containerName, false);
+        logsViewer.open(serverName, containerName, false, isSwarm);
       }
     }
 
@@ -220,6 +221,7 @@ export function initLogsButtons() {
       e.preventDefault();
       const serverName = viewLogsBtn.dataset.server;
       const containerName = viewLogsBtn.dataset.container;
+      const isSwarm = state.swarmServers.includes(serverName);
 
       if (serverName && containerName) {
         const successModal = document.getElementById('update-success-modal');
@@ -232,7 +234,7 @@ export function initLogsButtons() {
           errorModal.classList.add('hidden');
         }
 
-        logsViewer.open(serverName, containerName, true);
+        logsViewer.open(serverName, containerName, true, isSwarm);
       }
     }
   });

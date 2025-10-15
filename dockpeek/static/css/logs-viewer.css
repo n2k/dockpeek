@@ -305,6 +305,12 @@ mark.search-highlight-active {
   color: #ffffff;
 }
 
+.log-task-id {
+  color: #bea2ff;
+  font-weight: 500;
+  font-family: 'Courier New', monospace;
+  margin-right: 4px;
+}
 /* Loading State */
 .logs-loading {
   display: flex;

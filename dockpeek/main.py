@@ -12,7 +12,7 @@ from .update_manager import update_container
 from .docker_utils import discover_docker_clients
 from .docker_utils import create_streaming_client
 from .update import update_checker
-from .logs_manager import get_container_logs, stream_container_logs
+from .logs_manager import get_container_logs, stream_container_logs, get_service_logs, stream_service_logs
 from flask import Response
 
 
@@ -450,6 +450,7 @@ def get_logs():
     server_name = request_data.get('server_name')
     container_name = request_data.get('container_name')
     tail = request_data.get('tail', 500)
+    is_swarm = request_data.get('is_swarm', False)
     
     if not server_name or not container_name:
         return jsonify({"error": "Missing server_name or container_name"}), 400
@@ -460,13 +461,22 @@ def get_logs():
     if not server:
         return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
     
-    result = get_container_logs(
-        server['client'], 
-        container_name, 
-        tail=tail,
-        timestamps=True,
-        follow=False
-    )
+    if is_swarm:
+        result = get_service_logs(
+            server['client'], 
+            container_name, 
+            tail=tail,
+            timestamps=True,
+            follow=False
+        )
+    else:
+        result = get_container_logs(
+            server['client'], 
+            container_name, 
+            tail=tail,
+            timestamps=True,
+            follow=False
+        )
     
     if result['success']:
         return jsonify(result), 200
@@ -480,6 +490,7 @@ def stream_logs():
     server_name = request.args.get('server_name')
     container_name = request.args.get('container_name')
     tail = int(request.args.get('tail', 100))
+    is_swarm = request.args.get('is_swarm', 'false').lower() == 'true'
     
     if not server_name or not container_name:
         return jsonify({"error": "Missing server_name or container_name"}), 400
@@ -495,7 +506,12 @@ def stream_logs():
     
     def generate():
         try:
-            for log_line in stream_container_logs(stream_client, container_name, tail):
+            if is_swarm:
+                stream_func = stream_service_logs
+            else:
+                stream_func = stream_container_logs
+                
+            for log_line in stream_func(stream_client, container_name, tail):
                 yield f"data: {log_line}\n\n"
         except GeneratorExit:
             logger.info(f"Stream closed for {container_name}")

@@ -8,6 +8,7 @@ export class LogsViewer {
     this.isStreaming = false;
     this.currentServer = null;
     this.currentContainer = null;
+    this.isSwarm = false;
     this.autoScroll = true;
     this.searchMatches = [];
     this.currentMatchIndex = -1;
@@ -205,11 +206,12 @@ export class LogsViewer {
     });
   }
 
-  async open(serverName, containerName, autoStream = false) {
+  async open(serverName, containerName, autoStream = false, isSwarm = false) {
     this.stopStreaming();
 
     this.currentServer = serverName;
     this.currentContainer = containerName;
+    this.isSwarm = isSwarm;
 
     document.getElementById('logs-container-name').textContent = containerName;
     document.getElementById('logs-server-name').textContent = `${serverName}`;
@@ -266,7 +268,8 @@ export class LogsViewer {
         body: JSON.stringify({
           server_name: this.currentServer,
           container_name: this.currentContainer,
-          tail: tail
+          tail: tail,
+          is_swarm: this.isSwarm || false
         })
       });
 
@@ -297,18 +300,38 @@ export class LogsViewer {
   formatLogLine(line) {
     if (!line.trim()) return '';
 
-    // Parse timestamp if present
-    const timestampRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(.*)$/;
-    const match = line.match(timestampRegex);
+    let taskPrefix = '';
+    let timestampPart = '';
+    let contentPart = line;
 
-    if (match) {
-      const timestamp = this.formatTimestamp(match[1]);
-      const content = match[2];
-      const colorizedContent = this.colorizeLogLine(content);
-      return `<div class="log-line"><span class="log-timestamp">${timestamp}</span> ${colorizedContent}</div>`;
+    // Parse timestamp first
+    const timestampRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(.*)$/;
+    const timestampMatch = line.match(timestampRegex);
+
+    if (timestampMatch) {
+      timestampPart = this.formatTimestamp(timestampMatch[1]);
+      contentPart = timestampMatch[2];
+    }
+
+    // Parse Swarm task details from content
+    const swarmDetailsRegex = /^com\.docker\.swarm\.[^\s]+ (.*)$/;
+    const swarmMatch = contentPart.match(swarmDetailsRegex);
+
+    if (swarmMatch) {
+      const taskIdMatch = contentPart.match(/com\.docker\.swarm\.task\.id=([a-z0-9]+)/);
+      if (taskIdMatch) {
+        const shortTaskId = taskIdMatch[1].substring(0, 12);
+        taskPrefix = `<span class="log-task-id">[${shortTaskId}]</span> `;
+      }
+      contentPart = swarmMatch[1];
+    }
+
+    const colorizedContent = this.colorizeLogLine(contentPart);
+
+    if (timestampPart) {
+      return `<div class="log-line"><span class="log-timestamp">${timestampPart}</span> ${taskPrefix}${colorizedContent}</div>`;
     } else {
-      const colorizedContent = this.colorizeLogLine(line);
-      return `<div class="log-line">${colorizedContent}</div>`;
+      return `<div class="log-line">${taskPrefix}${colorizedContent}</div>`;
     }
   }
 
@@ -385,7 +408,7 @@ export class LogsViewer {
     this.isStreaming = true;
     this.updateStreamButton();
 
-    const url = `${apiUrl('/stream-container-logs')}?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}`;
+    const url = `${apiUrl('/stream-container-logs')}?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}&is_swarm=${this.isSwarm || false}`;
 
     this.eventSource = new EventSource(url);
 

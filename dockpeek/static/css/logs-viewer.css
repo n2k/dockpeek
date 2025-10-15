@@ -301,25 +301,8 @@ mark.search-highlight-active {
   color: #34d399;
 }
 
-/* HTTP Status Colors */
-.log-http-2xx {
-  color: #34d399;
-  font-weight: 600;
-}
-
-.log-http-3xx {
-  color: #60a5fa;
-  font-weight: 600;
-}
-
-.log-http-4xx {
-  color: #fbbf24;
-  font-weight: 600;
-}
-
-.log-http-5xx {
-  color: #f87171;
-  font-weight: 600;
+.log-number {
+  color: #ffffff;
 }
 
 /* Loading State */

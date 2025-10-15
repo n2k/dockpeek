@@ -21,7 +21,7 @@ export class LogsViewer {
           <div class="logs-header">
             <div class="logs-title-section">
               <h3 class="text-lg font-semibold text-gray-900">
-                Container Logs: <span id="logs-container-name" class="text-blue-600"></span>
+               <span id="logs-container-name" class="text-blue-600"></span>
               </h3>
               <span id="logs-server-name" class="text-sm text-gray-500"></span>
             </div>
@@ -212,7 +212,7 @@ export class LogsViewer {
     this.currentContainer = containerName;
 
     document.getElementById('logs-container-name').textContent = containerName;
-    document.getElementById('logs-server-name').textContent = `Server: ${serverName}`;
+    document.getElementById('logs-server-name').textContent = `${serverName}`;
 
     this.modal.classList.remove('hidden');
     this.showLoading();
@@ -332,11 +332,8 @@ export class LogsViewer {
     // Escape HTML first
     let escapedLine = this.escapeHtml(line);
 
-    // HTTP status codes
-    escapedLine = escapedLine.replace(/\b([2]\d{2})\b/g, '<span class="log-http-2xx">$1</span>');
-    escapedLine = escapedLine.replace(/\b([3]\d{2})\b/g, '<span class="log-http-3xx">$1</span>');
-    escapedLine = escapedLine.replace(/\b([4]\d{2})\b/g, '<span class="log-http-4xx">$1</span>');
-    escapedLine = escapedLine.replace(/\b([5]\d{2})\b/g, '<span class="log-http-5xx">$1</span>');
+    // numbers 
+    escapedLine = escapedLine.replace(/\d+/g, '<span class="log-number">$&</span>');
 
     // Make URLs clickable
     escapedLine = escapedLine.replace(
@@ -345,19 +342,19 @@ export class LogsViewer {
     );
 
     // Wrap in log level spans (after URL processing)
-    if (/ERROR|ERRO|ERR/i.test(line)) {
+    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(line)) {
       return `<span class="log-error">${escapedLine}</span>`;
     }
-    if (/WARN|WARNING/i.test(line)) {
+    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(line)) {
       return `<span class="log-warning">${escapedLine}</span>`;
     }
-    if (/INFO/i.test(line)) {
+    if (/\b(INFO)\b|\[(INFO)\]/i.test(line)) {
       return `<span class="log-info">${escapedLine}</span>`;
     }
-    if (/DEBUG|TRACE/i.test(line)) {
+    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(line)) {
       return `<span class="log-debug">${escapedLine}</span>`;
     }
-    if (/SUCCESS|OK/i.test(line)) {
+    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(line)) {
       return `<span class="log-success">${escapedLine}</span>`;
     }
 
@@ -510,19 +507,19 @@ export class LogsViewer {
     lines.forEach((line, lineIndex) => {
       const textContent = line.textContent;
       const lowerText = textContent.toLowerCase();
-      
+
       let startIndex = 0;
       while (true) {
         const matchIndex = lowerText.indexOf(lowerQuery, startIndex);
         if (matchIndex === -1) break;
-        
+
         this.searchMatches.push({
           lineElement: line,
           lineIndex: lineIndex,
           startIndex: matchIndex,
           endIndex: matchIndex + query.length
         });
-        
+
         startIndex = matchIndex + 1;
       }
     });
@@ -546,77 +543,77 @@ export class LogsViewer {
   }
 
   highlightAllMatches(query) {
-  this.clearSearchHighlights();
-  
-  const escapedQuery = this.escapeRegex(query);
-  let globalMatchIndex = 0;
+    this.clearSearchHighlights();
 
-  const linesWithMatches = new Set();
-  this.searchMatches.forEach(match => linesWithMatches.add(match.lineElement));
+    const escapedQuery = this.escapeRegex(query);
+    let globalMatchIndex = 0;
 
-  linesWithMatches.forEach(line => {
-    if (!line.dataset.originalHtml) {
-      line.dataset.originalHtml = line.innerHTML;
-    }
+    const linesWithMatches = new Set();
+    this.searchMatches.forEach(match => linesWithMatches.add(match.lineElement));
 
-    const walker = document.createTreeWalker(
-      line,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
-
-    const replacements = [];
-    let node;
-    
-    while (node = walker.nextNode()) {
-      const text = node.textContent;
-      const regex = new RegExp(escapedQuery, 'gi');
-      let match;
-      const nodeMatches = [];
-      
-      while ((match = regex.exec(text)) !== null) {
-        nodeMatches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          text: match[0]
-        });
+    linesWithMatches.forEach(line => {
+      if (!line.dataset.originalHtml) {
+        line.dataset.originalHtml = line.innerHTML;
       }
 
-      if (nodeMatches.length > 0) {
-        replacements.push({ node, matches: nodeMatches });
-      }
-    }
+      const walker = document.createTreeWalker(
+        line,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
 
-    replacements.forEach(({ node, matches }) => {
-      const text = node.textContent;
-      const fragment = document.createDocumentFragment();
-      let lastIndex = 0;
+      const replacements = [];
+      let node;
 
-      matches.forEach(m => {
-        if (m.start > lastIndex) {
-          fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
+      while (node = walker.nextNode()) {
+        const text = node.textContent;
+        const regex = new RegExp(escapedQuery, 'gi');
+        let match;
+        const nodeMatches = [];
+
+        while ((match = regex.exec(text)) !== null) {
+          nodeMatches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            text: match[0]
+          });
         }
 
-        const mark = document.createElement('mark');
-        mark.className = globalMatchIndex === this.currentMatchIndex 
-          ? 'search-highlight-active' 
-          : 'search-highlight';
-        mark.dataset.matchIndex = globalMatchIndex;
-        mark.textContent = m.text;
-        fragment.appendChild(mark);
-
-        globalMatchIndex++;
-        lastIndex = m.end;
-      });
-
-      if (lastIndex < text.length) {
-        fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        if (nodeMatches.length > 0) {
+          replacements.push({ node, matches: nodeMatches });
+        }
       }
 
-      node.parentNode.replaceChild(fragment, node);
+      replacements.forEach(({ node, matches }) => {
+        const text = node.textContent;
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+
+        matches.forEach(m => {
+          if (m.start > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
+          }
+
+          const mark = document.createElement('mark');
+          mark.className = globalMatchIndex === this.currentMatchIndex
+            ? 'search-highlight-active'
+            : 'search-highlight';
+          mark.dataset.matchIndex = globalMatchIndex;
+          mark.textContent = m.text;
+          fragment.appendChild(mark);
+
+          globalMatchIndex++;
+          lastIndex = m.end;
+        });
+
+        if (lastIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+
+        node.parentNode.replaceChild(fragment, node);
+      });
     });
-  });
-}
+  }
 
   clearSearchHighlights() {
     const lines = this.logsContent.querySelectorAll('.log-line');
@@ -630,7 +627,7 @@ export class LogsViewer {
 
   navigateToNextMatch() {
     if (this.searchMatches.length === 0) return;
-    
+
     this.currentMatchIndex = (this.currentMatchIndex + 1) % this.searchMatches.length;
     this.updateSearchCount();
     this.updateActiveHighlight();
@@ -639,7 +636,7 @@ export class LogsViewer {
 
   navigateToPrevMatch() {
     if (this.searchMatches.length === 0) return;
-    
+
     this.currentMatchIndex = (this.currentMatchIndex - 1 + this.searchMatches.length) % this.searchMatches.length;
     this.updateSearchCount();
     this.updateActiveHighlight();
@@ -677,7 +674,7 @@ export class LogsViewer {
     if (this.currentMatchIndex >= 0 && this.currentMatchIndex < this.searchMatches.length) {
       const match = this.searchMatches[this.currentMatchIndex];
       const line = match.lineElement;
-      
+
       line.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }

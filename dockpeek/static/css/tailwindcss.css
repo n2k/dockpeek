@@ -885,6 +885,17 @@ body.dark-mode .logs-nav-arrow:hover {
   background: #292d35;
   color: #c9d1d9;
 }
+.logs-stack-link {
+  cursor: pointer;
+  color: inherit;
+}
+.logs-stack-link:hover {
+  color: #3b82f6 !important;
+  text-decoration: underline;
+}
+body.dark-mode .logs-stack-link:hover {
+  color: #4799ff !important;
+}
 .logs-controls {
   display: flex;
   justify-content: space-between;

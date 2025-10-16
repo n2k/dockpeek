@@ -248,6 +248,22 @@ export class LogsViewer {
       this.navigateToContainer(1);
     });
 
+    document.getElementById('logs-stack-name').addEventListener('click', (e) => {
+      const target = e.target.closest('.logs-stack-link');
+      if (!target) return;
+
+      const stack = target.dataset.stack;
+      const server = target.dataset.server;
+
+      if (stack && server) {
+        this.close();
+
+        import('./filters.js').then(({ filterByStackAndServer }) => {
+          filterByStackAndServer(stack, server);
+        });
+      }
+    });
+
     // Close on overlay click
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.close();
@@ -292,7 +308,17 @@ export class LogsViewer {
 
     document.getElementById('logs-container-name').textContent = containerName;
     document.getElementById('logs-server-name').textContent = `${serverName}`;
-    document.getElementById('logs-stack-name').textContent = stackName ? `• ${stackName}` : '';
+
+    const stackElement = document.getElementById('logs-stack-name');
+    if (stackName) {
+      stackElement.innerHTML = `• <span class="logs-stack-link">${stackName}</span>`;
+      const stackLink = stackElement.querySelector('.logs-stack-link');
+      stackLink.style.cursor = 'pointer';
+      stackLink.dataset.stack = stackName;
+      stackLink.dataset.server = serverName;
+    } else {
+      stackElement.textContent = '';
+    }
 
     this.modal.classList.remove('hidden');
     this.showLoading();
@@ -303,6 +329,7 @@ export class LogsViewer {
       await this.fetchLogs();
     }
   }
+
 
   close() {
     this.stopStreaming();

@@ -14,6 +14,7 @@ export class LogsViewer {
     this.currentMatchIndex = -1;
     this.containerList = [];
     this.currentContainerIndex = -1;
+    this.fetchController = null;
     this.initModal();
   }
 
@@ -291,6 +292,12 @@ export class LogsViewer {
   async open(serverName, containerName, autoStream = false, isSwarm = false) {
     this.stopStreaming();
 
+    if (this.fetchController) {
+      this.fetchController.abort();
+    }
+
+    this.fetchController = new AbortController();
+
     this.currentServer = serverName;
     this.currentContainer = containerName;
     this.isSwarm = isSwarm;
@@ -333,6 +340,12 @@ export class LogsViewer {
 
   close() {
     this.stopStreaming();
+
+    if (this.fetchController) {
+      this.fetchController.abort();
+      this.fetchController = null;
+    }
+
     this.modal.classList.add('hidden');
     this.logsContent.innerHTML = '';
     const searchInput = document.getElementById('logs-search-input');
@@ -375,7 +388,8 @@ export class LogsViewer {
           container_name: this.currentContainer,
           tail: tail,
           is_swarm: this.isSwarm || false
-        })
+        }),
+        signal: this.fetchController.signal
       });
 
       const data = await response.json();
@@ -388,6 +402,10 @@ export class LogsViewer {
         this.displayError(data.error);
       }
     } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted');
+        return;
+      }
       this.displayError(`Failed to fetch logs: ${error.message}`);
     }
   }

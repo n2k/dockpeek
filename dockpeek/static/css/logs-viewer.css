@@ -19,7 +19,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 1.5rem;
+  padding: 0.7rem 1.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #ebebeb;
 }
 
@@ -311,6 +312,7 @@ mark.search-highlight-active {
   font-family: 'Courier New', monospace;
   margin-right: 4px;
 }
+
 /* Loading State */
 .logs-loading {
   display: flex;
@@ -456,11 +458,16 @@ body.dark-mode .logs-checkbox-label {
 
 @media (max-height: 640px) {
 
-  .logs-header,
   .logs-search-bar,
   .logs-footer,
+  #logs-server-name,
   #logs-download-btn,
   #logs-fontsize-select {
     display: none;
+  }
+
+  .logs-header,
+  .logs-controls {
+    padding: 0.2em 1em;
   }
 }

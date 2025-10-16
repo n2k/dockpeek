@@ -23,7 +23,6 @@ export function initEventListeners() {
   refreshButton.addEventListener("click", () => {
     state.pruneInfoCache = null;
     fetchContainerData();
-    initPruneInfo();
   });
 
   checkUpdatesButton.addEventListener("click", checkForUpdates);

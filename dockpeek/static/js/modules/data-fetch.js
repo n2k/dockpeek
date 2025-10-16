@@ -6,6 +6,8 @@ import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './
 import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
 
+let fetchController = null;
+let isFetching = false;
 
 let originalButtonHTML = '';
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,10 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 export async function fetchContainerData() {
+  if (isFetching) {
+    console.log('Fetch already in progress, ignoring');
+    return;
+  }
+
+  isFetching = true;
+
+  if (fetchController) {
+    fetchController.abort();
+  }
+
+  fetchController = new AbortController();
+
   showLoadingIndicator();
   loadFilterStates();
   try {
-    const response = await fetch(apiUrl("/data"));
+    const response = await fetch(apiUrl("/data"), {
+      signal: fetchController.signal
+    });
     if (!response.ok) throw createResponseError(response);
 
     const { servers = [], containers = [], traefik_enabled = true, swarm_servers = [] } = await response.json();
@@ -43,8 +60,14 @@ export async function fetchContainerData() {
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
 
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log('Fetch aborted');
+      return;
+    }
     handleFetchError(error);
   } finally {
+    fetchController = null;
+    isFetching = false;
     hideLoadingIndicator();
   }
 }

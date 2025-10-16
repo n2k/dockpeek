@@ -26,7 +26,6 @@
 
 .logs-title-section {
   display: flex;
-  flex-direction: column;
   gap: 4px;
 }
 
@@ -44,7 +43,52 @@
   background: #e1e4e8;
   color: #364153;
 }
+.logs-nav-arrow {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: #6b7280;
+  transition: color 0.2s, background-color 0.2s;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.logs-nav-arrow:hover {
+  color: #3b82f6;
+  background-color: #f3f4f6;
+}
+
+.logs-container-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.logs-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.logs-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+body.dark-mode .logs-nav-arrow {
+    color: #6a737d;
+}
+
+body.dark-mode .logs-nav-arrow:hover {
+    background: #292d35;
+    color: #c9d1d9;
+}
 /* Controls */
 .logs-controls {
   display: flex;
@@ -462,6 +506,7 @@ body.dark-mode .logs-checkbox-label {
   .logs-search-bar,
   .logs-footer,
   #logs-server-name,
+  #logs-stack-name,
   #logs-download-btn,
   #logs-fontsize-select {
     display: none;

@@ -22,18 +22,33 @@ export class LogsViewer {
       <div id="logs-modal" class="modal-overlay hidden">
         <div class="logs-modal-content">
           <div class="logs-header">
-            <div class="logs-title-section">
-              <h3 class="text-lg font-semibold text-gray-900">
-               <span id="logs-container-name" class="text-blue-600"></span>
-              </h3>
-              <span id="logs-server-name" class="text-sm text-gray-500"></span>
-            </div>
-            <button id="logs-close-button" class="logs-close-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
+            <div class="logs-title-section">            
+              <div class="logs-container-info">
+                <h3 class="text-lg font-semibold text-gray-900">
+                  <span id="logs-container-name" class="text-blue-600"></span>
+                </h3>
+                <div class="logs-meta">
+                  <span id="logs-server-name" class="text-sm text-gray-500"></span>
+                  <span id="logs-stack-name" class="text-sm text-gray-400"></span>
+                </div>
+              </div>
+              <button id="logs-prev-container" class="logs-nav-arrow" data-tooltip="Previous container (←)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button id="logs-next-container" class="logs-nav-arrow" data-tooltip="Next container (→)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+              <button id="logs-close-button" class="logs-close-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>            
           </div>
           
           <div class="logs-controls">
@@ -225,6 +240,14 @@ export class LogsViewer {
       this.navigateToNextMatch();
     });
 
+    document.getElementById('logs-prev-container').addEventListener('click', () => {
+      this.navigateToContainer(-1);
+    });
+
+    document.getElementById('logs-next-container').addEventListener('click', () => {
+      this.navigateToContainer(1);
+    });
+
     // Close on overlay click
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.close();
@@ -264,8 +287,12 @@ export class LogsViewer {
       this.currentContainerIndex = 0;
     }
 
+    const currentContainer = this.containerList[this.currentContainerIndex];
+    const stackName = currentContainer?.stack || '';
+
     document.getElementById('logs-container-name').textContent = containerName;
     document.getElementById('logs-server-name').textContent = `${serverName}`;
+    document.getElementById('logs-stack-name').textContent = stackName ? `• ${stackName}` : '';
 
     this.modal.classList.remove('hidden');
     this.showLoading();

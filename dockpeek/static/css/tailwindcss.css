@@ -1069,6 +1069,7 @@ mark.search-highlight-active {
   margin-right: 4px;
 }
 .logs-loading {
+  padding: 0.7rem;
   display: flex;
   flex-direction: column;
   align-items: center;

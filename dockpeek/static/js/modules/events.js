@@ -212,6 +212,7 @@ export function initLogsButtons() {
       const isSwarm = state.swarmServers.includes(serverName);
 
       if (serverName && containerName) {
+        logsViewer.setContainerList(state.filteredAndSortedContainers, serverName, containerName);
         logsViewer.open(serverName, containerName, false, isSwarm);
       }
     }
@@ -233,6 +234,7 @@ export function initLogsButtons() {
           errorModal.classList.add('hidden');
         }
 
+        logsViewer.setContainerList(state.filteredAndSortedContainers, serverName, containerName);
         logsViewer.open(serverName, containerName, true, isSwarm);
       }
     }

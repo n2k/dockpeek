@@ -12,6 +12,8 @@ export class LogsViewer {
     this.autoScroll = true;
     this.searchMatches = [];
     this.currentMatchIndex = -1;
+    this.containerList = [];
+    this.currentContainerIndex = -1;
     this.initModal();
   }
 
@@ -139,6 +141,36 @@ export class LogsViewer {
     this.attachEventListeners();
   }
 
+  setContainerList(containers, currentServer, currentContainer) {
+    this.containerList = containers;
+    this.currentContainerIndex = containers.findIndex(
+      c => c.server === currentServer && c.name === currentContainer
+    );
+
+    if (this.currentContainerIndex === -1) {
+      this.currentContainerIndex = 0;
+    }
+  }
+
+  navigateToContainer(direction) {
+    if (this.containerList.length === 0) return;
+
+    const wasStreaming = this.isStreaming;
+
+    this.currentContainerIndex += direction;
+
+    if (this.currentContainerIndex < 0) {
+      this.currentContainerIndex = this.containerList.length - 1;
+    } else if (this.currentContainerIndex >= this.containerList.length) {
+      this.currentContainerIndex = 0;
+    }
+
+    const container = this.containerList[this.currentContainerIndex];
+    const isSwarm = this.isSwarm;
+
+    this.open(container.server, container.name, wasStreaming, isSwarm);
+  }
+
   attachEventListeners() {
     document.getElementById('logs-close-button').addEventListener('click', () => this.close());
     document.getElementById('logs-refresh-btn').addEventListener('click', () => this.refresh());
@@ -198,6 +230,17 @@ export class LogsViewer {
       if (e.target === this.modal) this.close();
     });
 
+    document.addEventListener('keydown', (e) => {
+      if (this.modal.classList.contains('hidden')) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        this.navigateToContainer(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        this.navigateToContainer(1);
+      }
+    });
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
@@ -212,6 +255,14 @@ export class LogsViewer {
     this.currentServer = serverName;
     this.currentContainer = containerName;
     this.isSwarm = isSwarm;
+
+    this.currentContainerIndex = this.containerList.findIndex(
+      c => c.server === serverName && c.name === containerName
+    );
+
+    if (this.currentContainerIndex === -1) {
+      this.currentContainerIndex = 0;
+    }
 
     document.getElementById('logs-container-name').textContent = containerName;
     document.getElementById('logs-server-name').textContent = `${serverName}`;
@@ -352,57 +403,57 @@ export class LogsViewer {
   }
 
   colorizeLogLine(line) {
-  const urls = [];
-  const urlPlaceholder = '___URL_PLACEHOLDER_';
-  
-  let processedLine = line.replace(
-    /https?:\/\/[^\s"'<>|\\{}[\]`]+/g,
-    (match) => {
-      const cleaned = match.replace(/[.,;:!?)}"':]+$/, '');
-      urls.push(cleaned);
-      return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+    const urls = [];
+    const urlPlaceholder = '___URL_PLACEHOLDER_';
+
+    let processedLine = line.replace(
+      /https?:\/\/[^\s"'<>|\\{}[\]`]+/g,
+      (match) => {
+        const cleaned = match.replace(/[.,;:!?)}"':]+$/, '');
+        urls.push(cleaned);
+        return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+      }
+    );
+
+    let escapedLine = this.escapeHtml(processedLine);
+
+    escapedLine = escapedLine.replace(/\d+/g, (match, offset) => {
+      const before = escapedLine.substring(Math.max(0, offset - urlPlaceholder.length), offset);
+      const after = escapedLine.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
+
+      if (before === urlPlaceholder && after === urlPlaceholder) {
+        return match;
+      }
+      return `<span class="log-number">${match}</span>`;
+    });
+
+    escapedLine = escapedLine.replace(
+      new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
+      (match, index) => {
+        const url = urls[parseInt(index)];
+        const escapedUrl = this.escapeHtml(url);
+        return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer" class="log-link">${escapedUrl}</a>`;
+      }
+    );
+
+    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(escapedLine)) {
+      return `<span class="log-error">${escapedLine}</span>`;
     }
-  );
-
-  let escapedLine = this.escapeHtml(processedLine);
-
-  escapedLine = escapedLine.replace(/\d+/g, (match, offset) => {
-    const before = escapedLine.substring(Math.max(0, offset - urlPlaceholder.length), offset);
-    const after = escapedLine.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
-    
-    if (before === urlPlaceholder && after === urlPlaceholder) {
-      return match;
+    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(escapedLine)) {
+      return `<span class="log-warning">${escapedLine}</span>`;
     }
-    return `<span class="log-number">${match}</span>`;
-  });
-
-  escapedLine = escapedLine.replace(
-    new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
-    (match, index) => {
-      const url = urls[parseInt(index)];
-      const escapedUrl = this.escapeHtml(url);
-      return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer" class="log-link">${escapedUrl}</a>`;
+    if (/\b(INFO)\b|\[(INFO)\]/i.test(escapedLine)) {
+      return `<span class="log-info">${escapedLine}</span>`;
     }
-  );
+    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(escapedLine)) {
+      return `<span class="log-debug">${escapedLine}</span>`;
+    }
+    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(escapedLine)) {
+      return `<span class="log-success">${escapedLine}</span>`;
+    }
 
-  if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(escapedLine)) {
-    return `<span class="log-error">${escapedLine}</span>`;
+    return escapedLine;
   }
-  if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(escapedLine)) {
-    return `<span class="log-warning">${escapedLine}</span>`;
-  }
-  if (/\b(INFO)\b|\[(INFO)\]/i.test(escapedLine)) {
-    return `<span class="log-info">${escapedLine}</span>`;
-  }
-  if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(escapedLine)) {
-    return `<span class="log-debug">${escapedLine}</span>`;
-  }
-  if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(escapedLine)) {
-    return `<span class="log-success">${escapedLine}</span>`;
-  }
-  
-  return escapedLine;
-}
 
   escapeHtml(text) {
     const div = document.createElement('div');

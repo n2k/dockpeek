@@ -96,13 +96,11 @@ export function updateActiveButton() {
         checkUpdatesButton.disabled = true;
         checkUpdatesButton.classList.add('disabled');
         checkUpdatesButton.style.opacity = '0.5';
-        checkUpdatesButton.title = 'Update checks not supported for Swarm servers';
-        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm servers');
+        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm services');
       } else if (state.isDataLoaded) {
         checkUpdatesButton.disabled = false;
         checkUpdatesButton.classList.remove('disabled');
         checkUpdatesButton.style.opacity = '1';
-        checkUpdatesButton.title = '';
         checkUpdatesButton.removeAttribute('data-tooltip');
       }
     }

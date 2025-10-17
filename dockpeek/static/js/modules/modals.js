@@ -299,7 +299,7 @@ export function showPruneInfoModal(data) {
     }
 
     if (data.servers && data.servers.length > 0) {
-      details += '<div class="text-sm text-left mt-3"><strong>Details:</strong><ul class="mt-2 space-y-1 prune-details-list">';
+      details += '<div class="text-sm text-left mt-3"><ul class="mt-2 space-y-1 prune-details-list">';
       data.servers.forEach(server => {
         details += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})`;
 
@@ -377,7 +377,7 @@ export function showPruneResultModal(data) {
   let message = `<p class="text-center mb-3">Successfully removed <strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''}, freeing up <strong>${formatSize(data.total_size)}</strong> of disk space!</p>`;
 
   if (data.servers && data.servers.length > 0) {
-    message += '<div class="text-sm text-left"><strong>Details:</strong><ul class="mt-2 space-y-1 prune-details-list">';
+    message += '<div class="text-sm text-left"><ul class="mt-2 space-y-1 prune-details-list">';
     data.servers.forEach(server => {
       message += `<li>• <strong>${server.server}:</strong> ${server.count} image${server.count > 1 ? 's' : ''} (${formatSize(server.size)})</li>`;
     });

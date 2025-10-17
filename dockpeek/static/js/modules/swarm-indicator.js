@@ -22,7 +22,7 @@ export function updateSwarmIndicator(swarmServers, currentServerFilter) {
   if (isSwarmActive) {
     indicator.classList.remove('hidden');
     if (swarmServers.length > 1) {
-      indicator.setAttribute('data-tooltip', `Swarm servers: ${swarmServers.join(', ')}`);
+      indicator.setAttribute('data-tooltip', `Swarm servers: ${swarmServers.join(' • ')}`);
     } else {
       indicator.setAttribute('data-tooltip', `Server "${swarmServers[0]}" running in Swarm mode`);
     }

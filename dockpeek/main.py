@@ -1,19 +1,16 @@
 import json
-import docker
 from datetime import datetime
 from functools import wraps
-from flask import (
-    Blueprint, render_template, jsonify, request, current_app, make_response
-)
+
+import docker
+from flask import Blueprint, render_template, jsonify, request, current_app, make_response, Response
 from flask_login import login_required, current_user
 
 from .get_data import get_all_data
 from .update_manager import update_container
-from .docker_utils import discover_docker_clients
-from .docker_utils import create_streaming_client
+from .docker_utils import discover_docker_clients, create_streaming_client, DockerClientFactory
 from .update import update_checker
 from .logs_manager import get_container_logs, stream_container_logs, get_service_logs, stream_service_logs
-from flask import Response
 
 
 main_bp = Blueprint('main', __name__)
@@ -149,7 +146,7 @@ def check_single_update():
         # Block update checks for Swarm
         if is_swarm:
             current_app.logger.info(
-                f"[{server_name}] Image '{container_name}' belongs to a Swarm server — update check skipped."
+                f"[{server_name}] Container '{container_name}' is part of a Swarm service — update check skipped."
             )
             key = f"{server_name}:{container_name}"
             return jsonify({

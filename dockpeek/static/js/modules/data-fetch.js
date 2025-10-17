@@ -67,13 +67,11 @@ export async function fetchContainerData() {
         checkUpdatesButton.disabled = true;
         checkUpdatesButton.classList.add('disabled');
         checkUpdatesButton.style.opacity = '0.5';
-        checkUpdatesButton.title = 'Update checks not supported for Swarm servers';
-        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm servers');
+        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm services');
       } else if (state.isDataLoaded) {
         checkUpdatesButton.disabled = false;
         checkUpdatesButton.classList.remove('disabled');
         checkUpdatesButton.style.opacity = '1';
-        checkUpdatesButton.title = '';
         checkUpdatesButton.removeAttribute('data-tooltip');
       }
     }
@@ -145,7 +143,7 @@ export async function checkForUpdates() {
     try {
       await showConfirmationModal(
         'Check Updates on Multiple Servers',
-        `You are about to check for updates on <strong>${serversToCheck.length}</strong> servers:\n ${serversToCheck.map(s => s.name).join(', ')}\n\nThis operation may take longer and will pull images from registries. <strong>Do you want to continue?</strong>`,
+        `You are about to check for updates on <strong>${serversToCheck.length}</strong> servers:\n ${serversToCheck.map(s => s.name).join(' • ')}\n\nThis operation may take longer and will pull images from registries. <strong>Do you want to continue?</strong>`,
         'Check Updates'
       );
     } catch (error) {

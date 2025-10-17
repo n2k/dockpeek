@@ -138,6 +138,28 @@ def check_single_update():
         return jsonify({"error": f"Server {server_name} not found or inactive"}), 404
     
     try:
+        # Detect if this is a Swarm service
+        is_swarm = False
+        try:
+            info = server['client'].info()
+            is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
+        except Exception:
+            pass
+        
+        # Block update checks for Swarm
+        if is_swarm:
+            current_app.logger.info(
+                f"[{server_name}] Image '{container_name}' belongs to a Swarm server — update check skipped."
+            )
+            key = f"{server_name}:{container_name}"
+            return jsonify({
+                "key": key,
+                "update_available": False,
+                "server_name": server_name,
+                "container_name": container_name,
+                "cancelled": False
+            }), 200
+        
         container = server['client'].containers.get(container_name)
         
         if update_checker.is_cancelled:

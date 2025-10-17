@@ -59,6 +59,25 @@ export async function fetchContainerData() {
     updateDisplay();
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
 
+    const isCurrentServerSwarm = state.currentServerFilter;
+      state.swarmServers.includes(state.currentServerFilter);
+    const checkUpdatesButton = document.getElementById('check-updates-button');
+    if (checkUpdatesButton) {
+      if (isCurrentServerSwarm) {
+        checkUpdatesButton.disabled = true;
+        checkUpdatesButton.classList.add('disabled');
+        checkUpdatesButton.style.opacity = '0.5';
+        checkUpdatesButton.title = 'Update checks not supported for Swarm servers';
+        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm servers');
+      } else if (state.isDataLoaded) {
+        checkUpdatesButton.disabled = false;
+        checkUpdatesButton.classList.remove('disabled');
+        checkUpdatesButton.style.opacity = '1';
+        checkUpdatesButton.title = '';
+        checkUpdatesButton.removeAttribute('data-tooltip');
+      }
+    }
+
   } catch (error) {
     if (error.name === 'AbortError') {
       console.log('Fetch aborted');

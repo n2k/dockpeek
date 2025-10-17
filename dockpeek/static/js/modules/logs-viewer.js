@@ -298,8 +298,12 @@ export class LogsViewer {
 
     this.fetchController = new AbortController();
 
+    this.savedScrollPosition = window.pageYOffset;
+    document.body.style.overflow = 'hidden';
+
     this.currentServer = serverName;
     this.currentContainer = containerName;
+
     this.isSwarm = isSwarm;
 
     this.currentContainerIndex = this.containerList.findIndex(
@@ -346,6 +350,8 @@ export class LogsViewer {
       this.fetchController = null;
     }
 
+    document.body.style.overflow = '';
+    
     this.modal.classList.add('hidden');
     this.logsContent.innerHTML = '';
     const searchInput = document.getElementById('logs-search-input');

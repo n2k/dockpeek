@@ -23,7 +23,7 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
     
     APP_VERSION = os.environ.get('VERSION', 'dev')
-    
-    DOCKER_TIMEOUT = 5
-    
+        
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
+    DOCKER_CONNECTION_TIMEOUT = float(os.environ.get("DOCKER_CONNECTION_TIMEOUT", "1"))

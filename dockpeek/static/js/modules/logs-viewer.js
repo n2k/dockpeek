@@ -159,34 +159,44 @@ export class LogsViewer {
   }
 
   setContainerList(containers, currentServer, currentContainer) {
-    this.containerList = containers;
-    this.currentContainerIndex = containers.findIndex(
-      c => c.server === currentServer && c.name === currentContainer
+    this.containerList = containers.map(c => ({
+        server: c.server,
+        name: c.name,
+        stack: c.stack,
+        is_swarm: c.is_swarm || false
+    }));
+    
+    this.currentContainerIndex = this.containerList.findIndex(
+        c => c.server === currentServer && c.name === currentContainer
     );
 
     if (this.currentContainerIndex === -1) {
-      this.currentContainerIndex = 0;
+        this.currentContainerIndex = 0;
     }
-  }
+}
 
-  navigateToContainer(direction) {
+
+ navigateToContainer(direction) {
     if (this.containerList.length === 0) return;
 
     const wasStreaming = this.isStreaming;
 
+    this.stopStreaming();
+
     this.currentContainerIndex += direction;
 
     if (this.currentContainerIndex < 0) {
-      this.currentContainerIndex = this.containerList.length - 1;
+        this.currentContainerIndex = this.containerList.length - 1;
     } else if (this.currentContainerIndex >= this.containerList.length) {
-      this.currentContainerIndex = 0;
+        this.currentContainerIndex = 0;
     }
 
     const container = this.containerList[this.currentContainerIndex];
-    const isSwarm = this.isSwarm;
+    const newIsSwarm = container.is_swarm || false;
 
-    this.open(container.server, container.name, wasStreaming, isSwarm);
-  }
+    this.open(container.server, container.name, false, newIsSwarm);
+}
+
 
   attachEventListeners() {
     document.getElementById('logs-close-button').addEventListener('click', () => this.close());

@@ -212,7 +212,12 @@ export function initLogsButtons() {
       const isSwarm = state.swarmServers.includes(serverName);
 
       if (serverName && containerName) {
-        logsViewer.setContainerList(state.filteredAndSortedContainers, serverName, containerName);
+        const containersWithSwarm = state.filteredAndSortedContainers.map(c => ({
+          ...c,
+          is_swarm: state.swarmServers.includes(c.server)
+        }));
+        
+        logsViewer.setContainerList(containersWithSwarm, serverName, containerName);
         logsViewer.open(serverName, containerName, false, isSwarm);
       }
     }
@@ -233,8 +238,12 @@ export function initLogsButtons() {
         if (errorModal && !errorModal.classList.contains('hidden')) {
           errorModal.classList.add('hidden');
         }
+        const containersWithSwarm = state.filteredAndSortedContainers.map(c => ({
+          ...c,
+          is_swarm: state.swarmServers.includes(c.server)
+        }));
 
-        logsViewer.setContainerList(state.filteredAndSortedContainers, serverName, containerName);
+        logsViewer.setContainerList(containersWithSwarm, serverName, containerName);
         logsViewer.open(serverName, containerName, true, isSwarm);
       }
     }

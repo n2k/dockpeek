@@ -503,13 +503,14 @@ def get_logs():
         return jsonify(result), 500
 
 
-@main_bp.route("/stream-container-logs", methods=["GET"])
+@main_bp.route("/stream-container-logs", methods=["POST"])
 @conditional_login_required
 def stream_logs():
-    server_name = request.args.get('server_name')
-    container_name = request.args.get('container_name')
-    tail = int(request.args.get('tail', 100))
-    is_swarm = request.args.get('is_swarm', 'false').lower() == 'true'
+    request_data = request.get_json() or {}
+    server_name = request_data.get('server_name')
+    container_name = request_data.get('container_name')
+    tail = request_data.get('tail', 100)
+    is_swarm = request_data.get('is_swarm', False)
     
     if not server_name or not container_name:
         return jsonify({"error": "Missing server_name or container_name"}), 400
@@ -531,13 +532,15 @@ def stream_logs():
                 stream_func = stream_container_logs
                 
             for log_line in stream_func(stream_client, container_name, tail):
-                yield f"data: {log_line}\n\n"
+                chunk = json.dumps({"line": log_line}) + "\n"
+                yield chunk
         except GeneratorExit:
             logger.info(f"Stream closed for {container_name}")
             raise
         except Exception as e:
             logger.error(f"Stream error: {e}")
-            yield f"data: Error: {str(e)}\n\n"
+            error_chunk = json.dumps({"error": str(e)}) + "\n"
+            yield error_chunk
         finally:
             try:
                 stream_client.close()
@@ -546,7 +549,7 @@ def stream_logs():
     
     response = Response(
         generate(),
-        mimetype='text/event-stream',
+        mimetype='application/x-ndjson',
         headers={
             'Cache-Control': 'no-cache',
             'X-Accel-Buffering': 'no',

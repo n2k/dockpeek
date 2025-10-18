@@ -4,7 +4,7 @@ export class LogsViewer {
   constructor() {
     this.modal = null;
     this.logsContent = null;
-    this.eventSource = null;
+    this.streamReader = null;
     this.isStreaming = false;
     this.currentServer = null;
     this.currentContainer = null;
@@ -15,6 +15,7 @@ export class LogsViewer {
     this.containerList = [];
     this.currentContainerIndex = -1;
     this.fetchController = null;
+    this.streamController = null;
     this.initModal();
   }
 
@@ -350,8 +351,13 @@ export class LogsViewer {
       this.fetchController = null;
     }
 
+    if (this.streamController) {
+      this.streamController.abort();
+      this.streamController = null;
+    }
+
     document.body.style.overflow = '';
-    
+
     this.modal.classList.add('hidden');
     this.logsContent.innerHTML = '';
     const searchInput = document.getElementById('logs-search-input');
@@ -555,57 +561,116 @@ export class LogsViewer {
     const tail = Math.min(parseInt(tailSelect.value) || 100, 100);
 
     this.isStreaming = true;
+    this.streamController = new AbortController();
     this.updateStreamButton();
 
-    const url = `${apiUrl('/stream-container-logs')}?server_name=${encodeURIComponent(this.currentServer)}&container_name=${encodeURIComponent(this.currentContainer)}&tail=${tail}&is_swarm=${this.isSwarm || false}`;
+    try {
+      const response = await fetch(apiUrl('/stream-container-logs'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          server_name: this.currentServer,
+          container_name: this.currentContainer,
+          tail: tail,
+          is_swarm: this.isSwarm || false
+        }),
+        signal: this.streamController.signal
+      });
 
-    this.eventSource = new EventSource(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    this.eventSource.onmessage = (event) => {
-      const line = event.data;
-      this.appendLogLine(line);
-    };
-
-    this.eventSource.onerror = (error) => {
-      console.error('Stream error:', error);
-      this.stopStreaming();
-      this.updateStatus('Stream disconnected');
-    };
-
-    this.eventSource.onopen = () => {
       this.updateStatus('Streaming live...');
-    };
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (this.isStreaming) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data = JSON.parse(line);
+              if (data.error) {
+                console.error('Stream error:', data.error);
+                this.stopStreaming();
+                this.updateStatus('Stream error');
+                break;
+              }
+              if (data.line) {
+                this.appendLogLine(data.line);
+              }
+            } catch (e) {
+              console.error('Failed to parse line:', line, e);
+            }
+          }
+        }
+      }
+
+      reader.releaseLock();
+
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Stream aborted');
+      } else {
+        console.error('Stream error:', error);
+        this.updateStatus('Stream disconnected');
+      }
+    } finally {
+      this.isStreaming = false;
+      this.updateStreamButton();
+    }
   }
 
   stopStreaming() {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-    }
     this.isStreaming = false;
+
+    if (this.streamController) {
+      this.streamController.abort();
+      this.streamController = null;
+    }
+
     this.updateStreamButton();
     this.updateStatus('Stream stopped');
   }
 
   appendLogLine(line) {
-    const pre = this.logsContent.querySelector('.logs-pre');
-    if (pre) {
-      const formattedLine = this.formatLogLine(line);
-      pre.insertAdjacentHTML('beforeend', formattedLine);
-
-      // Limit number of lines in memory
-      const lines = pre.querySelectorAll('.log-line');
-      if (lines.length > 5000) {
-        lines[0].remove();
-      }
-
-      if (this.autoScroll) {
-        this.scrollToBottom();
-      }
-
-      this.updateLineCount(lines.length);
+    let pre = this.logsContent.querySelector('.logs-pre');
+    
+    // Jeśli nie ma pre, utwórz go
+    if (!pre) {
+        this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
+        pre = this.logsContent.querySelector('.logs-pre');
     }
-  }
+    
+    if (pre) {
+        // Usuń trailing newline z linii
+        const cleanLine = line.replace(/\n$/, '');
+        const formattedLine = this.formatLogLine(cleanLine);
+        pre.insertAdjacentHTML('beforeend', formattedLine);
+
+        // Ogranicz liczbę linii w pamięci
+        const lines = pre.querySelectorAll('.log-line');
+        if (lines.length > 5000) {
+            lines[0].remove();
+        }
+
+        if (this.autoScroll) {
+            this.scrollToBottom();
+        }
+
+        this.updateLineCount(lines.length);
+    }
+}
 
   updateStreamButton() {
     const btn = document.getElementById('logs-stream-btn');

@@ -1,5 +1,7 @@
-// modules/logs-viewer.js
+
 import { apiUrl } from './config.js';
+import { ansiParser } from './ansi-parser.js';
+
 export class LogsViewer {
   constructor() {
     this.modal = null;
@@ -276,7 +278,7 @@ export class LogsViewer {
       }
     });
 
-    // Close on overlay click
+    
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.close();
     });
@@ -292,7 +294,7 @@ export class LogsViewer {
         this.navigateToContainer(1);
       }
     });
-    // Close on Escape key
+    
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
         this.close();
@@ -449,7 +451,7 @@ export class LogsViewer {
     let timestampPart = '';
     let contentPart = line;
 
-    // Parse timestamp first
+    
     const timestampRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(.*)$/;
     const timestampMatch = line.match(timestampRegex);
 
@@ -458,7 +460,7 @@ export class LogsViewer {
       contentPart = timestampMatch[2];
     }
 
-    // Parse Swarm task details from content
+    
     const swarmDetailsRegex = /^com\.docker\.swarm\.[^\s]+ (.*)$/;
     const swarmMatch = contentPart.match(swarmDetailsRegex);
 
@@ -497,10 +499,13 @@ export class LogsViewer {
   }
 
   colorizeLogLine(line) {
-    const urls = [];
-    const urlPlaceholder = '___URL_PLACEHOLDER_';
+  if (!line.trim()) return '';
 
-    let processedLine = line.replace(
+  return ansiParser.parseWithColorizer(line, (escapedHtml, originalText) => {
+    const urls = [];
+    const urlPlaceholder = '___URL___';
+    
+    escapedHtml = escapedHtml.replace(
       /https?:\/\/[^\s"'<>|\\{}[\]`]+/g,
       (match) => {
         const cleaned = match.replace(/[.,;:!?)}"':]+$/, '');
@@ -508,46 +513,44 @@ export class LogsViewer {
         return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
       }
     );
-
-    let escapedLine = this.escapeHtml(processedLine);
-
-    escapedLine = escapedLine.replace(/\d+/g, (match, offset) => {
-      const before = escapedLine.substring(Math.max(0, offset - urlPlaceholder.length), offset);
-      const after = escapedLine.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
-
+    
+    escapedHtml = escapedHtml.replace(/(\d+)/g, (match, num, offset) => {
+      const before = escapedHtml.substring(Math.max(0, offset - urlPlaceholder.length), offset);
+      const after = escapedHtml.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
+      
       if (before === urlPlaceholder && after === urlPlaceholder) {
         return match;
       }
       return `<span class="log-number">${match}</span>`;
     });
-
-    escapedLine = escapedLine.replace(
+    
+    escapedHtml = escapedHtml.replace(
       new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
       (match, index) => {
         const url = urls[parseInt(index)];
-        const escapedUrl = this.escapeHtml(url);
-        return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer" class="log-link">${escapedUrl}</a>`;
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="log-link">${url}</a>`;
       }
     );
-
-    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(escapedLine)) {
-      return `<span class="log-error">${escapedLine}</span>`;
+    
+    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(originalText)) {
+      return `<span class="log-error">${escapedHtml}</span>`;
     }
-    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(escapedLine)) {
-      return `<span class="log-warning">${escapedLine}</span>`;
+    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(originalText)) {
+      return `<span class="log-warning">${escapedHtml}</span>`;
     }
-    if (/\b(INFO)\b|\[(INFO)\]/i.test(escapedLine)) {
-      return `<span class="log-info">${escapedLine}</span>`;
+    if (/\b(INFO)\b|\[(INFO)\]/i.test(originalText)) {
+      return `<span class="log-info">${escapedHtml}</span>`;
     }
-    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(escapedLine)) {
-      return `<span class="log-debug">${escapedLine}</span>`;
+    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(originalText)) {
+      return `<span class="log-debug">${escapedHtml}</span>`;
     }
-    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(escapedLine)) {
-      return `<span class="log-success">${escapedLine}</span>`;
+    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(originalText)) {
+      return `<span class="log-success">${escapedHtml}</span>`;
     }
-
-    return escapedLine;
-  }
+    
+    return escapedHtml;
+  });
+}
 
   escapeHtml(text) {
     const div = document.createElement('div');
@@ -656,19 +659,19 @@ export class LogsViewer {
   appendLogLine(line) {
     let pre = this.logsContent.querySelector('.logs-pre');
     
-    // Jeśli nie ma pre, utwórz go
+    
     if (!pre) {
         this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
         pre = this.logsContent.querySelector('.logs-pre');
     }
     
     if (pre) {
-        // Usuń trailing newline z linii
+        
         const cleanLine = line.replace(/\n$/, '');
         const formattedLine = this.formatLogLine(cleanLine);
         pre.insertAdjacentHTML('beforeend', formattedLine);
 
-        // Ogranicz liczbę linii w pamięci
+        
         const lines = pre.querySelectorAll('.log-line');
         if (lines.length > 5000) {
             lines[0].remove();
@@ -732,7 +735,7 @@ export class LogsViewer {
     const prevBtn = document.getElementById('logs-search-prev');
     const nextBtn = document.getElementById('logs-search-next');
 
-    // Reset
+    
     this.searchMatches = [];
     this.currentMatchIndex = -1;
 
@@ -747,7 +750,7 @@ export class LogsViewer {
 
     clearBtn.classList.remove('hidden');
 
-    // Find all matches
+    
     const lines = this.logsContent.querySelectorAll('.log-line');
     const lowerQuery = query.toLowerCase();
 
@@ -771,7 +774,7 @@ export class LogsViewer {
       }
     });
 
-    // Update UI
+    
     if (this.searchMatches.length > 0) {
       countSpan.classList.remove('hidden');
       prevBtn.classList.remove('hidden');
@@ -891,13 +894,13 @@ export class LogsViewer {
   }
 
   updateActiveHighlight() {
-    // Remove all active highlights
+    
     this.logsContent.querySelectorAll('mark.search-highlight-active').forEach(el => {
       el.classList.remove('search-highlight-active');
       el.classList.add('search-highlight');
     });
 
-    // Add active highlight to current match
+    
     const marks = this.logsContent.querySelectorAll('mark[data-match-index]');
     marks.forEach(mark => {
       const idx = parseInt(mark.dataset.matchIndex);
@@ -956,5 +959,5 @@ export class LogsViewer {
   }
 }
 
-// Export singleton instance
+
 export const logsViewer = new LogsViewer();

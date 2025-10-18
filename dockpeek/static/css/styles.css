@@ -1991,3 +1991,21 @@ body {
 .hidden {
   display: none;
 }
+
+
+@keyframes ansi-blink {
+
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.ansi-blink {
+  animation: ansi-blink 1s linear infinite;
+}

@@ -531,7 +531,7 @@ def stream_logs():
     def generate():
         queue = Queue()
         stop_flag = [False]
-        heartbeat_interval = 25
+        heartbeat_interval = 20
         last_yield = time.time()
         
         def log_reader():
@@ -574,7 +574,7 @@ def stream_logs():
                         yield json.dumps({"heartbeat": True}) + "\n"
                         
         except GeneratorExit:
-            logger.info(f"Stream closed for {container_name}")
+            logger.debug(f"Stream closed for {container_name}")
             stop_flag[0] = True
             raise
         finally:

@@ -215,7 +215,7 @@ services:
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
 | `DOCKER_HOST_NAME`            | `default`     | Display name for the primary server in the UI          |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
-| `DOCKER_CONNECTION_TIMEOUT`   | `1`           | Connection timeout in seconds for Docker host discovery |
+| `DOCKER_CONNECTION_TIMEOUT`   | `0.5`           | Connection timeout in seconds for Docker host discovery |
 
 ### Multi-Host Variables
 

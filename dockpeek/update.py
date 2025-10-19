@@ -232,20 +232,38 @@ class UpdateChecker:
             updated_image = client.images.get(f"{base_name}:{current_tag}")
             result = container_image_id != updated_image.id
             
-            if result: 
-                logger.info(f"[{server_name}] Update available for ⬆️ {base_name}:{current_tag} (container: {container_image_id[:12]}..., latest: {updated_image.id[:12]}...)")
-            else: 
-                logger.info(f"[{server_name}] Image up to date: ✅ {base_name}:{current_tag}")
+            if result:
+                logger.info(
+                    f"\033[96m[{server_name}]\033[0m "
+                    f"\033[93mUpdate available\033[0m  "
+                    f"\033[0m{base_name}:\033[96m{current_tag}\033[0m "
+                )
+            else:
+                logger.info(
+                    f"\033[96m[{server_name}]\033[0m "
+                    f"\033[92mImage up to date\033[0m  "
+                    f"{base_name}:{current_tag}"
+                )
             
             return result
             
         except Exception as pull_error:
-            if self._cancellation.is_cancelled():
-                logger.info(f"Update check cancelled during pull error handling for {base_name}:{current_tag}")
-                return False
+                if self._cancellation.is_cancelled():
+                    logger.info(
+                        f"\033[96m[{server_name}]\033[0m "
+                        f"\033[90mUpdate check cancelled during pull error handling for\033[0m "
+                        f"{base_name}:{current_tag}"
+                    )
+                    return False
             
-            logger.info(f"[{server_name}] Cannot pull {base_name}:{current_tag} - built locally or private repository")
-            return False
+                logger.warning(
+                    f"\033[96m[{server_name}]\033[0m "
+                    f"\033[91mCannot pull\033[0m "
+                    f"{base_name}:{current_tag}"
+                    f"\033[90m– built locally or private repository\033[0m"
+                )
+                return False
+
     
     def _pull_image(self, client, base_name, tag):
         client.images.pull(base_name, tag=tag)

@@ -362,26 +362,7 @@ mark.search-highlight-active {
 }
 
 .log-number {
-  color: #fbfbfb;
-}
-.log-error .log-number {
-  color: #ffb1b1;
-}
-
-.log-warning .log-number {
-  color: #ffd278;
-}
-
-.log-info .log-number {
-  color: #ccecff;
-}
-
-.log-debug .log-number {
-  color: #d7cfff;
-}
-
-.log-success .log-number {
-  color: #b7ffb7;
+    filter: brightness(1.15);
 }
 
 .log-task-id {

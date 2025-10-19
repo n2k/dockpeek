@@ -125,18 +125,15 @@ export function initEventListeners() {
       );
 
       if (!tagAlreadyExists) {
-        if (currentSearch) {
-          searchInput.value = `${currentSearch} ${tagSearch}`;
-        } else {
-          searchInput.value = tagSearch;
-        }
+        const existingTags = filters.tags.map(t => `#${t}`).join(' ');
+        searchInput.value = existingTags ? `${existingTags} ${tagSearch}` : tagSearch;
 
         toggleClearButton();
         updateDisplay();
         searchInput.focus();
       }
     }
-
+    
     if (e.target.classList.contains('stack-link')) {
       e.preventDefault();
       e.stopPropagation();
@@ -216,7 +213,7 @@ export function initLogsButtons() {
           ...c,
           is_swarm: state.swarmServers.includes(c.server)
         }));
-        
+
         logsViewer.setContainerList(containersWithSwarm, serverName, containerName);
         logsViewer.open(serverName, containerName, false, isSwarm);
       }

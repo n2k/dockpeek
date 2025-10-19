@@ -577,71 +577,131 @@ export class LogsViewer {
     this.streamController = new AbortController();
     this.updateStreamButton();
 
-    try {
-      const response = await fetch(apiUrl('/stream-container-logs'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          server_name: this.currentServer,
-          container_name: this.currentContainer,
-          tail: tail,
-          is_swarm: this.isSwarm || false
-        }),
-        signal: this.streamController.signal
-      });
+    let isFirstConnect = true;
+    let connectionStartTime = null;
+    let currentReader = null;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const connect = async () => {
+      try {
+        connectionStartTime = Date.now();
+        
+        const currentLineCount = this.logsContent.querySelectorAll('.log-line').length;
+        const reconnectTail = Math.max(1, currentLineCount);
+        
+        const response = await fetch(apiUrl('/stream-container-logs'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            server_name: this.currentServer,
+            container_name: this.currentContainer,
+            tail: isFirstConnect ? tail : reconnectTail,
+            is_swarm: this.isSwarm || false
+          }),
+          signal: this.streamController.signal
+        });
 
-      this.updateStatus('Streaming live...');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+        this.updateStatus('Streaming live...');
+        
+        if (!isFirstConnect) {
+          this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
+        }
+        
+        isFirstConnect = false;
 
-      while (this.isStreaming) {
-        const { done, value } = await reader.read();
+        const reader = response.body.getReader();
+        currentReader = reader;
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        if (done) break;
+        while (this.isStreaming) {
+          if (Date.now() - connectionStartTime > 480000) {
+            console.log('Reconnecting after 8 minutes');
+            break;
+          }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
+          const { done, value } = await reader.read();
 
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const data = JSON.parse(line);
-              if (data.error) {
-                console.error('Stream error:', data.error);
-                this.stopStreaming();
-                this.updateStatus('Stream error');
-                break;
+          if (done) {
+            console.log('Stream ended by server');
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                const data = JSON.parse(line);
+                
+                if (data.heartbeat) {
+                  continue;
+                }
+                
+                if (data.error) {
+                  console.error('Stream error:', data.error);
+                  this.stopStreaming();
+                  return;
+                }
+                
+                if (data.line) {
+                  this.appendLogLine(data.line);
+                }
+              } catch (e) {
+                console.error('Failed to parse line:', line, e);
               }
-              if (data.line) {
-                this.appendLogLine(data.line);
-              }
-            } catch (e) {
-              console.error('Failed to parse line:', line, e);
             }
           }
         }
-      }
 
-      reader.releaseLock();
+        try {
+          await reader.cancel();
+        } catch (e) {
+          console.log('Reader cleanup:', e.message);
+        }
+        
+        if (this.isStreaming) {
+          throw new Error('Reconnecting...');
+        }
 
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('Stream aborted');
-      } else {
-        console.error('Stream error:', error);
-        this.updateStatus('Stream disconnected');
+      } catch (error) {
+        if (error.name === 'AbortError' || !this.isStreaming) {
+          console.log('Stream stopped');
+          
+          if (currentReader) {
+            try {
+              await currentReader.cancel();
+            } catch (e) {}
+          }
+          
+          return;
+        }
+
+        console.log('Reconnecting...', error.message);
+        
+        if (currentReader) {
+          try {
+            await currentReader.cancel();
+          } catch (e) {}
+        }
+        
+        await new Promise(r => setTimeout(r, 1000));
+        
+        if (this.isStreaming) {
+          await connect();
+        }
       }
-    } finally {
-      this.isStreaming = false;
-      this.updateStreamButton();
-    }
+    };
+
+    await connect();
+
+    this.isStreaming = false;
+    this.updateStreamButton();
   }
 
   stopStreaming() {

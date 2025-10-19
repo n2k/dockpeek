@@ -386,6 +386,7 @@ export function updateDisplay() {
   updateActiveButton();
   updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
   updateContainerStats(statsData);
+  updateActiveTagsDisplay();
 }
 
 export function filterByStackAndServer(stack, server) {
@@ -524,4 +525,49 @@ export function hideFreePortResult() {
   if (resultDiv) {
     resultDiv.classList.add('hidden');
   }
+}
+
+export function updateActiveTagsDisplay() {
+  const searchInput = document.getElementById("search-input");
+  const container = document.getElementById("active-tags-container");
+  
+  if (!container) return;
+  
+  const filters = parseAdvancedSearch(searchInput.value.trim());
+  
+  if (filters.tags.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.classList.remove('hidden');
+  container.innerHTML = filters.tags.map(tag => `
+    <div class="active-tag-badge" data-tag="${tag}">
+      <span>#${tag}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </div>
+  `).join('');
+  
+  // Event listener dla usuwania tagów
+  container.querySelectorAll('.active-tag-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tagToRemove = badge.dataset.tag;
+      const currentFilters = parseAdvancedSearch(searchInput.value.trim());
+      
+      const remainingTags = currentFilters.tags
+        .filter(t => t.toLowerCase() !== tagToRemove.toLowerCase())
+        .map(t => `#${t}`)
+        .join(' ');
+      
+      searchInput.value = remainingTags;
+      toggleClearButton();
+      updateDisplay();
+      searchInput.focus();
+    });
+  });
 }

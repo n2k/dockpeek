@@ -2470,6 +2470,42 @@ body.dark-mode .prune-details-list {
   gap: 4px;
   max-width: 250px;
 }
+.active-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 10px;
+  background-color: #daeaff;
+  color: #546f9f;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  max-width: 150px;
+}
+.active-tag-badge:hover {
+  background-color: #cfe0fd;
+}
+.active-tag-badge span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.active-tag-badge svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  flex-shrink: 0;
+}
+.dark-mode .active-tag-badge {
+  background-color: #26344b;
+  color: #a2afd1;
+}
+.dark-mode .active-tag-badge:hover {
+  background-color: #252a33;
+}
 .column-menu {
   min-width: 200px;
 }

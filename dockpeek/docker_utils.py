@@ -379,8 +379,7 @@ def get_container_status_with_exit_code(container) -> Tuple[str, Optional[int]]:
     return ContainerStatusExtractor.get_status_with_exit_code(container)
 
 def create_streaming_client(server_url: str) -> DockerClient:
-    """Tworzy dedykowanego klienta dla streamowania logów"""
-    factory = DockerClientFactory(long_timeout=600)
+    factory = DockerClientFactory(long_timeout=60)
     return factory.create_client(server_url, use_long_timeout=True)
 
 def _get_link_hostname(public_hostname: Optional[str], host_ip: Optional[str], 

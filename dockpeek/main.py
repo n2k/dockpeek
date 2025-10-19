@@ -506,6 +506,10 @@ def get_logs():
 @main_bp.route("/stream-container-logs", methods=["POST"])
 @conditional_login_required
 def stream_logs():
+    import time
+    import gevent
+    from gevent.queue import Queue, Empty
+    
     request_data = request.get_json() or {}
     server_name = request_data.get('server_name')
     container_name = request_data.get('container_name')
@@ -525,23 +529,57 @@ def stream_logs():
     logger = current_app.logger
     
     def generate():
-        try:
-            if is_swarm:
-                stream_func = stream_service_logs
-            else:
-                stream_func = stream_container_logs
+        queue = Queue()
+        stop_flag = [False]
+        heartbeat_interval = 25
+        last_yield = time.time()
+        
+        def log_reader():
+            try:
+                if is_swarm:
+                    stream_func = stream_service_logs
+                else:
+                    stream_func = stream_container_logs
                 
-            for log_line in stream_func(stream_client, container_name, tail):
-                chunk = json.dumps({"line": log_line}) + "\n"
-                yield chunk
+                for log_line in stream_func(stream_client, container_name, tail):
+                    if stop_flag[0]:
+                        break
+                    queue.put(('log', log_line))
+                    
+                queue.put(('end', None))
+            except Exception as e:
+                queue.put(('error', str(e)))
+        
+        reader_greenlet = gevent.spawn(log_reader)
+        
+        try:
+            while True:
+                try:
+                    msg_type, data = queue.get(timeout=1)
+                    
+                    if msg_type == 'log':
+                        last_yield = time.time()
+                        yield json.dumps({"line": data}) + "\n"
+                    elif msg_type == 'end':
+                        break
+                    elif msg_type == 'error':
+                        logger.error(f"Stream error: {data}")
+                        yield json.dumps({"error": data}) + "\n"
+                        break
+                        
+                except Empty:
+                    current_time = time.time()
+                    if current_time - last_yield >= heartbeat_interval:
+                        last_yield = current_time
+                        yield json.dumps({"heartbeat": True}) + "\n"
+                        
         except GeneratorExit:
             logger.info(f"Stream closed for {container_name}")
+            stop_flag[0] = True
             raise
-        except Exception as e:
-            logger.error(f"Stream error: {e}")
-            error_chunk = json.dumps({"error": str(e)}) + "\n"
-            yield error_chunk
         finally:
+            stop_flag[0] = True
+            reader_greenlet.kill()
             try:
                 stream_client.close()
             except:

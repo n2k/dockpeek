@@ -80,7 +80,7 @@ class UpdateChecker:
         self._cache = UpdateCache(duration_seconds=120)
         self._cancellation = CancellationToken()
         self._pull_timeout = 300
-        self._executor = ThreadPoolExecutor(max_workers=1)
+        self._executor = ThreadPoolExecutor(max_workers=2)
         self._floating_tag_mode = os.getenv('UPDATE_FLOATING_TAGS', 'disabled').lower()
     
     def _resolve_floating_tag(self, current_tag: str) -> str:

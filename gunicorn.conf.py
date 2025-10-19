@@ -1,6 +1,6 @@
 import os
 
-workers = int(os.environ.get('WORKERS', '4'))
+workers = int(os.environ.get('WORKERS', '2'))
 
 worker_class = 'gevent'
 worker_connections = 1024
@@ -8,8 +8,8 @@ bind = '0.0.0.0:8000'
 
 # Timeouts
 timeout = 600
-graceful_timeout = 60
-keepalive = 75
+graceful_timeout = 30
+keepalive = 30
 
 # Logging
 accesslog = '-'
@@ -19,8 +19,8 @@ loglevel = 'warning'
 # Performance
 sendfile = False
 backlog = 2048
-max_requests = 1000 
-max_requests_jitter = 50 
+max_requests = 2000 
+max_requests_jitter = 100
 
 # Security
 limit_request_line = 4094
@@ -48,7 +48,7 @@ def get_dockpeek_art():
 ══ Version: {version}                
 ════ https://github.com/dockpeek/dockpeek  
 --
-══ To support dev(s) visit:
+══ To support dev visit:
 ══ https://buymeacoffee.com/dockpeek
  
 

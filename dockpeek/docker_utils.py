@@ -152,6 +152,13 @@ class DockerClientFactory:
             logger.debug(f"Connection test failed: {e}")
             return False
 
+    def get_host_name_from_api(self, client: DockerClient) -> Optional[str]:
+        try:
+            info = client.info()
+            return info.get('Name')
+        except Exception as e:
+            logger.debug(f"Failed to get host name from Docker API: {e}")
+            return None
 
 class EnvironmentConfigParser:
     HOST_PATTERN = re.compile(r"^DOCKER_HOST_(\d+)_URL$")
@@ -200,7 +207,7 @@ class EnvironmentConfigParser:
                 continue
             
             num = match.group(1)
-            name = os.environ.get(f"DOCKER_HOST_{num}_NAME", f"server{num}")
+            name = os.environ.get(f"DOCKER_HOST_{num}_NAME", "").strip() or f"server{num}"
             public_hostname = (
                 os.environ.get(f"DOCKER_HOST_{num}_PUBLIC_HOSTNAME") or
                 HostnameExtractor.extract_from_url(url, False)
@@ -266,14 +273,21 @@ class DockerClientDiscovery:
         hosts.sort(key=lambda h: h.order)
         return hosts
     
+    
     def _create_host_from_config(self, config: DockerHostConfig) -> DockerHost:
         try:
             client = self.client_factory.create_client(config.url)
-            
+
             if self.client_factory.test_connection(client):
-                logger.debug(f"Connected to Docker host '{config.name}' at {config.url}")
+                host_name = config.name
+                if host_name in [f"server{config.order}", "default"] and config.order > 0:
+                    api_name = self.client_factory.get_host_name_from_api(client)
+                    if api_name:
+                        host_name = api_name
+
+                logger.debug(f"Connected to Docker host '{host_name}' at {config.url}")
                 return DockerHost(
-                    name=config.name,
+                    name=host_name,
                     client=client,
                     url=config.url,
                     public_hostname=config.public_hostname,
@@ -300,14 +314,18 @@ class DockerClientDiscovery:
         )
     
     def _create_fallback_host(self) -> DockerHost:
-        fallback_name = os.environ.get("DOCKER_HOST_NAME", "").strip() or "default"
+        fallback_name = os.environ.get("DOCKER_HOST_NAME", "").strip()
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME", "")
         url = "unix:///var/run/docker.sock"
-        
+
         try:
             client = self.client_factory.create_default_client()
-            
+
             if self.client_factory.test_connection(client):
+                if not fallback_name:
+                    api_name = self.client_factory.get_host_name_from_api(client)
+                    fallback_name = api_name or "default"
+
                 logger.debug(f"Connected to default Docker socket")
                 return DockerHost(
                     name=fallback_name,
@@ -320,9 +338,9 @@ class DockerClientDiscovery:
                 )
         except Exception as e:
             logger.warning(f"Could not connect to default Docker socket: {e}")
-        
+
         return DockerHost(
-            name=fallback_name,
+            name=fallback_name or "default",
             client=None,
             url=url,
             public_hostname=public_hostname,

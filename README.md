@@ -15,26 +15,24 @@
 
 <h3>Quick Access & Easy Updates for Your Docker Containers</h3>
 
-<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard designed for efficiency and simplicity.
-With dockpeek, you can instantly access container web interfaces, view logs, monitor ports, and apply updates in a single click.
-It also auto-detects Traefik labels to display container addresses, helping you keep everything organized — all from one clean and intuitive interface.</p>
+<p><b>Dockpeek</b> is a lightweight, self-hosted Docker dashboard for quick access to your containers.  
+Open web interfaces, view logs, monitor ports, and update images — all from one clean, intuitive interface.  
+It automatically detects Traefik labels and works out of the box with zero configuration.</p>
+
 </div>
 
- 
 ## ✨ Key Features
 
-* **Port Mapping Overview** — Instantly see all running containers and their published ports
-* **Real-Time Log Viewer** — Monitor container logs in real-time
-* **Traefik Integration** — Auto-detect and display container addresses from Traefik labels
-* **One-Click Access** — Jump directly into containerized web interfaces
-* **Multi-Host Management** — Manage multiple Docker hosts in one place
-* **Zero Configuration** — Works out of the box, no manual setup required
-* **Update Management** — Check for image updates and upgrade containers with a click
-* **Responsive UI** — Smooth experience on desktop, tablet, and mobile
+* **One-click web access** — Instantly open your containers’ dashboards and web apps
+* **Automatic port mapping** — Detect and display all published ports
+* **Live container logs** — Stream logs in real time
+* **Traefik integration** — Automatically extract service URLs from labels
+* **Multi-host management** — Control multiple Docker daemons from one interface
+* **Image update checks** — Detect and upgrade outdated containers
 
 ## 🏷️ Labels Support
 
-Customize how your containers are displayed with custom labels:
+Add labels to your containers to tag them, customize their appearance, or control how dockpeek interacts with them.
 
 * `dockpeek.https` — Force HTTPS protocol for specific ports
 * `dockpeek.link` — Turn container names into clickable links
@@ -84,7 +82,7 @@ Customize how your containers are displayed with custom labels:
 
 ### Basic Setup (Recommended)
 
-The easiest way to get started with Dockpeek:
+The easiest way to get started with dockpeek:
 
 ```yaml
 services:
@@ -106,11 +104,11 @@ services:
 
 
 > [!TIP]
-> Add labels to your other containers to tag them, customize their appearance, or control how Dockpeek interacts with them.
+> You can add labels to your other containers to tag them or control how dockpeek interacts with them.
 >
-> Learn more about [available Dockpeek labels.](https://github.com/dockpeek/dockpeek?tab=readme-ov-file#%EF%B8%8F-container-labels)
+> Learn more about [available dockpeek labels.](https://github.com/dockpeek/dockpeek?tab=readme-ov-file#%EF%B8%8F-container-labels)
 
-### Option 2: Secure Setup with Socket Proxy
+### Option 2: Socket Proxy
 
 For enhanced security, use a socket proxy to limit Docker API access:
 
@@ -131,7 +129,8 @@ services:
     restart: unless-stopped
 
   socket-proxy:
-    image: lscr.io/linuxserver/socket-proxy:latest
+           # alternative: tecnativa/docker-socket-proxy
+    image: lscr.io/linuxserver/socket-proxy:latest 
     container_name: dockpeek-socket-proxy
     environment:
       - CONTAINERS=1
@@ -243,7 +242,7 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 
 ## 🏷️ Container Labels
 
-Customize how containers appear and behave in Dockpeek:
+Customize how containers appear and behave in dockpeek:
 
 ```yaml
 services:
@@ -271,7 +270,7 @@ services:
 
 ## 🐳 Docker Swarm Support
 
-Dockpeek natively supports Docker Swarm, You can deploy Dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This configuration is ideal for production clusters using Traefik as an ingress proxy.
+Dockpeek natively supports Docker Swarm, You can deploy dockpeek as a stack, with a single socket-proxy instance, and view/manage all Swarm services and tasks in the dashboard. This configuration is ideal for production clusters using Traefik as an ingress proxy.
 
 ![swarm](https://i.imgur.com/ceEFBT7.png)
 
@@ -370,7 +369,7 @@ networks:
 > docker swarm leave --force
 > ```
 >
-> After running this command, refresh Dockpeek — your regular containers should appear again.
+> After running this command, refresh dockpeek — your regular containers should appear again.
 
 </details>
 

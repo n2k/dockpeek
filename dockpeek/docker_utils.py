@@ -175,7 +175,7 @@ class EnvironmentConfigParser:
             return None
         
         host_url = os.environ["DOCKER_HOST"]
-        host_name = os.environ.get("DOCKER_HOST_NAME", "default")
+        host_name = os.environ.get("DOCKER_HOST_NAME", "").strip() or "default"
         public_hostname = (
             os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME") or 
             HostnameExtractor.extract_from_url(host_url, True)
@@ -300,7 +300,7 @@ class DockerClientDiscovery:
         )
     
     def _create_fallback_host(self) -> DockerHost:
-        fallback_name = os.environ.get("DOCKER_HOST_NAME", "default")
+        fallback_name = os.environ.get("DOCKER_HOST_NAME", "").strip() or "default"
         public_hostname = os.environ.get("DOCKER_HOST_PUBLIC_HOSTNAME", "")
         url = "unix:///var/run/docker.sock"
         

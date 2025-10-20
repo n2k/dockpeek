@@ -95,6 +95,7 @@ services:
       - SECRET_KEY=your_secure_secret_key # Required: Set a secure secret key
       - USERNAME=admin # username
       - PASSWORD=admin # password
+      - DOCKER_HOST_NAME= # Server name for UI (optional, displays in the interface)
     ports:
       - "3420:8000"
     volumes:

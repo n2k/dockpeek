@@ -1,7 +1,7 @@
 import os
 import re
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -218,8 +218,10 @@ class EnvironmentConfigParser:
 
 
 class DockerClientDiscovery:
-    def __init__(self, client_factory: Optional[DockerClientFactory] = None):
+    def __init__(self, client_factory: Optional[DockerClientFactory] = None, 
+             discovery_timeout: float = 10.0):
         self.client_factory = client_factory or DockerClientFactory()
+        self.discovery_timeout = discovery_timeout
         self._lock = Lock()
         self._cache = None
         self._cache_time = 0
@@ -241,25 +243,28 @@ class DockerClientDiscovery:
         return hosts
     
     def _perform_discovery(self) -> List[DockerHost]:
-         configs = EnvironmentConfigParser.parse()
-
-         if not configs:
-             return [self._create_fallback_host()]
-
-         hosts = []
-         with ThreadPoolExecutor(max_workers=len(configs)) as executor:
-             future_to_host = {executor.submit(self._create_host_from_config, config): config for config in configs}
-             for future in as_completed(future_to_host):
-                 try:
-                     host_result = future.result()
-                     hosts.append(host_result)
-                 except Exception as e:
-                     config = future_to_host[future]
-                     logger.error(f"Error processing host {config.name}: {e}")
-                     hosts.append(self._create_inactive_host(config))
-
-         hosts.sort(key=lambda h: h.order)
-         return hosts
+        configs = EnvironmentConfigParser.parse()
+    
+        if not configs:
+            return [self._create_fallback_host()]
+    
+        hosts = []
+        with ThreadPoolExecutor(max_workers=len(configs)) as executor:
+            future_to_host = {executor.submit(self._create_host_from_config, config): config for config in configs}
+            for future in as_completed(future_to_host):
+                config = future_to_host[future]
+                try:
+                    host_result = future.result(timeout=self.discovery_timeout)
+                    hosts.append(host_result)
+                except TimeoutError:
+                    logger.error(f"Timeout discovering host {config.name} after {self.discovery_timeout}s")
+                    hosts.append(self._create_inactive_host(config))
+                except Exception as e:
+                    logger.error(f"Error processing host {config.name}: {e}")
+                    hosts.append(self._create_inactive_host(config))
+    
+        hosts.sort(key=lambda h: h.order)
+        return hosts
     
     def _create_host_from_config(self, config: DockerHostConfig) -> DockerHost:
         try:
@@ -334,34 +339,55 @@ class DockerClientDiscovery:
 
 class ContainerStatusExtractor:
     @staticmethod
-    def get_status_with_exit_code(container) -> Tuple[str, Optional[int]]:
+    def get_status_with_exit_code(container, timeout: float = 5.0) -> Tuple[str, Optional[int]]:
         try:
-            base_status = container.status
-            state = container.attrs.get('State', {})
-            exit_code = state.get('ExitCode')
+            import signal
             
-            if base_status in ['exited', 'dead']:
-                return base_status, exit_code
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Container attrs fetch timeout")
             
-            if base_status in ['paused', 'restarting', 'removing', 'created']:
+            if hasattr(signal, 'SIGALRM'):
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(int(timeout))
+            
+            try:
+                base_status = container.status
+                state = container.attrs.get('State', {})
+                exit_code = state.get('ExitCode')
+                
+                if base_status in ['exited', 'dead']:
+                    return base_status, exit_code
+                
+                if base_status in ['paused', 'restarting', 'removing', 'created']:
+                    return base_status, None
+                
+                if base_status == 'running':
+                    health = state.get('Health', {})
+                    if health:
+                        health_status = health.get('Status', '')
+                        if health_status == 'healthy':
+                            return 'healthy', None
+                        if health_status == 'unhealthy':
+                            return 'unhealthy', exit_code
+                        if health_status == 'starting':
+                            return 'starting', None
+                    return 'running', None
+                
                 return base_status, None
-            
-            if base_status == 'running':
-                health = state.get('Health', {})
-                if health:
-                    health_status = health.get('Status', '')
-                    if health_status == 'healthy':
-                        return 'healthy', None
-                    if health_status == 'unhealthy':
-                        return 'unhealthy', exit_code
-                    if health_status == 'starting':
-                        return 'starting', None
-                return 'running', None
-            
-            return base_status, None
+            finally:
+                if hasattr(signal, 'SIGALRM'):
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+                    
+        except TimeoutError:
+            logger.warning(f"Timeout getting status for container {getattr(container, 'name', 'unknown')}")
+            return 'timeout', None
         except Exception as e:
-            logger.warning(f"Error getting status for container {container.name}: {e}")
-            return container.status, None
+            logger.warning(f"Error getting status for container {getattr(container, 'name', 'unknown')}: {e}")
+            try:
+                return container.status, None
+            except:
+                return 'error', None
 
 
 _discovery_instance = DockerClientDiscovery()

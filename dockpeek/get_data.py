@@ -1,6 +1,7 @@
 import re
 import logging
 from flask import current_app
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from .docker_utils import discover_docker_clients, get_container_status_with_exit_code, _get_link_hostname
 from .update import update_checker
 
@@ -285,17 +286,103 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'tags': labels_data['tags'],
             'update_available': update_available
         }
-        
+                
         return container_info
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Error processing container {getattr(container, 'name', 'unknown')}: {e}")
         return {
             'server': server_name,
             'name': getattr(container, 'name', 'unknown'),
-            'status': getattr(container, 'status', 'unknown'),
+            'status': 'error',
             'image': 'error-loading',
             'ports': []
         }
+    
+def process_single_host_data(host, traefik_enabled, tags_enable):
+    if host['status'] == 'inactive':
+        return []
+    
+    container_data = []
+    
+    try:
+        server_name = host["name"]
+        client = host["client"]
+        public_hostname = host["public_hostname"]
+        is_docker_host = host["is_docker_host"]
 
+        try:
+            info = client.info()
+            is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
+        except Exception:
+            is_swarm = False
+
+        if is_swarm:
+            try:
+                services = client.services.list()
+                tasks = client.api.tasks()
+                
+                tasks_by_service = {}
+                for t in tasks:
+                    sid = t['ServiceID']
+                    tasks_by_service.setdefault(sid, []).append(t)
+                
+                for service in services:
+                    container_info = process_swarm_service(
+                        service, tasks_by_service, client, server_name,
+                        public_hostname, is_docker_host, traefik_enabled, tags_enable
+                    )
+                    container_data.append(container_info)
+            except Exception as swarm_error:
+                logger.error(f"Swarm error on {server_name}: {swarm_error}")
+                container_data.append({
+                    'server': server_name,
+                    'name': 'unknown',
+                    'status': 'swarm-error',
+                    'image': 'error-loading',
+                    'ports': []
+                })
+            return container_data
+
+        try:
+            containers = client.containers.list(all=True)
+        except Exception as list_error:
+            logger.error(f"Failed to list containers on {server_name}: {list_error}")
+            return [{
+                'server': server_name,
+                'name': 'error',
+                'status': 'list-error',
+                'image': 'error-loading',
+                'ports': []
+            }]
+        
+        for container in containers:
+            try:
+                container_info = process_container(
+                    container, client, server_name, public_hostname,
+                    is_docker_host, traefik_enabled, tags_enable
+                )
+                container_data.append(container_info)
+            except Exception as container_error:
+                logger.warning(f"Error processing container {getattr(container, 'name', 'unknown')} on {server_name}: {container_error}")
+                container_data.append({
+                    'server': server_name,
+                    'name': getattr(container, 'name', 'unknown'),
+                    'status': 'processing-error',
+                    'image': 'error-loading',
+                    'ports': []
+                })
+                
+    except Exception as e:
+        logger.error(f"Error processing host {host.get('name', 'unknown')}: {e}")
+        return [{
+            'server': host.get('name', 'unknown'),
+            'name': 'error',
+            'status': 'host-error',
+            'image': 'error-loading',
+            'ports': []
+        }]
+    
+    return container_data
 
 def get_all_data():
     servers = discover_docker_clients()
@@ -310,63 +397,49 @@ def get_all_data():
     swarm_servers = []
     server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"], "url": s["url"]} for s in servers]
 
-    for host in servers:
-        if host['status'] == 'inactive':
-            continue
+    HOST_PROCESSING_TIMEOUT = 30.0
+    
+    with ThreadPoolExecutor(max_workers=len(servers)) as executor:
+        future_to_host = {
+            executor.submit(process_single_host_data, host, TRAEFIK_ENABLE, TAGS_ENABLE): host 
+            for host in servers
+        }
         
-        try:
-            server_name = host["name"]
-            client = host["client"]
-            public_hostname = host["public_hostname"]
-            is_docker_host = host["is_docker_host"]
-
+        for future in future_to_host:
+            host = future_to_host[future]
             try:
-                info = client.info()
-                is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
-            except Exception:
-                is_swarm = False
-
-            if is_swarm:
-                swarm_servers.append(server_name)
-                try:
-                    services = client.services.list()
-                    tasks = client.api.tasks()
-                    
-                    tasks_by_service = {}
-                    for t in tasks:
-                        sid = t['ServiceID']
-                        tasks_by_service.setdefault(sid, []).append(t)
-                    
-                    for service in services:
-                        container_info = process_swarm_service(
-                            service, tasks_by_service, client, server_name,
-                            public_hostname, is_docker_host, TRAEFIK_ENABLE, TAGS_ENABLE
-                        )
-                        all_container_data.append(container_info)
-                except Exception as swarm_error:
-                    all_container_data.append({
-                        'server': server_name,
-                        'name': 'unknown',
-                        'status': 'swarm-error',
-                        'image': 'error-loading',
-                        'ports': []
-                    })
-                continue
-
-            containers = client.containers.list(all=True)
-            for container in containers:
-                container_info = process_container(
-                    container, client, server_name, public_hostname,
-                    is_docker_host, TRAEFIK_ENABLE, TAGS_ENABLE
-                )
-                all_container_data.append(container_info)
+                host_containers = future.result(timeout=HOST_PROCESSING_TIMEOUT)
+                all_container_data.extend(host_containers)
                 
-        except Exception as e:
-            for s in server_list_for_json:
-                if s["name"] == host["name"]:
-                    s["status"] = "inactive"
-                    break
-            continue
+                if host['status'] != 'inactive':
+                    try:
+                        client = host["client"]
+                        info = client.info()
+                        is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
+                        if is_swarm:
+                            swarm_servers.append(host["name"])
+                    except:
+                        pass
+                        
+            except FuturesTimeoutError:
+                logger.error(f"Timeout processing host {host['name']} after {HOST_PROCESSING_TIMEOUT}s")
+                for s in server_list_for_json:
+                    if s["name"] == host["name"]:
+                        s["status"] = "inactive"
+                        break
+                all_container_data.append({
+                    'server': host["name"],
+                    'name': 'timeout',
+                    'status': 'host-timeout',
+                    'image': 'timeout-error',
+                    'ports': []
+                })
+            except Exception as e:
+                logger.error(f"Error processing host {host['name']}: {e}")
+                for s in server_list_for_json:
+                    if s["name"] == host["name"]:
+                        s["status"] = "inactive"
+                        break
 
     return {
         "servers": server_list_for_json, 

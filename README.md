@@ -106,7 +106,7 @@ services:
 > [!TIP]
 > You can add labels to your other containers to tag them or control how dockpeek interacts with them.
 >
-> Learn more about [available dockpeek labels.](https://github.com/dockpeek/dockpeek?tab=readme-ov-file#%EF%B8%8F-container-labels)
+> Learn more about [available dockpeek labels.](#%EF%B8%8F-container-labels)
 
 ### Option 2: Socket Proxy
 

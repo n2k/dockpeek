@@ -1,10 +1,10 @@
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     environment:
       SECRET_KEY: your_secure_secret_key
       USERNAME: admin
-      PASSWORD: secure_password
+      PASSWORD: admin
       TRAEFIK_LABELS: "true"
       DOCKER_HOST: tcp://tasks.socket-proxy:2375  # Connect to Swarm manager via socket-proxy
     networks:

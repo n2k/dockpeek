@@ -1,7 +1,7 @@
 
 services:
   dockpeek:
-    image: ghcr.io/dockpeek/dockpeek:latest
+    image: dockpeek/dockpeek:latest
     container_name: dockpeek
     restart: unless-stopped
     ports:
@@ -9,6 +9,6 @@ services:
     environment:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=secure_password
+      - PASSWORD=admin
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

@@ -94,7 +94,7 @@ services:
     environment:
       - SECRET_KEY=your_secure_secret_key # Required: Set a secure secret key
       - USERNAME=admin # username
-      - PASSWORD=secure_password # password
+      - PASSWORD=admin # password
     ports:
       - "3420:8000"
     volumes:
@@ -116,7 +116,7 @@ services:
     environment:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=secure_password
+      - PASSWORD=admin
       - DOCKER_HOST=tcp://socket-proxy:2375 # Connect via socket proxy
     ports:
       - "3420:8000"
@@ -164,7 +164,7 @@ services:
     environment:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=secure_password
+      - PASSWORD=admin
 
       # --- Docker Host 1 (Local) ---
       - DOCKER_HOST_1_URL=unix:///var/run/docker.sock # Local Docker socket
@@ -280,7 +280,7 @@ services:
     environment:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
-      - PASSWORD=secure_password
+      - PASSWORD=admin
       - TRAEFIK_LABELS=true
       - DOCKER_HOST=tcp://tasks.socket-proxy:2375 # Connect to Swarm manager via socket-proxy
     ports:

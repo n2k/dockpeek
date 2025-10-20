@@ -95,7 +95,8 @@ services:
       - SECRET_KEY=your_secure_secret_key # Required: Set a secure secret key
       - USERNAME=admin # username
       - PASSWORD=admin # password
-      - DOCKER_HOST_NAME= # Server name for UI (optional, displays in the interface)
+    # Server name for UI (optional, auto-detected from Docker API if not set)
+    #  - DOCKER_HOST_NAME=
     ports:
       - "3420:8000"
     volumes:
@@ -103,7 +104,11 @@ services:
     restart: unless-stopped
 ```
 
-**Then visit:** http://localhost:3420
+
+> [!TIP]
+> Add labels to your other containers to tag them, customize their appearance, or control how Dockpeek interacts with them.
+>
+> Learn more about [available Dockpeek labels.](https://github.com/dockpeek/dockpeek?tab=readme-ov-file#%EF%B8%8F-container-labels)
 
 ### Option 2: Secure Setup with Socket Proxy
 
@@ -153,7 +158,6 @@ services:
 ## 🌐 Multi-Host Setup
 
 Manage multiple Docker hosts from a single dashboard:
-
 ```yaml
 services:
   dockpeek:
@@ -169,17 +173,17 @@ services:
 
       # --- Docker Host 1 (Local) ---
       - DOCKER_HOST_1_URL=unix:///var/run/docker.sock # Local Docker socket
-      - DOCKER_HOST_1_NAME=Local Development # Display name in UI
-      # DOCKER_HOST_1_PUBLIC_HOSTNAME is optional; uses host IP by default
+      # DOCKER_HOST_1_NAME= is Optional: Auto-detected from Docker API if not set
+      # DOCKER_HOST_1_PUBLIC_HOSTNAME= is optional; uses host IP by default
 
       # --- Docker Host 2 (Remote Server) ---
       - DOCKER_HOST_2_URL=tcp://192.168.1.100:2375 # Remote socket proxy
-      - DOCKER_HOST_2_NAME=Production Server # Display name in UI
+      - DOCKER_HOST_2_NAME=Production Server # Optional: Auto-detected from Docker API if not set
       - DOCKER_HOST_2_PUBLIC_HOSTNAME=server.local # Optional: Custom hostname for links
 
       # --- Docker Host 3 (Tailscale) ---
       - DOCKER_HOST_3_URL=tcp://100.64.1.5:2375 # Tailscale IP
-      - DOCKER_HOST_3_NAME=Remote VPS # Display name in UI
+      - DOCKER_HOST_3_NAME=Remote VPS # Optional: Auto-detected from Docker API if not set
       - DOCKER_HOST_3_PUBLIC_HOSTNAME=vps.tailnet.ts.net # Optional: Tailscale FQDN
 
       # --- Continue pattern for additional hosts (4, 5, etc.) ---
@@ -214,7 +218,7 @@ services:
 | `TRUST_PROXY_HEADERS`         | `false`       | Set to `true` to enable proxy header support (X-Forwarded-*) |
 | `TRUSTED_PROXY_COUNT`         | `1`           | Number of trusted proxies when `TRUST_PROXY_HEADERS=true` |
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
-| `DOCKER_HOST_NAME`            | `default`     | Display name for the primary server in the UI          |
+| `DOCKER_HOST_NAME`            | Auto-detected | Display name for the primary server (auto-detected from Docker API if not set) |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
 | `DOCKER_CONNECTION_TIMEOUT`   | `0.5`           | Connection timeout in seconds for Docker host discovery |
 
@@ -225,7 +229,7 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 | Variable                        | Description                              |
 | ------------------------------- | ---------------------------------------- |
 | `DOCKER_HOST_N_URL`             | Docker API URL (e.g., `tcp://host:2375`) |
-| `DOCKER_HOST_N_NAME`            | Display name in the dashboard            |
+| `DOCKER_HOST_N_NAME`            | Display name in the dashboard (auto-detected from Docker API if not set) |
 | `DOCKER_HOST_N_PUBLIC_HOSTNAME` | Optional public hostname for links       |
 
 > [!IMPORTANT] 

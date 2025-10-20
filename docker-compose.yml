@@ -10,7 +10,7 @@ services:
       - SECRET_KEY=your_secure_secret_key
       - USERNAME=admin
       - PASSWORD=admin
-     # Server name for UI (optional, displays in the interface)
-     # - DOCKER_HOST_NAME=
+    # Server name for UI (optional, auto-detected from Docker API if not set)
+    #  - DOCKER_HOST_NAME=
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  

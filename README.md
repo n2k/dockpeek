@@ -27,10 +27,10 @@ It automatically detects Traefik labels and works out of the box with zero confi
 * **Automatic port mapping** — Detect and display all published ports
 * **Live container logs** — Stream logs in real time
 * **Traefik integration** — Automatically extract service URLs from labels
-* **Multi-host management** — Control multiple Docker daemons from one interface
+* **[Multi-host management](#-multi-host-setup)** — Control multiple Docker daemons from one interface
 * **Image update checks** — Detect and upgrade outdated containers
 
-## 🏷️ Labels Support
+## 🏷️ [Labels Support](#%EF%B8%8F-container-labels)
 
 Add labels to your containers to tag them, customize their appearance, or control how dockpeek interacts with them.
 

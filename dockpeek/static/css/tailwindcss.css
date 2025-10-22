@@ -819,8 +819,22 @@
   src: url('../fonts/inter/inter-v19-latin-800.woff2') format('woff2');
 }
 .logs-button svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.1px;
+}
+.logs-button {
+  color: #677183;
+  cursor: pointer;
+}
+.logs-button:hover {
+  color: #2b7fff !important;
+}
+body.dark-mode .logs-button {
+  color: #7b818f;
+}
+body.dark-mode .logs-button:hover {
+  color: #2b7fff !important;
 }
 .logs-modal-content {
   background: #ffffff;
@@ -1380,6 +1394,7 @@ body.dark-mode .data-content-name {
   padding: 0.08rem 0.35em;
   font-weight: 400;
   display: inline-block;
+  white-space: nowrap;
 }
 body.dark-mode [data-content="ports"] .badge {
   background-color: #21262d;

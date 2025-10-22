@@ -1,7 +1,25 @@
 /* Logs Modal */
 .logs-button svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.1px;
+}
+
+.logs-button {
+  color: #677183;
+  cursor: pointer;
+}
+
+.logs-button:hover {
+  color: #2b7fff !important;
+}
+
+body.dark-mode .logs-button {
+  color: #7b818f;
+}
+
+body.dark-mode .logs-button:hover {
+  color: #2b7fff !important;
 }
 
 .logs-modal-content {
@@ -43,6 +61,7 @@
   background: #e1e4e8;
   color: #364153;
 }
+
 .logs-nav-arrow {
   background: none;
   border: none;
@@ -82,12 +101,12 @@
 }
 
 body.dark-mode .logs-nav-arrow {
-    color: #6a737d;
+  color: #6a737d;
 }
 
 body.dark-mode .logs-nav-arrow:hover {
-    background: #292d35;
-    color: #c9d1d9;
+  background: #292d35;
+  color: #c9d1d9;
 }
 
 .logs-stack-link {
@@ -362,7 +381,7 @@ mark.search-highlight-active {
 }
 
 .log-number {
-    filter: brightness(1.15);
+  filter: brightness(1.15);
 }
 
 .log-task-id {

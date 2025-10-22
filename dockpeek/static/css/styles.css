@@ -170,6 +170,8 @@ body.dark-mode .data-content-name {
   color: #6a737d;
 }
 
+
+
 [data-content="ports"] .badge {
   background-color: #e5effd;
   color: #2188ff;
@@ -177,6 +179,7 @@ body.dark-mode .data-content-name {
   padding: 0.08rem 0.35em;
   font-weight: 400;
   display: inline-block;
+  white-space: nowrap;
 }
 
 body.dark-mode [data-content="ports"] .badge {

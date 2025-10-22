@@ -34,7 +34,7 @@ COPY gunicorn.conf.py .
 
 COPY . .
 
-EXPOSE ${PORT:-8000}
+EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
   CMD curl -fsS http://localhost:${PORT:-8000}/health || exit 1

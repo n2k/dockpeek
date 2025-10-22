@@ -100,31 +100,26 @@ export function renderPorts(container, cell) {
 
   const arrowSvg = `<svg width="12" height="12" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="align-middle"><path d="M19 12L31 24L19 36" stroke="currentColor" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-  // Check if port range grouping is enabled (global setting and per-container setting)
   const globalGroupingEnabled = window.portRangeGroupingEnabled !== false;
   const containerGroupingEnabled = container.port_range_grouping !== false;
   const shouldGroupPorts = globalGroupingEnabled && containerGroupingEnabled;
 
   if (shouldGroupPorts) {
-    // Group ports into ranges and individual ports
     const portGroups = groupPortsIntoRanges(container.ports, window.portRangeThreshold || 5);
 
     cell.innerHTML = portGroups.map(group => {
       if (group.isRange) {
-        // Render as a range
         const rangeBadge = `<a href="${group.startPort.link}" data-tooltip="${group.startPort.link}" target="_blank" class="badge text-bg-dark rounded">${group.startPort.host_port}-${group.endPort.host_port}</a>`;
         
         if (group.startPort.is_custom || !group.startPort.container_port) {
           return `<div class="custom-port flex items-center mb-1">${rangeBadge}</div>`;
         }
 
-        // Extract port numbers and protocol from container_port
         const startContainerPort = group.startPort.container_port.split('/')[0];
         const endContainerPort = group.endPort.container_port.split('/')[0];
         const protocol = group.startPort.container_port.split('/')[1] || 'tcp';
         return `<div class="flex items-center mb-1">${rangeBadge}${arrowSvg}<small class="text-secondary">${startContainerPort}-${endContainerPort}/${protocol}</small></div>`;
       } else {
-        // Render as individual port
         const badge = `<a href="${group.port.link}" data-tooltip="${group.port.link}" target="_blank" class="badge text-bg-dark rounded">${group.port.host_port}</a>`;
 
         if (group.port.is_custom || !group.port.container_port) {
@@ -135,7 +130,6 @@ export function renderPorts(container, cell) {
       }
     }).join('');
   } else {
-    // Render ports individually (original behavior)
     cell.innerHTML = container.ports.map(p => {
       const badge = `<a href="${p.link}" data-tooltip="${p.link}" target="_blank" class="badge text-bg-dark rounded">${p.host_port}</a>`;
 
@@ -151,30 +145,76 @@ export function renderPorts(container, cell) {
 function groupPortsIntoRanges(ports, threshold = 5) {
   if (!ports.length) return [];
 
-  // Sort ports by host_port numerically
   const sortedPorts = [...ports].sort((a, b) => {
     const portA = parseInt(a.host_port, 10);
     const portB = parseInt(b.host_port, 10);
-    return portA - portB;
+    if (portA !== portB) return portA - portB;
+    
+    const protocolA = a.container_port?.split('/')[1] || 'tcp';
+    const protocolB = b.container_port?.split('/')[1] || 'tcp';
+    if (protocolA === 'tcp' && protocolB === 'udp') return -1;
+    if (protocolA === 'udp' && protocolB === 'tcp') return 1;
+    return protocolA.localeCompare(protocolB);
   });
 
-  const groups = [];
-  let currentRange = null;
+  const portsByProtocol = {};
+  sortedPorts.forEach(port => {
+    const protocol = port.container_port?.split('/')[1] || 'tcp';
+    if (!portsByProtocol[protocol]) {
+      portsByProtocol[protocol] = [];
+    }
+    portsByProtocol[protocol].push(port);
+  });
 
-  for (let i = 0; i < sortedPorts.length; i++) {
-    const port = sortedPorts[i];
-    const portNum = parseInt(port.host_port, 10);
-    
-    // Check if this port can be part of the current range
-    if (currentRange && 
-        portNum === currentRange.endPortNum + 1 &&
-        port.is_custom === currentRange.startPort.is_custom) {
-      // Extend the current range
-      currentRange.endPort = port;
-      currentRange.endPortNum = portNum;
-    } else {
-      // Close the current range if it exists and meets the threshold
-      if (currentRange && (currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
+  const groupsByProtocol = {};
+
+  Object.keys(portsByProtocol).forEach(protocol => {
+    const protocolPorts = portsByProtocol[protocol];
+    const groups = [];
+
+    let currentRange = null;
+
+    for (let i = 0; i < protocolPorts.length; i++) {
+      const port = protocolPorts[i];
+      const portNum = parseInt(port.host_port, 10);
+      
+      if (currentRange && 
+          portNum === currentRange.endPortNum + 1 &&
+          port.is_custom === currentRange.startPort.is_custom) {
+        currentRange.endPort = port;
+        currentRange.endPortNum = portNum;
+      } else {
+        if (currentRange && (currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
+          groups.push({
+            isRange: true,
+            startPort: currentRange.startPort,
+            endPort: currentRange.endPort,
+            startPortNum: currentRange.startPortNum,
+            endPortNum: currentRange.endPortNum
+          });
+        } else if (currentRange) {
+          for (let j = currentRange.startPortNum; j <= currentRange.endPortNum; j++) {
+            const portToAdd = protocolPorts.find(p => parseInt(p.host_port, 10) === j);
+            if (portToAdd) {
+              groups.push({
+                isRange: false,
+                port: portToAdd
+              });
+            }
+          }
+        }
+        
+        currentRange = {
+          startPort: port,
+          endPort: port,
+          startPortNum: portNum,
+          endPortNum: portNum
+        };
+      }
+    }
+
+    if (currentRange) {
+      if ((currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
         groups.push({
           isRange: true,
           startPort: currentRange.startPort,
@@ -182,10 +222,9 @@ function groupPortsIntoRanges(ports, threshold = 5) {
           startPortNum: currentRange.startPortNum,
           endPortNum: currentRange.endPortNum
         });
-      } else if (currentRange) {
-        // Range doesn't meet threshold, add ports as individuals
+      } else {
         for (let j = currentRange.startPortNum; j <= currentRange.endPortNum; j++) {
-          const portToAdd = sortedPorts.find(p => parseInt(p.host_port, 10) === j);
+          const portToAdd = protocolPorts.find(p => parseInt(p.host_port, 10) === j);
           if (portToAdd) {
             groups.push({
               isRange: false,
@@ -194,42 +233,31 @@ function groupPortsIntoRanges(ports, threshold = 5) {
           }
         }
       }
-      
-      // Start a new range
-      currentRange = {
-        startPort: port,
-        endPort: port,
-        startPortNum: portNum,
-        endPortNum: portNum
-      };
     }
-  }
 
-  // Close the last range
-  if (currentRange) {
-    if ((currentRange.endPortNum - currentRange.startPortNum + 1) >= threshold) {
-      groups.push({
-        isRange: true,
-        startPort: currentRange.startPort,
-        endPort: currentRange.endPort,
-        startPortNum: currentRange.startPortNum,
-        endPortNum: currentRange.endPortNum
-      });
-    } else {
-      // Range doesn't meet threshold, add ports as individuals
-      for (let j = currentRange.startPortNum; j <= currentRange.endPortNum; j++) {
-        const portToAdd = sortedPorts.find(p => parseInt(p.host_port, 10) === j);
-        if (portToAdd) {
-          groups.push({
-            isRange: false,
-            port: portToAdd
-          });
-        }
+    groupsByProtocol[protocol] = groups;
+  });
+
+  const allGroups = [];
+  sortedPorts.forEach(port => {
+    const protocol = port.container_port?.split('/')[1] || 'tcp';
+    const protocolGroups = groupsByProtocol[protocol];
+    
+    const group = protocolGroups.find(g => {
+      if (g.isRange) {
+        const portNum = parseInt(port.host_port, 10);
+        return portNum >= g.startPortNum && portNum <= g.endPortNum;
+      } else {
+        return g.port === port;
       }
+    });
+    
+    if (group && !allGroups.includes(group)) {
+      allGroups.push(group);
     }
-  }
+  });
 
-  return groups;
+  return allGroups;
 }
 
 export function renderTraefik(container, cell, hasAnyRoutes) {

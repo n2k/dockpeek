@@ -210,6 +210,7 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
         container_info = {
             'server': server_name,
             'name': spec.get('Name', service.name),
+            'container_id': service.id[:12],
             'status': status,
             'exit_code': None,
             'image': image_name,
@@ -295,6 +296,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
         container_info = {
             'server': server_name,
             'name': container.name,
+            'container_id': container.id[:12],
             'status': container_status,
             'started_at': start_time,
             'exit_code': exit_code,
@@ -389,6 +391,7 @@ def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grou
                 container_data.append({
                     'server': server_name,
                     'name': getattr(container, 'name', 'unknown'),
+                    'container_id': container.id[:12],
                     'status': 'processing-error',
                     'image': 'error-loading',
                     'ports': []

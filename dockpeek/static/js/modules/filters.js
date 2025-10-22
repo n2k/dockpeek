@@ -86,24 +86,24 @@ export function updateActiveButton() {
   serverFilterContainer.querySelectorAll('.filter-button').forEach(button => {
     button.classList.toggle('active', button.dataset.server === state.currentServerFilter);
   });
-  
-  
-    const isCurrentServerSwarm = state.currentServerFilter !== 'all' &&
-      state.swarmServers.includes(state.currentServerFilter);
-    const checkUpdatesButton = document.getElementById('check-updates-button');
-    if (checkUpdatesButton) {
-      if (isCurrentServerSwarm) {
-        checkUpdatesButton.disabled = true;
-        checkUpdatesButton.classList.add('disabled');
-        checkUpdatesButton.style.opacity = '0.5';
-        checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm services');
-      } else if (state.isDataLoaded) {
-        checkUpdatesButton.disabled = false;
-        checkUpdatesButton.classList.remove('disabled');
-        checkUpdatesButton.style.opacity = '1';
-        checkUpdatesButton.removeAttribute('data-tooltip');
-      }
+
+
+  const isCurrentServerSwarm = state.currentServerFilter !== 'all' &&
+    state.swarmServers.includes(state.currentServerFilter);
+  const checkUpdatesButton = document.getElementById('check-updates-button');
+  if (checkUpdatesButton) {
+    if (isCurrentServerSwarm) {
+      checkUpdatesButton.disabled = true;
+      checkUpdatesButton.classList.add('disabled');
+      checkUpdatesButton.style.opacity = '0.5';
+      checkUpdatesButton.setAttribute('data-tooltip', 'Not supported for Swarm services');
+    } else if (state.isDataLoaded) {
+      checkUpdatesButton.disabled = false;
+      checkUpdatesButton.classList.remove('disabled');
+      checkUpdatesButton.style.opacity = '1';
+      checkUpdatesButton.removeAttribute('data-tooltip');
     }
+  }
 }
 
 export function parseAdvancedSearch(searchTerm) {
@@ -111,6 +111,7 @@ export function parseAdvancedSearch(searchTerm) {
     tags: [],
     ports: [],
     stacks: [],
+    ids: [],
     general: []
   };
 
@@ -130,6 +131,12 @@ export function parseAdvancedSearch(searchTerm) {
         stackValue = stackValue.slice(1, -1);
       }
       filters.stacks.push(stackValue.toLowerCase());
+    } else if (term.startsWith('id:')) {
+      let idValue = term.substring(3);
+      if (idValue.startsWith('"') && idValue.endsWith('"')) {
+        idValue = idValue.slice(1, -1);
+      }
+      filters.ids.push(idValue.toLowerCase());
     } else {
       if (term.startsWith('"') && term.endsWith('"')) {
         term = term.slice(1, -1);
@@ -248,6 +255,13 @@ export function updateDisplay() {
         if (!hasAllTags) return false;
       }
 
+      if (filters.ids.length > 0) {
+        const hasAllIds = filters.ids.every(searchId =>
+          container.container_id && container.container_id.toLowerCase().includes(searchId)
+        );
+        if (!hasAllIds) return false;
+      }
+
       if (filters.ports.length > 0) {
         const hasAllPorts = filters.ports.every(searchPort =>
           container.ports.some(p =>
@@ -256,6 +270,7 @@ export function updateDisplay() {
         );
         if (!hasAllPorts) return false;
       }
+
 
       if (filters.stacks.length > 0) {
         const hasAllStacks = filters.stacks.every(searchStack =>
@@ -270,6 +285,7 @@ export function updateDisplay() {
             container.name.toLowerCase().includes(searchTerm) ||
             container.image.toLowerCase().includes(searchTerm) ||
             (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
+            (container.container_id && container.container_id.toLowerCase().includes(searchTerm)) ||
             container.ports.some(p =>
               p.host_port.includes(searchTerm) ||
               p.container_port.includes(searchTerm)
@@ -399,6 +415,24 @@ export function filterByStackAndServer(stack, server) {
   updateDisplay();
   searchInput.focus();
 }
+
+export function filterByContainerName(containerName, server) {
+  const searchInput = document.getElementById("search-input");  
+  const container = state.allContainersData.find(
+    c => c.name === containerName && c.server === server
+  );  
+  state.currentServerFilter = server;
+  updateActiveButton();  
+  if (container?.container_id) {
+    searchInput.value = `id:${container.container_id}`;
+  } else {
+    searchInput.value = containerName;
+  }  
+  toggleClearButton();
+  updateDisplay();
+  searchInput.focus();
+}
+
 
 export function toggleClearButton() {
   const searchInput = document.getElementById("search-input");
@@ -530,17 +564,17 @@ export function hideFreePortResult() {
 export function updateActiveTagsDisplay() {
   const searchInput = document.getElementById("search-input");
   const container = document.getElementById("active-tags-container");
-  
+
   if (!container) return;
-  
+
   const filters = parseAdvancedSearch(searchInput.value.trim());
-  
+
   if (filters.tags.length === 0) {
     container.classList.add('hidden');
     container.innerHTML = '';
     return;
   }
-  
+
   container.classList.remove('hidden');
   container.innerHTML = filters.tags.map(tag => `
     <div class="active-tag-badge" data-tag="${tag}">
@@ -551,19 +585,19 @@ export function updateActiveTagsDisplay() {
       </svg>
     </div>
   `).join('');
-  
+
   // Event listener dla usuwania tagów
   container.querySelectorAll('.active-tag-badge').forEach(badge => {
     badge.addEventListener('click', (e) => {
       e.preventDefault();
       const tagToRemove = badge.dataset.tag;
       const currentFilters = parseAdvancedSearch(searchInput.value.trim());
-      
+
       const remainingTags = currentFilters.tags
         .filter(t => t.toLowerCase() !== tagToRemove.toLowerCase())
         .map(t => `#${t}`)
         .join(' ');
-      
+
       searchInput.value = remainingTags;
       toggleClearButton();
       updateDisplay();

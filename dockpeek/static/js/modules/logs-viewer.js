@@ -1,6 +1,7 @@
 
 import { apiUrl } from './config.js';
 import { ansiParser } from './ansi-parser.js';
+import { filterByContainerName } from './filters.js';
 
 export class LogsViewer {
   constructor() {
@@ -29,7 +30,7 @@ export class LogsViewer {
             <div class="logs-title-section">            
               <div class="logs-container-info">
                 <h3 class="text-lg font-semibold text-gray-900">
-                  <span id="logs-container-name" class="text-blue-600"></span>
+                  <span id="logs-container-name" class="text-blue-600 cursor-pointer hover:underline"></span>
                 </h3>
                 <div class="logs-meta">
                   <span id="logs-server-name" class="text-sm text-gray-500"></span>
@@ -162,23 +163,23 @@ export class LogsViewer {
 
   setContainerList(containers, currentServer, currentContainer) {
     this.containerList = containers.map(c => ({
-        server: c.server,
-        name: c.name,
-        stack: c.stack,
-        is_swarm: c.is_swarm || false
+      server: c.server,
+      name: c.name,
+      stack: c.stack,
+      is_swarm: c.is_swarm || false
     }));
-    
+
     this.currentContainerIndex = this.containerList.findIndex(
-        c => c.server === currentServer && c.name === currentContainer
+      c => c.server === currentServer && c.name === currentContainer
     );
 
     if (this.currentContainerIndex === -1) {
-        this.currentContainerIndex = 0;
+      this.currentContainerIndex = 0;
     }
-}
+  }
 
 
- navigateToContainer(direction) {
+  navigateToContainer(direction) {
     if (this.containerList.length === 0) return;
 
     const wasStreaming = this.isStreaming;
@@ -188,16 +189,16 @@ export class LogsViewer {
     this.currentContainerIndex += direction;
 
     if (this.currentContainerIndex < 0) {
-        this.currentContainerIndex = this.containerList.length - 1;
+      this.currentContainerIndex = this.containerList.length - 1;
     } else if (this.currentContainerIndex >= this.containerList.length) {
-        this.currentContainerIndex = 0;
+      this.currentContainerIndex = 0;
     }
 
     const container = this.containerList[this.currentContainerIndex];
     const newIsSwarm = container.is_swarm || false;
 
     this.open(container.server, container.name, false, newIsSwarm);
-}
+  }
 
 
   attachEventListeners() {
@@ -278,7 +279,7 @@ export class LogsViewer {
       }
     });
 
-    
+
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.close();
     });
@@ -294,12 +295,22 @@ export class LogsViewer {
         this.navigateToContainer(1);
       }
     });
-    
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
         this.close();
       }
     });
+
+    document.getElementById('logs-container-name').addEventListener('click', () => {
+      if (!this.currentContainer || !this.currentServer) return;
+      const containerName = this.currentContainer;
+      const serverName = this.currentServer;
+      this.close();
+      filterByContainerName(containerName, serverName);
+    });
+
+
   }
 
   async open(serverName, containerName, autoStream = false, isSwarm = false) {
@@ -451,7 +462,7 @@ export class LogsViewer {
     let timestampPart = '';
     let contentPart = line;
 
-    
+
     const timestampRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(.*)$/;
     const timestampMatch = line.match(timestampRegex);
 
@@ -460,7 +471,7 @@ export class LogsViewer {
       contentPart = timestampMatch[2];
     }
 
-    
+
     const swarmDetailsRegex = /^com\.docker\.swarm\.[^\s]+ (.*)$/;
     const swarmMatch = contentPart.match(swarmDetailsRegex);
 
@@ -499,58 +510,58 @@ export class LogsViewer {
   }
 
   colorizeLogLine(line) {
-  if (!line.trim()) return '';
+    if (!line.trim()) return '';
 
-  return ansiParser.parseWithColorizer(line, (escapedHtml, originalText) => {
-    const urls = [];
-    const urlPlaceholder = '___URL___';
-    
-    escapedHtml = escapedHtml.replace(
-      /https?:\/\/[^\s"'<>|\\{}[\]`]+/g,
-      (match) => {
-        const cleaned = match.replace(/[.,;:!?)}"':]+$/, '');
-        urls.push(cleaned);
-        return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+    return ansiParser.parseWithColorizer(line, (escapedHtml, originalText) => {
+      const urls = [];
+      const urlPlaceholder = '___URL___';
+
+      escapedHtml = escapedHtml.replace(
+        /https?:\/\/[^\s"'<>|\\{}[\]`]+/g,
+        (match) => {
+          const cleaned = match.replace(/[.,;:!?)}"':]+$/, '');
+          urls.push(cleaned);
+          return `${urlPlaceholder}${urls.length - 1}${urlPlaceholder}`;
+        }
+      );
+
+      escapedHtml = escapedHtml.replace(/(\d+)/g, (match, num, offset) => {
+        const before = escapedHtml.substring(Math.max(0, offset - urlPlaceholder.length), offset);
+        const after = escapedHtml.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
+
+        if (before === urlPlaceholder && after === urlPlaceholder) {
+          return match;
+        }
+        return `<span class="log-number">${match}</span>`;
+      });
+
+      escapedHtml = escapedHtml.replace(
+        new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
+        (match, index) => {
+          const url = urls[parseInt(index)];
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="log-link">${url}</a>`;
+        }
+      );
+
+      if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(originalText)) {
+        return `<span class="log-error">${escapedHtml}</span>`;
       }
-    );
-    
-    escapedHtml = escapedHtml.replace(/(\d+)/g, (match, num, offset) => {
-      const before = escapedHtml.substring(Math.max(0, offset - urlPlaceholder.length), offset);
-      const after = escapedHtml.substring(offset + match.length, offset + match.length + urlPlaceholder.length);
-      
-      if (before === urlPlaceholder && after === urlPlaceholder) {
-        return match;
+      if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(originalText)) {
+        return `<span class="log-warning">${escapedHtml}</span>`;
       }
-      return `<span class="log-number">${match}</span>`;
+      if (/\b(INFO)\b|\[(INFO)\]/i.test(originalText)) {
+        return `<span class="log-info">${escapedHtml}</span>`;
+      }
+      if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(originalText)) {
+        return `<span class="log-debug">${escapedHtml}</span>`;
+      }
+      if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(originalText)) {
+        return `<span class="log-success">${escapedHtml}</span>`;
+      }
+
+      return escapedHtml;
     });
-    
-    escapedHtml = escapedHtml.replace(
-      new RegExp(`${urlPlaceholder}(\\d+)${urlPlaceholder}`, 'g'),
-      (match, index) => {
-        const url = urls[parseInt(index)];
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="log-link">${url}</a>`;
-      }
-    );
-    
-    if (/\b(ERROR|ERR|ERRO)\b|\[(ERROR|ERR|ERRO)\]/i.test(originalText)) {
-      return `<span class="log-error">${escapedHtml}</span>`;
-    }
-    if (/\b(WARN|WARNING)\b|\[(WARN|WARNING)\]/i.test(originalText)) {
-      return `<span class="log-warning">${escapedHtml}</span>`;
-    }
-    if (/\b(INFO)\b|\[(INFO)\]/i.test(originalText)) {
-      return `<span class="log-info">${escapedHtml}</span>`;
-    }
-    if (/\b(DEBUG|TRACE)\b|\[(DEBUG|TRACE)\]/i.test(originalText)) {
-      return `<span class="log-debug">${escapedHtml}</span>`;
-    }
-    if (/\b(SUCCESS|OK|DONE|READY)\b|\[(SUCCESS|OK|DONE|READY)\]/i.test(originalText)) {
-      return `<span class="log-success">${escapedHtml}</span>`;
-    }
-    
-    return escapedHtml;
-  });
-}
+  }
 
   escapeHtml(text) {
     const div = document.createElement('div');
@@ -584,10 +595,10 @@ export class LogsViewer {
     const connect = async () => {
       try {
         connectionStartTime = Date.now();
-        
+
         const currentLineCount = this.logsContent.querySelectorAll('.log-line').length;
         const reconnectTail = Math.max(1, currentLineCount);
-        
+
         const response = await fetch(apiUrl('/stream-container-logs'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -605,11 +616,11 @@ export class LogsViewer {
         }
 
         this.updateStatus('Streaming live...');
-        
+
         if (!isFirstConnect) {
           this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
         }
-        
+
         isFirstConnect = false;
 
         const reader = response.body.getReader();
@@ -638,17 +649,17 @@ export class LogsViewer {
             if (line.trim()) {
               try {
                 const data = JSON.parse(line);
-                
+
                 if (data.heartbeat) {
                   continue;
                 }
-                
+
                 if (data.error) {
                   console.error('Stream error:', data.error);
                   this.stopStreaming();
                   return;
                 }
-                
+
                 if (data.line) {
                   this.appendLogLine(data.line);
                 }
@@ -664,7 +675,7 @@ export class LogsViewer {
         } catch (e) {
           console.log('Reader cleanup:', e.message);
         }
-        
+
         if (this.isStreaming) {
           throw new Error('Reconnecting...');
         }
@@ -672,26 +683,26 @@ export class LogsViewer {
       } catch (error) {
         if (error.name === 'AbortError' || !this.isStreaming) {
           console.log('Stream stopped');
-          
+
           if (currentReader) {
             try {
               await currentReader.cancel();
-            } catch (e) {}
+            } catch (e) { }
           }
-          
+
           return;
         }
 
         console.log('Reconnecting...', error.message);
-        
+
         if (currentReader) {
           try {
             await currentReader.cancel();
-          } catch (e) {}
+          } catch (e) { }
         }
-        
+
         await new Promise(r => setTimeout(r, 1000));
-        
+
         if (this.isStreaming) {
           await connect();
         }
@@ -718,32 +729,32 @@ export class LogsViewer {
 
   appendLogLine(line) {
     let pre = this.logsContent.querySelector('.logs-pre');
-    
-    
+
+
     if (!pre) {
-        this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
-        pre = this.logsContent.querySelector('.logs-pre');
+      this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
+      pre = this.logsContent.querySelector('.logs-pre');
     }
-    
+
     if (pre) {
-        
-        const cleanLine = line.replace(/\n$/, '');
-        const formattedLine = this.formatLogLine(cleanLine);
-        pre.insertAdjacentHTML('beforeend', formattedLine);
 
-        
-        const lines = pre.querySelectorAll('.log-line');
-        if (lines.length > 5000) {
-            lines[0].remove();
-        }
+      const cleanLine = line.replace(/\n$/, '');
+      const formattedLine = this.formatLogLine(cleanLine);
+      pre.insertAdjacentHTML('beforeend', formattedLine);
 
-        if (this.autoScroll) {
-            this.scrollToBottom();
-        }
 
-        this.updateLineCount(lines.length);
+      const lines = pre.querySelectorAll('.log-line');
+      if (lines.length > 5000) {
+        lines[0].remove();
+      }
+
+      if (this.autoScroll) {
+        this.scrollToBottom();
+      }
+
+      this.updateLineCount(lines.length);
     }
-}
+  }
 
   updateStreamButton() {
     const btn = document.getElementById('logs-stream-btn');
@@ -795,7 +806,7 @@ export class LogsViewer {
     const prevBtn = document.getElementById('logs-search-prev');
     const nextBtn = document.getElementById('logs-search-next');
 
-    
+
     this.searchMatches = [];
     this.currentMatchIndex = -1;
 
@@ -810,7 +821,7 @@ export class LogsViewer {
 
     clearBtn.classList.remove('hidden');
 
-    
+
     const lines = this.logsContent.querySelectorAll('.log-line');
     const lowerQuery = query.toLowerCase();
 
@@ -834,7 +845,7 @@ export class LogsViewer {
       }
     });
 
-    
+
     if (this.searchMatches.length > 0) {
       countSpan.classList.remove('hidden');
       prevBtn.classList.remove('hidden');
@@ -954,13 +965,13 @@ export class LogsViewer {
   }
 
   updateActiveHighlight() {
-    
+
     this.logsContent.querySelectorAll('mark.search-highlight-active').forEach(el => {
       el.classList.remove('search-highlight-active');
       el.classList.add('search-highlight');
     });
 
-    
+
     const marks = this.logsContent.querySelectorAll('mark[data-match-index]');
     marks.forEach(mark => {
       const idx = parseInt(mark.dataset.matchIndex);

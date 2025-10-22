@@ -4,7 +4,7 @@ workers = int(os.environ.get('WORKERS', '2'))
 
 worker_class = 'gevent'
 worker_connections = 1024
-bind = '0.0.0.0:8000'
+bind = f'0.0.0.0:{os.environ.get('PORT', '8080')}'
 
 # Timeouts
 timeout = 600

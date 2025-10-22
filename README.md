@@ -223,18 +223,19 @@ services:
 
 | Variable                      | Default       | Description                                            |
 | ----------------------------- | ------------- | ------------------------------------------------------ |
+| `PORT`                        | `8000`        | Port on which the application listens                  |
 | `DISABLE_AUTH`                | `false`       | Set to `true` to disable authentication                |
-| `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik column      |
-| `TAGS`                        | `true`        | Set to `false` to hide tags column           |
-| `UPDATE_FLOATING_TAGS`        | `disabled`    | Update check mode: `latest`, `major` (e.g., `8.3.3` → `8`), or `minor` (e.g., `8.3.3` → `8.3`) (default: exact tags) |
-| `TRUST_PROXY_HEADERS`         | `false`       | Set to `true` to enable proxy header support (X-Forwarded-*) |
-| `TRUSTED_PROXY_COUNT`         | `1`           | Number of trusted proxies when `TRUST_PROXY_HEADERS=true` |
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
 | `DOCKER_HOST_NAME`            | Auto-detected | Display name for the primary server (auto-detected from Docker API if not set) |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
-| `DOCKER_CONNECTION_TIMEOUT`   | `0.5`           | Connection timeout in seconds for Docker host discovery |
-| `PORT_RANGE_GROUPING`         | `true`         | Set to `false` to disable port range grouping globally |
-| `PORT_RANGE_THRESHOLD`        | `5`            | Minimum number of consecutive ports to group as a range |
+| `DOCKER_CONNECTION_TIMEOUT`   | `0.5`         | Connection timeout in seconds for Docker host discovery |
+| `UPDATE_FLOATING_TAGS`        | `disabled`    | Update check mode: `latest`, `major` (e.g., `8.3.3` → `8`), or `minor` (e.g., `8.3.3` → `8.3`) (default: exact tags) |
+| `TRUST_PROXY_HEADERS`         | `false`       | Set to `true` to enable proxy header support (X-Forwarded-*) |
+| `TRUSTED_PROXY_COUNT`         | `1`           | Number of trusted proxies when `TRUST_PROXY_HEADERS=true` |
+| `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik column      |
+| `TAGS`                        | `true`        | Set to `false` to hide tags column           |
+| `PORT_RANGE_GROUPING`         | `true`        | Set to `false` to disable port range grouping globally |
+| `PORT_RANGE_THRESHOLD`        | `5`           | Minimum number of consecutive ports to group as a range |
 
 ### Multi-Host Variables
 

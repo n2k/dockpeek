@@ -109,18 +109,15 @@ class HostnameExtractor:
 class LinkHostnameResolver:
     @staticmethod
     def resolve(public_hostname: Optional[str], host_ip: Optional[str], 
-                is_docker_host: bool) -> str:
+                is_docker_host: bool, request_hostname: Optional[str] = None) -> str:
         if public_hostname:
             return public_hostname
         
         if host_ip and host_ip not in ['0.0.0.0', '127.0.0.1']:
             return host_ip
         
-        if has_request_context():
-            try:
-                return request.host.split(":")[0]
-            except Exception as e:
-                logger.debug(f"Failed to get hostname from request: {e}")
+        if request_hostname:
+            return request_hostname
         
         return "localhost"
 
@@ -427,5 +424,5 @@ def create_streaming_client(server_url: str) -> DockerClient:
     return factory.create_client(server_url, use_long_timeout=True)
 
 def _get_link_hostname(public_hostname: Optional[str], host_ip: Optional[str], 
-                       is_docker_host: bool) -> str:
-    return LinkHostnameResolver.resolve(public_hostname, host_ip, is_docker_host)
+                       is_docker_host: bool, request_hostname: Optional[str] = None) -> str:
+    return LinkHostnameResolver.resolve(public_hostname, host_ip, is_docker_host, request_hostname)

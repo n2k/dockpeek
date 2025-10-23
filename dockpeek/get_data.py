@@ -1,6 +1,6 @@
 import re
 import logging
-from flask import current_app
+from flask import current_app, request, has_request_context
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from .docker_utils import discover_docker_clients, get_container_status_with_exit_code, _get_link_hostname
 from .update import update_checker
@@ -78,22 +78,22 @@ def create_port_link(port, https_ports_list, link_hostname, container_port=""):
         return f"{protocol}://{link_hostname}:{port}"
 
 
-def build_port_map(published_ports, custom_ports_list, https_ports_list, public_hostname, host_ip, is_docker_host):
+def build_port_map(published_ports, custom_ports_list, https_ports_list, public_hostname, host_ip, is_docker_host, request_hostname=None):
     port_map = []
-    
+
     for container_port, host_port, protocol in published_ports:
-        link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+        link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host, request_hostname)
         link = create_port_link(host_port, https_ports_list, link_hostname, container_port)
-        
+
         port_map.append({
             'container_port': container_port,
             'host_port': host_port,
             'link': link,
             'is_custom': False
         })
-    
+
     if custom_ports_list:
-        link_hostname = _get_link_hostname(public_hostname, None, is_docker_host)
+        link_hostname = _get_link_hostname(public_hostname, None, is_docker_host, request_hostname)
         for port in custom_ports_list:
             link = create_port_link(port, https_ports_list, link_hostname)
             port_map.append({
@@ -102,7 +102,7 @@ def build_port_map(published_ports, custom_ports_list, https_ports_list, public_
                 'link': link,
                 'is_custom': True
             })
-    
+
     return port_map
 
 
@@ -171,13 +171,13 @@ def get_or_check_update(cache_key, client, container_or_service, server_name, im
         return update_checker.check_local_image_updates(client, container_or_service, server_name)
 
 
-def process_swarm_service(service, tasks_by_service, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled):
+def process_swarm_service(service, tasks_by_service, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled, request_hostname=None):
     try:
         s_attrs = service.attrs
         spec = s_attrs.get('Spec', {})
         labels = spec.get('Labels', {}) or {}
         image_name = spec.get('TaskTemplate', {}).get('ContainerSpec', {}).get('Image', 'unknown')
-        
+
         labels_data = extract_labels_data(labels, tags_enable)
         traefik_routes = extract_traefik_routes(labels, traefik_enabled)
         published_ports = extract_swarm_service_ports(s_attrs)
@@ -187,9 +187,10 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             labels_data['https_ports_list'],
             public_hostname,
             None,
-            is_docker_host
+            is_docker_host,
+            request_hostname
         )
-        
+
         # Determine if port range grouping should be enabled for this container
         container_port_range_grouping = labels_data['port_range_grouping']
         if container_port_range_grouping is None:
@@ -198,15 +199,15 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
         else:
             # Use per-container setting
             port_range_grouping = container_port_range_grouping == 'true'
-        
+
         service_tasks = tasks_by_service.get(service.id, [])
         running = sum(1 for t in service_tasks if t['Status']['State'] == 'running')
         total = len(service_tasks)
         status = f"running ({running}/{total})" if total else "no-tasks"
-        
+
         cache_key = update_checker.get_cache_key(server_name, service.name, image_name)
         update_available = get_or_check_update(cache_key, client, service, server_name, image_name, True)
-        
+
         container_info = {
             'server': server_name,
             'name': spec.get('Name', service.name),
@@ -223,7 +224,7 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             'update_available': update_available,
             'port_range_grouping': port_range_grouping
         }
-        
+
         return container_info
     except Exception:
         return {
@@ -234,8 +235,7 @@ def process_swarm_service(service, tasks_by_service, client, server_name, public
             'ports': []
         }
 
-
-def process_container(container, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled):
+def process_container(container, client, server_name, public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled, request_hostname=None):
     try:
         original_image = container.attrs.get('Config', {}).get('Image', '')
         if original_image:
@@ -246,22 +246,22 @@ def process_container(container, client, server_name, public_hostname, is_docker
                     image_name = container.image.tags[0]
                 else:
                     image_name = container.image.id[:12] if hasattr(container.image, 'id') else "unknown"
-        
+
         container_status, exit_code = get_container_status_with_exit_code(container)
         start_time = container.attrs.get('State', {}).get('StartedAt', '')
-        
+
         labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
         labels_data = extract_labels_data(labels, tags_enable)
         traefik_routes = extract_traefik_routes(labels, traefik_enabled)
-        
+
         published_ports_data = extract_container_ports(container.attrs)
         published_ports = [(cp, hp, None) for cp, hp, hi in published_ports_data]
         host_ips = {cp: hi for cp, hp, hi in published_ports_data}
-        
+
         port_map = []
         for container_port, host_port, _ in published_ports:
             host_ip = host_ips.get(container_port, '0.0.0.0')
-            link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host)
+            link_hostname = _get_link_hostname(public_hostname, host_ip, is_docker_host, request_hostname)
             link = create_port_link(host_port, labels_data['https_ports_list'], link_hostname, container_port)
             port_map.append({
                 'container_port': container_port,
@@ -269,9 +269,9 @@ def process_container(container, client, server_name, public_hostname, is_docker
                 'link': link,
                 'is_custom': False
             })
-        
+
         if labels_data['custom_ports_list']:
-            link_hostname = _get_link_hostname(public_hostname, None, is_docker_host)
+            link_hostname = _get_link_hostname(public_hostname, None, is_docker_host, request_hostname)
             for port in labels_data['custom_ports_list']:
                 link = create_port_link(port, labels_data['https_ports_list'], link_hostname)
                 port_map.append({
@@ -280,7 +280,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
                     'link': link,
                     'is_custom': True
                 })
-        
+
         # Determine if port range grouping should be enabled for this container
         container_port_range_grouping = labels_data['port_range_grouping']
         if container_port_range_grouping is None:
@@ -289,10 +289,10 @@ def process_container(container, client, server_name, public_hostname, is_docker
         else:
             # Use per-container setting
             port_range_grouping = container_port_range_grouping == 'true'
-        
+
         cache_key = update_checker.get_cache_key(server_name, container.name, image_name)
         update_available = get_or_check_update(cache_key, client, container, server_name, image_name, False)
-        
+
         container_info = {
             'server': server_name,
             'name': container.name,
@@ -310,7 +310,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'update_available': update_available,
             'port_range_grouping': port_range_grouping
         }
-                
+
         return container_info
     except Exception as e:
         logger.warning(f"Error processing container {getattr(container, 'name', 'unknown')}: {e}")
@@ -322,12 +322,12 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'ports': []
         }
     
-def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grouping_enabled):
+def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grouping_enabled, request_hostname=None):
     if host['status'] == 'inactive':
         return []
-    
+
     container_data = []
-    
+
     try:
         server_name = host["name"]
         client = host["client"]
@@ -344,16 +344,17 @@ def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grou
             try:
                 services = client.services.list()
                 tasks = client.api.tasks()
-                
+
                 tasks_by_service = {}
                 for t in tasks:
                     sid = t['ServiceID']
                     tasks_by_service.setdefault(sid, []).append(t)
-                
+
                 for service in services:
                     container_info = process_swarm_service(
                         service, tasks_by_service, client, server_name,
-                        public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled
+                        public_hostname, is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled,
+                        request_hostname
                     )
                     container_data.append(container_info)
             except Exception as swarm_error:
@@ -378,12 +379,13 @@ def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grou
                 'image': 'error-loading',
                 'ports': []
             }]
-        
+
         for container in containers:
             try:
                 container_info = process_container(
                     container, client, server_name, public_hostname,
-                    is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled
+                    is_docker_host, traefik_enabled, tags_enable, port_range_grouping_enabled,
+                    request_hostname
                 )
                 container_data.append(container_info)
             except Exception as container_error:
@@ -396,7 +398,7 @@ def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grou
                     'image': 'error-loading',
                     'ports': []
                 })
-                
+
     except Exception as e:
         logger.error(f"Error processing host {host.get('name', 'unknown')}: {e}")
         return [{
@@ -406,17 +408,24 @@ def process_single_host_data(host, traefik_enabled, tags_enable, port_range_grou
             'image': 'error-loading',
             'ports': []
         }]
-    
+
     return container_data
 
 def get_all_data():
     servers = discover_docker_clients()
-    
+
     TRAEFIK_ENABLE = current_app.config['TRAEFIK_ENABLE']
     TAGS_ENABLE = current_app.config['TAGS_ENABLE']
     PORT_RANGE_GROUPING = current_app.config['PORT_RANGE_GROUPING']
     PORT_RANGE_THRESHOLD = current_app.config['PORT_RANGE_THRESHOLD']
-    
+
+    request_hostname = None
+    if has_request_context():
+        try:
+            request_hostname = request.host.split(":")[0]
+        except Exception:
+            pass
+
     if not servers:
         return {"servers": [], "containers": [], "swarm_servers": []}
 
@@ -425,19 +434,19 @@ def get_all_data():
     server_list_for_json = [{"name": s["name"], "status": s["status"], "order": s["order"], "url": s["url"]} for s in servers]
 
     HOST_PROCESSING_TIMEOUT = 30.0
-    
+
     with ThreadPoolExecutor(max_workers=len(servers)) as executor:
         future_to_host = {
-            executor.submit(process_single_host_data, host, TRAEFIK_ENABLE, TAGS_ENABLE, PORT_RANGE_GROUPING): host 
+            executor.submit(process_single_host_data, host, TRAEFIK_ENABLE, TAGS_ENABLE, PORT_RANGE_GROUPING, request_hostname): host 
             for host in servers
         }
-        
+
         for future in future_to_host:
             host = future_to_host[future]
             try:
                 host_containers = future.result(timeout=HOST_PROCESSING_TIMEOUT)
                 all_container_data.extend(host_containers)
-                
+
                 if host['status'] != 'inactive':
                     try:
                         client = host["client"]
@@ -447,7 +456,7 @@ def get_all_data():
                             swarm_servers.append(host["name"])
                     except:
                         pass
-                        
+
             except FuturesTimeoutError:
                 logger.error(f"Timeout processing host {host['name']} after {HOST_PROCESSING_TIMEOUT}s")
                 for s in server_list_for_json:

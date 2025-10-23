@@ -87,8 +87,9 @@ export class LogsViewer {
               
               <select id="logs-tail-select" class="logs-select">
                 <option value="100" selected>Last 100 lines</option>
-                <option value="500">Last 500 lines</option>
                 <option value="1000">Last 1000 lines</option>
+                <option value="5000">Last 5 000 lines</option>
+                <option value="10000">Last 10 000 lines</option>
                 <option value="all">All logs</option>
               </select>
             </div>

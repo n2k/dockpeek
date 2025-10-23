@@ -25,9 +25,10 @@ body.dark-mode .logs-button:hover {
 .logs-modal-content {
   background: #ffffff;
   border-radius: 0.7rem;
-  width: 90vw;
-  max-width: 1600px;
-  max-height: 90vh;
+  width: 93vw;
+  height: 100%;
+  max-width: 1660px;
+  max-height: 96vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -551,3 +552,4 @@ body.dark-mode .logs-checkbox-label {
     padding: 0.2em 1em;
   }
 }
+

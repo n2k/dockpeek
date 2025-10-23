@@ -417,17 +417,25 @@ export function filterByStackAndServer(stack, server) {
 }
 
 export function filterByContainerName(containerName, server) {
-  const searchInput = document.getElementById("search-input");  
+  const searchInput = document.getElementById("search-input");
+  const filterRunningCheckbox = document.getElementById("filter-running-checkbox");
+  const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
+
   const container = state.allContainersData.find(
     c => c.name === containerName && c.server === server
-  );  
+  );
+
   state.currentServerFilter = server;
-  updateActiveButton();  
+  updateActiveButton();
+  //sliders
+  filterRunningCheckbox.checked = false;
+  filterUpdatesCheckbox.checked = false;
+  //id
   if (container?.container_id) {
     searchInput.value = `id:${container.container_id}`;
   } else {
     searchInput.value = containerName;
-  }  
+  }
   toggleClearButton();
   updateDisplay();
   searchInput.focus();

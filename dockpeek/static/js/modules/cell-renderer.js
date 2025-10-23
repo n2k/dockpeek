@@ -287,7 +287,12 @@ export function renderLogs(container, cell) {
   logsButton.className = 'logs-button text-gray-500 hover:text-blue-600 p-1 rounded transition-colors';
   logsButton.setAttribute('data-server', container.server);
   logsButton.setAttribute('data-container', container.name);
-  logsButton.setAttribute('data-tooltip', 'View logs');
+  
+  const tooltipText = container.name.length > 50 
+    ? container.name.substring(0, 47) + '...' 
+    : container.name;
+  logsButton.setAttribute('data-tooltip', tooltipText);
+  
   logsButton.setAttribute('aria-label', 'View container logs');
   logsButton.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">

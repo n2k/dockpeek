@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { updateSwarmIndicator, isSwarmMode } from './swarm-indicator.js';
-import { renderTable } from '../app.js';
-import { handlePruneImages, initPruneInfo } from './prune.js';
+import { renderTable } from './render-utils.js';
+import { initPruneInfo } from './prune.js';
 import { updateContainerStats } from './container-stats.js';
 
 export function getCachedServerStatus() {
@@ -106,6 +106,17 @@ export function updateActiveButton() {
   }
 }
 
+const statusAliasMap = {
+  inactive: ['first_seen', 'last_seen'],
+  ghost: ['first_seen', 'last_seen'],
+  healthy: ['healthy'],
+  unhealthy: ['unhealthy'],
+  running: ['running'],
+  exited: ['exited', 'dead'],
+  dead: ['exited', 'dead'],
+  paused: ['paused']
+};
+
 export function parseAdvancedSearch(searchTerm) {
   const filters = {
     tags: [],
@@ -155,12 +166,15 @@ export function updateDisplay() {
   const filterUpdatesCheckbox = document.getElementById("filter-updates-checkbox");
   const mainTable = document.getElementById("main-table");
 
-  let workingData = [...state.allContainersData];
-  let statsData = [...state.allContainersData];
+  let workingData = [...(state.allContainersData || [])];
+  let statsData = [...(state.allContainersData || [])];
+  
+  workingData = workingData.concat(state.inactiveContainers || []);
+  statsData = statsData.concat(state.inactiveContainers || []);
 
   if (state.currentServerFilter !== "all") {
-    workingData = workingData.filter(c => c.server === state.currentServerFilter);
-    statsData = statsData.filter(c => c.server === state.currentServerFilter);
+    workingData = workingData.filter(c => c && c.server === state.currentServerFilter);
+    statsData = statsData.filter(c => c && c.server === state.currentServerFilter);
   }
 
   // Swarm mode: repurpose toggle to "Show Problems"
@@ -183,6 +197,7 @@ export function updateDisplay() {
   if (filterRunningCheckbox.checked) {
     if (swarmMode) {
       workingData = workingData.filter(c => {
+        if (!c) return false;
         if (typeof c.status === 'string') {
           const m = c.status.match(/^running \((\d+)\/(\d+)\)$/);
           if (m) {
@@ -195,12 +210,12 @@ export function updateDisplay() {
         return false;
       });
     } else {
-      workingData = workingData.filter(c => c.status === 'running' || c.status === 'healthy');
+      workingData = workingData.filter(c => c && (c.status === 'running' || c.status === 'healthy'));
     }
   }
 
   if (filterUpdatesCheckbox.checked) {
-    workingData = workingData.filter(c => c.update_available);
+    workingData = workingData.filter(c => c && c.update_available);
   }
 
   const searchTerm = searchInput.value.trim();
@@ -246,6 +261,7 @@ export function updateDisplay() {
     const filters = parseAdvancedSearch(cleanSearchTerm);
 
     workingData = workingData.filter(container => {
+      if (!container) return false;
       if (filters.tags.length > 0) {
         const hasAllTags = filters.tags.every(searchTag =>
           container.tags && container.tags.some(containerTag =>
@@ -264,7 +280,7 @@ export function updateDisplay() {
 
       if (filters.ports.length > 0) {
         const hasAllPorts = filters.ports.every(searchPort =>
-          container.ports.some(p =>
+          container.ports && container.ports.some(p =>
             p.host_port.includes(searchPort)
           )
         );
@@ -281,12 +297,24 @@ export function updateDisplay() {
 
       if (filters.general.length > 0) {
         const hasAllGeneral = filters.general.every(searchTerm => {
+          for (const [alias, statusValues] of Object.entries(statusAliasMap)) {
+            if (alias.toLowerCase().startsWith(searchTerm)) {
+              if (statusValues.includes(container.status)) {
+                return true;
+              }
+            }
+          }
+          
+          if (container.status && container.status.toLowerCase().startsWith(searchTerm)) {
+            return true;
+          }
+          
           return (
             container.name.toLowerCase().includes(searchTerm) ||
             container.image.toLowerCase().includes(searchTerm) ||
             (container.stack && container.stack.toLowerCase().includes(searchTerm)) ||
             (container.container_id && container.container_id.toLowerCase().includes(searchTerm)) ||
-            container.ports.some(p =>
+            container.ports && container.ports.some(p =>
               p.host_port.includes(searchTerm) ||
               p.container_port.includes(searchTerm)
             )
@@ -300,6 +328,7 @@ export function updateDisplay() {
   }
 
   workingData.sort((a, b) => {
+    if (!a || !b) return 0;
     let valA = a[state.currentSortColumn];
     let valB = b[state.currentSortColumn];
 
@@ -321,7 +350,7 @@ export function updateDisplay() {
       valB = statusOrder[valB] || 99;
     } else if (state.currentSortColumn === "ports") {
       const getFirstPort = (container) => {
-        if (container.ports.length === 0) {
+        if (!container.ports || container.ports.length === 0) {
           return state.currentSortDirection === "asc" ? Number.MAX_SAFE_INTEGER : -1;
         }
         return parseInt(container.ports[0].host_port, 10);
@@ -348,7 +377,7 @@ export function updateDisplay() {
   });
 
   const isTraefikGloballyEnabled = window.traefikEnabled !== false;
-  const hasTraefikRoutes = isTraefikGloballyEnabled && workingData.some(c => c.traefik_routes && c.traefik_routes.length > 0);
+  const hasTraefikRoutes = isTraefikGloballyEnabled && workingData.some(c => c && c.traefik_routes && Array.isArray(c.traefik_routes) && c.traefik_routes.length > 0);
 
   const traefikHeaders = document.querySelectorAll('.traefik-column');
   traefikHeaders.forEach(header => {
@@ -359,7 +388,7 @@ export function updateDisplay() {
     }
   });
 
-  const hasTags = workingData.some(c => c.tags && c.tags.length > 0);
+  const hasTags = workingData.some(c => c && c.tags && c.tags.length > 0);
   const tagsHeaders = document.querySelectorAll('.tags-column');
   tagsHeaders.forEach(header => {
     if (hasTags) {

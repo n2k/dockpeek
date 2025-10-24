@@ -26,5 +26,7 @@ export const state = {
     ports: true,
     traefik: true,
     logs: true
-  }
+  },
+  inactiveContainers: [],
+  isInactiveContainer: (container) => container.hasOwnProperty('first_seen') && container.hasOwnProperty('last_seen')
 };

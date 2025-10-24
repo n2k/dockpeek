@@ -1,7 +1,6 @@
 module.exports = {
   content: [
-    './dockpeek/templates/*.html',
-    './dockpeek/static/js/app.js',
+    './dockpeek/static/**/*.{html,js}'
   ],
   safelist: [
     'bg-red-500',

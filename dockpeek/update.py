@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Lock
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -36,13 +36,13 @@ class UpdateCache:
         with self._lock:
             if key in self._cache:
                 result, timestamp = self._cache[key]
-                if datetime.now() - timestamp < timedelta(seconds=self._duration):
+                if datetime.now(timezone.utc) - timestamp < timedelta(seconds=self._duration):
                     return result, True
             return None, False
     
     def set(self, key, value):
         with self._lock:
-            self._cache[key] = (value, datetime.now())
+            self._cache[key] = (value, datetime.now(timezone.utc))
     
     def clear(self):
         with self._lock:
@@ -50,7 +50,7 @@ class UpdateCache:
     
     def prune_expired(self):
         with self._lock:
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             expired_keys = [
                 key for key, (_, timestamp) in self._cache.items()
                 if now - timestamp >= timedelta(seconds=self._duration)
@@ -62,7 +62,7 @@ class UpdateCache:
     def get_stats(self):
         with self._lock:
             total = len(self._cache)
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             valid = sum(
                 1 for _, timestamp in self._cache.values()
                 if now - timestamp < timedelta(seconds=self._duration)

@@ -2,6 +2,9 @@ import * as CellRenderer from './cell-renderer.js';
 import { renderStatus } from './status-renderer.js';
 import { updateColumnVisibility, updateFirstAndLastVisibleColumns } from './column-visibility.js';
 import { updateTableOrder } from './column-order.js';
+import { updateContainerStats } from './container-stats.js';
+import { updateInactiveBadge } from './inactive-manager.js';
+import { humanizeTimestamp, formatFullTimestamp } from './time-utils.js';
 
 
 export class TableRenderer {
@@ -23,8 +26,17 @@ export class TableRenderer {
 
     const fragment = document.createDocumentFragment();
 
-    for (const container of containers) {
+    const isInactiveContainer = (container) => container.hasOwnProperty('first_seen') && container.hasOwnProperty('last_seen');
+    const regularContainers = containers.filter(container => !isInactiveContainer(container));
+    const inactiveContainers = containers.filter(container => isInactiveContainer(container));
+    
+    for (const container of regularContainers) {
       const row = this._renderRow(container, hasAnyTraefikRoutes);
+      fragment.appendChild(row);
+    }
+
+    for (const container of inactiveContainers) {
+      const row = this._renderRow(container, hasAnyTraefikRoutes, true);
       fragment.appendChild(row);
     }
 
@@ -34,8 +46,21 @@ export class TableRenderer {
     updateFirstAndLastVisibleColumns();
   }
 
-  _renderRow(container, hasAnyTraefikRoutes) {
+  renderTable(containers) {
+    this.render(containers);
+    updateContainerStats(containers);
+    updateInactiveBadge();
+  }
+
+  _renderRow(container, hasAnyTraefikRoutes, isInactive = false) {
     const clone = this.template.content.cloneNode(true);
+
+    if (isInactive) {
+      const row = clone.querySelector('tr');
+      row.classList.add('inactive-container-row', 'opacity-75');
+      row.dataset.containerName = container.name;
+      row.dataset.server = container.server;
+    }
 
     const nameCell = clone.querySelector('[data-content="name"]');
     nameCell.classList.add('table-cell-name');
@@ -51,6 +76,10 @@ export class TableRenderer {
     imageCell.classList.add('table-cell-image');
     CellRenderer.renderImage(container, imageCell, clone);
 
+    const imageSizeCell = clone.querySelector('[data-content="image-size"]');
+    imageSizeCell.classList.add('table-cell-image-size');
+    CellRenderer.renderImageSize(container, imageSizeCell);
+
     CellRenderer.renderUpdateIndicator(container, clone);
 
     const tagsCell = clone.querySelector('[data-content="tags"]');
@@ -59,13 +88,37 @@ export class TableRenderer {
 
     const statusCell = clone.querySelector('[data-content="status"]');
     statusCell.classList.add('table-cell-status');
-    const { span, className } = renderStatus(container);
-    statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${className}`;
-    statusCell.appendChild(span);
+    
+    if (isInactive) {
+      const humanizedTime = humanizeTimestamp(container.last_seen);
+      const fullTimestamp = formatFullTimestamp(container.last_seen);
+      
+      if (container.inactive_status && container.inactive_color) {
+        statusCell.innerHTML = `<span class="status-inactive" style="color: ${container.inactive_color}" data-tooltip="Inactive, Last seen: ${fullTimestamp}">${humanizedTime}</span>`;
+        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status status-inactive`;
+      } else {
+        statusCell.innerHTML = `<span class="status-inactive" data-tooltip="Inactive, Last seen: ${fullTimestamp}">${humanizedTime}</span>`;
+        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status status-inactive`;
+      }
+    } else {
+      if (container.status) {
+        const { span, className } = renderStatus(container);
+        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status ${className}`;
+        statusCell.appendChild(span);
+      } else {
+        statusCell.innerHTML = `<span class="status-unknown">unknown</span>`;
+        statusCell.className = `py-3 px-4 border-b border-gray-200 table-cell-status status-unknown`;
+      }
+    }
 
     const logsCell = clone.querySelector('[data-content="logs"]');
     logsCell.classList.add('table-cell-logs');
-    CellRenderer.renderLogs(container, logsCell);
+    
+    if (isInactive) {
+      CellRenderer.renderInactiveDelete(container, logsCell);
+    } else {
+      CellRenderer.renderLogs(container, logsCell);
+    }
 
     const portsCell = clone.querySelector('[data-content="ports"]');
     portsCell.classList.add('table-cell-ports');

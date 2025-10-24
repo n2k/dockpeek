@@ -47,7 +47,16 @@ export function updateFirstAndLastVisibleColumns() {
   }
 
   rows.forEach(row => {
-    if (firstIndex !== -1) row.children[firstIndex].classList.add('first-visible');
-    if (lastIndex !== -1) row.children[lastIndex].classList.add('last-visible');
+    // Skip rows that don't have the expected number of columns (like separator rows)
+    if (row.children.length !== columnsCount) {
+      return;
+    }
+    
+    if (firstIndex !== -1 && row.children[firstIndex]) {
+      row.children[firstIndex].classList.add('first-visible');
+    }
+    if (lastIndex !== -1 && row.children[lastIndex]) {
+      row.children[lastIndex].classList.add('last-visible');
+    }
   });
 }

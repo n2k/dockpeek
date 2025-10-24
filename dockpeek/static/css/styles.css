@@ -1472,6 +1472,11 @@ body.dark-mode .prune-details-list {
   color: #3730a3;
 }
 
+.stat-inactive {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
 .dark-mode .stat-running {
   background-color: #14532d;
   color: #bbf7d0;
@@ -1495,6 +1500,11 @@ body.dark-mode .prune-details-list {
 .dark-mode .stat-paused {
   background-color: #78350f;
   color: #e7c981;
+}
+
+.dark-mode .stat-inactive {
+  background-color: #374151;
+  color: #9ca3af;
 }
 
 .dark-mode .stat-restarting {
@@ -2051,4 +2061,36 @@ body {
 
 .ansi-blink {
   animation: ansi-blink 1s linear infinite;
+}
+
+/* inactive container styles */
+.inactive-container-row {
+  background-color: #e9ecef !important;
+  border-left: 3px solid #6c757d;
+  opacity: 0.7;
+}
+
+.inactive-container-row:hover {
+  background-color: #dee2e6 !important;
+}
+
+body.dark-mode .inactive-container-row {
+  background-color: #2d3748 !important;
+}
+
+body.dark-mode .inactive-container-row:hover {
+  background-color: #4a5568 !important;
+}
+
+.inactive-badge {
+    background-color: #b3b3b3;
+}
+
+body.dark-mode .inactive-badge {
+  background-color: #364153;
+}
+
+.status-inactive {
+  color: #6c757d !important;
+  font-style: italic;
 }

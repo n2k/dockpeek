@@ -29,9 +29,12 @@ export async function initPruneInfo() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_name: 'all' })
+    }).catch(error => {
+      console.warn('Failed to fetch prune info:', error);
+      return null;
     });
 
-    if (response.ok) {
+    if (response && response.ok) {
       const data = await response.json();
       state.pruneInfoCache = {
         server_name: 'all',

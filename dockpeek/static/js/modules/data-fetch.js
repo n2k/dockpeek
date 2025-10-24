@@ -5,6 +5,8 @@ import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-u
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
 import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
+import { updateInactiveBadge } from './inactive-manager.js';
+import { startLastSeenTimer, stopLastSeenTimer } from './last-seen-timer.js';
 
 let fetchController = null;
 let isFetching = false;
@@ -43,7 +45,13 @@ export async function fetchContainerData() {
 
     state.allServersData.splice(0, state.allServersData.length, ...servers);
     setCachedServerStatus(servers);
-    state.allContainersData.splice(0, state.allContainersData.length, ...containers);
+    
+    const isInactiveContainer = (container) => container.hasOwnProperty('first_seen') && container.hasOwnProperty('last_seen');
+    const regularContainers = containers.filter(container => !isInactiveContainer(container));
+    const inactiveContainers = containers.filter(container => isInactiveContainer(container));
+    
+    state.allContainersData.splice(0, state.allContainersData.length, ...regularContainers);
+    state.inactiveContainers.splice(0, state.inactiveContainers.length, ...inactiveContainers);
 
     state.swarmServers = swarm_servers;
 
@@ -60,6 +68,8 @@ export async function fetchContainerData() {
     toggleClearButton();
     updateDisplay();
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
+    updateInactiveBadge();
+    updateLastSeenTimer();
 
     // disable swarm update 
     const isCurrentServerSwarm = state.currentServerFilter !== 'all' &&
@@ -373,5 +383,13 @@ export async function installUpdate(serverName, containerName) {
     showUpdateErrorModal(containerName, error.message, serverName);
   } finally {
     hideUpdateInProgressModal();
+  }
+}
+
+function updateLastSeenTimer() {
+  if (state.inactiveContainers && state.inactiveContainers.length > 0) {
+    startLastSeenTimer();
+  } else {
+    stopLastSeenTimer();
   }
 }

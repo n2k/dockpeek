@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 import docker
@@ -11,6 +11,7 @@ from .update_manager import update_container
 from .docker_utils import discover_docker_clients, create_streaming_client, DockerClientFactory
 from .update import update_checker
 from .logs_manager import get_container_logs, stream_container_logs, get_service_logs, stream_service_logs
+from .inactive_manager import inactive_manager
 
 
 main_bp = Blueprint('main', __name__)
@@ -39,7 +40,7 @@ def index():
 def health():
     return jsonify({
         "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": current_app.config['APP_VERSION']
     }), 200
 
@@ -609,7 +610,7 @@ def export_json():
         
     export_data = {
         "export_info": {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "dockpeek_version": current_app.config['APP_VERSION'],
             "server_filter": server_filter,
             "total_containers": len(filtered_containers),
@@ -628,10 +629,46 @@ def export_json():
         export_data["containers"].append(export_container)
 
     formatted_json = json.dumps(export_data, indent=2, ensure_ascii=False)
-    filename = f'dockpeek-export-{server_filter}-{datetime.now().strftime("%Y%m%d-%H%M%S")}.json'
+    filename = f'dockpeek-export-{server_filter}-{datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")}.json'
     
     response = make_response(formatted_json)
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     response.headers['Content-Type'] = 'application/json'
     return response
+
+@main_bp.route("/inactive-containers", methods=["GET"])
+@conditional_login_required
+def get_inactive_containers():
+    """Get all inactive containers."""
+    return jsonify(inactive_manager.get_inactive_containers())
+
+@main_bp.route("/inactive-containers/inactive", methods=["GET"])
+@conditional_login_required
+def get_inactive_containers_only():
+    """Get only inactive containers (not currently running)."""
+    return jsonify(inactive_manager.get_inactive_containers_only())
+
+@main_bp.route("/inactive-containers/<server>/<container_name>", methods=["DELETE"])
+@conditional_login_required
+def delete_inactive_container(server, container_name):
+    """Delete a specific inactive container."""
+    success = inactive_manager.delete_inactive_container(server, container_name)
+    if success:
+        return jsonify({"success": True, "message": f"Inactive container {container_name} deleted"})
+    else:
+        return jsonify({"success": False, "message": "Inactive container not found"}), 404
+
+@main_bp.route("/inactive-containers/clear", methods=["POST"])
+@conditional_login_required
+def clear_inactive_containers():
+    """Clear all inactive containers."""
+    request_data = request.get_json() or {}
+    clear_inactive_only = request_data.get('inactive_only', False)
+    
+    if clear_inactive_only:
+        inactive_manager.clear_inactive_containers_only()
+        return jsonify({"success": True, "message": "Inactive containers cleared"})
+    else:
+        inactive_manager.clear_all_inactive_containers()
+        return jsonify({"success": True, "message": "All inactive containers cleared"})
 

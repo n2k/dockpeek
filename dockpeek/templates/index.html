@@ -366,6 +366,18 @@
         <span id="prune-badge"
           class="hidden ml-1 px-2 py-0.5 text-xs bg-gray-700 text-gray-200 rounded-full prune-badge"></span>
       </button>
+
+      <button id="clear-inactive-button" class="hover:text-red-500 flex items-center gap-[0.6em]"
+        data-tooltip="Clear inactive containers">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+          <path d="m18 9-6 6"></path>
+          <path d="m12 9 6 6"></path>
+        </svg>
+        <span>Clear Inactive</span>
+        <span id="inactive-badge"
+          class="hidden ml-1 px-2 py-0.5 text-xs bg-gray-500 text-white rounded-full inactive-badge"></span>
+      </button>
     </div>
   </footer>
 
@@ -396,6 +408,7 @@
           <div class="image-wrapper">
             <div class="image-wrapper-inline">
               <code class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm" data-content="image"></code>
+              <span class="bg-gray-50 whitespace-nowrap text-gray-700 px-2 py-1 text-secondary font-mono text-[10px] text-xs rounded" data-content="image-size"></span>
             </div>
 
             <span class="update-indicator hidden" data-content="update-indicator" data-server="" data-container="">

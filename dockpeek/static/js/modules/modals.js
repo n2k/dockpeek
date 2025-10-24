@@ -1,5 +1,6 @@
 import { updateDisplay } from './filters.js';
 import { state } from './state.js';
+import { formatSize } from './size-utils.js';
 
 export function showUpdatesModal(updatedContainers) {
   const updatesList = document.getElementById("updates-list");
@@ -277,14 +278,6 @@ export function showPruneInfoModal(data) {
   const confirmBtn = document.getElementById('prune-confirm-button');
   const cancelBtn = document.getElementById('prune-cancel-button');
 
-  const formatSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   if (data.total_count === 0) {
     messageEl.innerHTML = `<p class="text-center">No unused images found. All images are currently in use!</p>`;
     confirmBtn.style.display = 'none';
@@ -365,14 +358,6 @@ export function showPruneResultModal(data) {
   const modal = document.getElementById('prune-result-modal');
   const messageEl = document.getElementById('prune-result-message');
   const okBtn = document.getElementById('prune-result-ok-button');
-
-  const formatSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
 
   let message = `<p class="text-center mb-3">Successfully removed <strong>${data.total_count}</strong> unused image${data.total_count > 1 ? 's' : ''}, freeing up <strong>${formatSize(data.total_size)}</strong> of disk space!</p>`;
 

@@ -53,4 +53,5 @@ docker-compose-dev*.yml
 # Cache
 .cache/
 .npm/
+__pycache__/
 /dockpeek/__pycache__

@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { getRegistryUrl } from './registry-urls.js';
+import { formatImageSize } from './size-utils.js';
 
 export function renderName(container, cell) {
   const nameSpan = cell.querySelector('[data-content="container-name"]');
@@ -30,6 +31,10 @@ export function renderStack(container, cell) {
   } else {
     cell.textContent = '';
   }
+}
+
+export function renderImageSize(container, cell) {
+  cell.textContent = formatImageSize(container);
 }
 
 export function renderImage(container, cell, clone) {
@@ -93,7 +98,7 @@ export function renderTags(container, cell) {
 }
 
 export function renderPorts(container, cell) {
-  if (!container.ports.length) {
+  if (!container.ports || !container.ports.length) {
     cell.innerHTML = `<span class="status-none" style="padding-left: 5px;">none</span>`;
     return;
   }
@@ -304,4 +309,24 @@ export function renderLogs(container, cell) {
     </svg>
   `;
   cell.appendChild(logsButton);
+}
+
+export function renderInactiveDelete(container, cell) {
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'inactive-delete-button text-gray-500 hover:text-red-600 p-1 rounded transition-colors';
+  deleteButton.setAttribute('data-server', container.server);
+  deleteButton.setAttribute('data-container', container.name);
+  
+  const tooltipText = `Delete inactive container: ${container.name}`;
+  deleteButton.setAttribute('data-tooltip', tooltipText);
+  
+  deleteButton.setAttribute('aria-label', 'Delete inactive container');
+  deleteButton.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+      <path d="m18 9-6 6"></path>
+      <path d="m12 9 6 6"></path>
+    </svg>
+  `;
+  cell.appendChild(deleteButton);
 }

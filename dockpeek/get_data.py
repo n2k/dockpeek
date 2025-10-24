@@ -4,6 +4,7 @@ from flask import current_app, request, has_request_context
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from .docker_utils import discover_docker_clients, get_container_status_with_exit_code, _get_link_hostname
 from .update import update_checker
+from .inactive_manager import inactive_manager
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +250,15 @@ def process_container(container, client, server_name, public_hostname, is_docker
 
         container_status, exit_code = get_container_status_with_exit_code(container)
         start_time = container.attrs.get('State', {}).get('StartedAt', '')
-
+        
+        # Get image size
+        image_size = 0
+        try:
+            if hasattr(container, 'image') and container.image:
+                image_size = container.image.attrs.get('Size', 0)
+        except Exception as e:
+            logger.debug(f"Could not get image size for container {container.name}: {e}")
+        
         labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
         labels_data = extract_labels_data(labels, tags_enable)
         traefik_routes = extract_traefik_routes(labels, traefik_enabled)
@@ -301,6 +310,7 @@ def process_container(container, client, server_name, public_hostname, is_docker
             'started_at': start_time,
             'exit_code': exit_code,
             'image': image_name,
+            'image_size': image_size,
             'stack': labels_data['stack_name'],
             'source_url': labels_data['source_url'],
             'custom_url': labels_data['custom_url'],
@@ -476,6 +486,30 @@ def get_all_data():
                     if s["name"] == host["name"]:
                         s["status"] = "inactive"
                         break
+
+    # Update inactive containers with current container data
+    global_config = {
+        'INACTIVE_TRACKING_ENABLE': current_app.config.get('INACTIVE_TRACKING_ENABLE', True),
+        'INACTIVE_IGNORE_THRESHOLD': current_app.config.get('INACTIVE_IGNORE_THRESHOLD', '5min'),
+        'INACTIVE_WARN_THRESHOLD': current_app.config.get('INACTIVE_WARN_THRESHOLD', '30min'),
+        'INACTIVE_CRITICAL_THRESHOLD': current_app.config.get('INACTIVE_CRITICAL_THRESHOLD', '1h'),
+        'INACTIVE_WARN_COLOR': current_app.config.get('INACTIVE_WARN_COLOR', '#ff9e00'),
+        'INACTIVE_CRITICAL_COLOR': current_app.config.get('INACTIVE_CRITICAL_COLOR', '#ff0000'),
+        'PERSIST_INACTIVE': current_app.config.get('PERSIST_INACTIVE', ''),
+    }
+    
+    # Update inactive manager with persistence configuration
+    persist_db = global_config.get('PERSIST_INACTIVE')
+    if persist_db and inactive_manager.persist_db != persist_db:
+        # Reinitialize with new persistence configuration
+        inactive_manager.__init__(inactive_manager.storage_file, persist_db)
+    inactive_manager.update_inactive_containers(all_container_data, global_config)
+    
+    # Get inactive containers (not currently running)
+    inactive_containers = inactive_manager.get_inactive_containers_only()
+    
+    # Add inactive containers to the container list
+    all_container_data.extend(inactive_containers)
 
     return {
         "servers": server_list_for_json, 

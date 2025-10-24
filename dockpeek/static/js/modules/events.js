@@ -6,6 +6,7 @@ import * as ColumnOrder from './column-order.js';
 import { handlePruneImages, initPruneInfo } from './prune.js';
 import { state } from './state.js';
 import { logsViewer } from './logs-viewer.js';
+import { handleDeleteInactiveContainer, handleClearInactiveContainers } from './inactive-manager.js';
 
 
 export function initEventListeners() {
@@ -29,6 +30,10 @@ export function initEventListeners() {
 
   document.getElementById('prune-images-button').addEventListener('click', () => {
     handlePruneImages();
+  });
+
+  document.getElementById('clear-inactive-button').addEventListener('click', () => {
+    handleClearInactiveContainers();
   });
 
   document.getElementById("theme-switcher").addEventListener("click", (e) => {
@@ -201,6 +206,18 @@ export function initLogsButtons() {
   document.addEventListener('click', (e) => {
     const logsButton = e.target.closest('.logs-button');
     const viewLogsBtn = e.target.closest('.view-logs-btn');
+    const inactiveDeleteButton = e.target.closest('.inactive-delete-button');
+
+    if (inactiveDeleteButton) {
+      e.preventDefault();
+      const serverName = inactiveDeleteButton.dataset.server;
+      const containerName = inactiveDeleteButton.dataset.container;
+      
+      if (serverName && containerName) {
+        handleDeleteInactiveContainer(serverName, containerName);
+      }
+      return;
+    }
 
     if (logsButton) {
       e.preventDefault();

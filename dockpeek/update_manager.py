@@ -90,45 +90,10 @@ class ContainerValidator:
         self.labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
     
     def validate(self) -> Optional[ValidationBlockage]:
-        dependency_check = self._check_network_dependencies()
-        if dependency_check:
-            return dependency_check
-        
         pattern_check = self._check_patterns()
         if pattern_check:
             return pattern_check
-        
-        return None
-    
-    def _check_network_dependencies(self) -> Optional[ValidationBlockage]:
-        try:
-            all_containers = self.client.containers.list(all=True)
-        except Exception as e:
-            logger.warning(f"Could not list containers to check dependencies: {e}")
-            return None
-        
-        dependent_containers = []
-        for other_container in all_containers:
-            if other_container.id == self.container.id:
-                continue
-            
-            network_mode = other_container.attrs.get('HostConfig', {}).get('NetworkMode', '')
-            if network_mode in [f'container:{self.container.name}', f'container:{self.container.id}']:
-                dependent_containers.append(other_container.name)
-        
-        if dependent_containers:
-            html_message = (
-                f"Cannot update container <strong>'{self.container.name}'</strong> because other containers "
-                f"<strong>depend</strong> on its network: <strong>{', '.join(dependent_containers)}.</strong>\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Updating such containers "
-                f"<strong>must be done outside of dockpeek.</strong></div>"
-            )
-            return ValidationBlockage(
-                ValidationResult.BLOCKED_DEPENDENCY,
-                html_message,
-                f"Container {self.container.name} has network dependencies: {dependent_containers}"
-            )
-        
+
         return None
     
     def _check_patterns(self) -> Optional[ValidationBlockage]:
@@ -252,26 +217,60 @@ class ContainerUpdater:
             except AttributeError:
                 pass
     
+    def _get_dependent_containers(self, container):
+        dependent = []
+        try:
+            all_containers = self.client.containers.list(all=True)
+            for other in all_containers:
+                if other.id == container.id:
+                    continue
+                network_mode = other.attrs.get('HostConfig', {}).get('NetworkMode', '')
+                if network_mode in [f'container:{container.name}', f'container:{container.id}']:
+                    dependent.append(other)
+        except Exception as e:
+            logger.warning(f"Could not check for dependent containers: {e}")
+        return dependent
+    
     def update(self, container_name: str, force: bool = False) -> Dict[str, Any]:
         logger.info(f"[{self.server_name}] Starting update for: {container_name} (force={force})")
-        
+
+        force = True
         container = self._get_container(container_name)
         self._validate_container(container)
-        
+
+        dependent_containers = self._get_dependent_containers(container)
+        if dependent_containers:
+            logger.info(f"[{self.server_name}] Found {len(dependent_containers)} dependent containers: {[c.name for c in dependent_containers]}")
+
         image_name, container_image_id = self._get_image_info(container)
-        
         self._pull_image(image_name)
-        
+
         if not force and not self._has_updates(image_name, container_image_id):
             logger.info(f"[{self.server_name}] No updates for {image_name}")
             return {"status": "success", "message": f"Container {container_name} is already up to date."}
-        
+
         config = ContainerConfigExtractor(container).extract()
         original_networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
-        
         backup_name = self._generate_backup_name(container_name)
-        
-        return self._perform_update(container, backup_name, image_name, config, original_networks)
+
+        result = self._perform_update(container, backup_name, image_name, config, original_networks)
+
+        if result["status"] == "success" and dependent_containers:
+            failed_recreates = []
+            new_container = self._get_container(container_name)
+            new_container_id = new_container.id
+
+            for dep_container in dependent_containers:
+                logger.info(f"[{self.server_name}] Recreating dependent: {dep_container.name}")
+                if not self._recreate_container(dep_container, new_container_id):
+                    failed_recreates.append(dep_container.name)
+
+            if failed_recreates:
+                result["message"] += f" Warning: Failed to recreate dependent containers: {', '.join(failed_recreates)}"
+            else:
+                result["message"] += f" Successfully recreated {len(dependent_containers)} dependent container(s)."
+
+        return result
     
     def _get_container(self, container_name: str):
         try:
@@ -334,6 +333,55 @@ class ContainerUpdater:
                 break
         
         return backup_name
+    
+    def _recreate_container(self, container, new_network_container_id=None) -> bool:
+        logger.info(f"[{self.server_name}] Recreating dependent container: {container.name}")
+        try:
+            current_image = container.image.tags[0] if container.image.tags else container.attrs.get('Config', {}).get('Image', '')
+            config = ContainerConfigExtractor(container).extract()
+            networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
+
+            if new_network_container_id and config.get('network_mode', '').startswith('container:'):
+                old_network_mode = config['network_mode']
+                config['network_mode'] = f'container:{new_network_container_id}'
+                logger.info(f"[{self.server_name}] Updated network_mode from '{old_network_mode}' to '{config['network_mode']}'")
+
+            temp_name = f"{container.name}-temp-{int(time.time())}"
+
+            self._stop_container(container)
+            container.rename(temp_name)
+
+            try:
+                new_container = self.client.containers.create(current_image, **config)
+                if networks:
+                    self._connect_networks(new_container, networks)
+                new_container.start()
+
+                time.sleep(2)
+                new_container.reload()
+                if new_container.status != 'running':
+                    raise Exception(f"Container failed to start (status: {new_container.status})")
+
+                temp_container = self.client.containers.get(temp_name)
+                temp_container.remove(force=True)
+
+                logger.info(f"[{self.server_name}] Successfully recreated: {container.name}")
+                return True
+
+            except Exception as e:
+                logger.error(f"[{self.server_name}] Recreate failed, restoring: {e}")
+                try:
+                    new_container.remove(force=True)
+                except:
+                    pass
+                temp_container = self.client.containers.get(temp_name)
+                temp_container.rename(container.name)
+                temp_container.start()
+                return False
+
+        except Exception as e:
+            logger.error(f"[{self.server_name}] Failed to recreate {container.name}: {e}")
+            return False
     
     def _perform_update(self, container, backup_name: str, image_name: str, 
                         config: Dict[str, Any], networks: Dict[str, Any]) -> Dict[str, Any]:

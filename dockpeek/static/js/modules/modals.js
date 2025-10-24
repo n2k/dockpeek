@@ -25,6 +25,119 @@ export function showUpdatesModal(updatedContainers) {
   updatesModal.addEventListener('click', e => e.target === updatesModal && okHandler(), { once: true });
 }
 
+export function showBulkUpdatesModal(updatedContainers) {
+  const bulkUpdatesModal = document.getElementById("bulk-updates-modal");
+  const bulkUpdatesList = document.getElementById("bulk-updates-list");
+  const selectAllBtn = document.getElementById("select-all-updates");
+  const deselectAllBtn = document.getElementById("deselect-all-updates");
+  const updateBtn = document.getElementById("bulk-updates-update-button");
+  const cancelBtn = document.getElementById("bulk-updates-cancel-button");
+  const selectedCountEl = document.getElementById("selected-count");
+  const totalCountEl = document.getElementById("total-count");
+  const bulkUpdateCountEl = document.getElementById("bulk-update-count");
+
+  // Clear previous content
+  bulkUpdatesList.innerHTML = "";
+  
+  // Set total count
+  totalCountEl.textContent = updatedContainers.length;
+  bulkUpdateCountEl.textContent = "0";
+
+  // Create checkbox items for each container
+  updatedContainers.forEach((container, index) => {
+    const item = document.createElement("div");
+    item.className = "flex items-center p-3 border-b border-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700";
+    item.innerHTML = `
+      <div class="flex items-center flex-1">
+        <input type="checkbox" 
+               id="update-checkbox-${index}" 
+               class="update-checkbox mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+               data-container='${JSON.stringify(container)}'>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-2">
+            <span class="font-medium text-gray-900 dark:text-gray-100">${container.name}</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">[${container.stack}]</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">(${container.server})</span>
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-400 truncate">
+            ${container.image}
+          </div>
+        </div>
+      </div>
+    `;
+    bulkUpdatesList.appendChild(item);
+  });
+
+  // Update selected count
+  const updateSelectedCount = () => {
+    const checkboxes = bulkUpdatesList.querySelectorAll('.update-checkbox');
+    const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    selectedCountEl.textContent = selectedCount;
+    bulkUpdateCountEl.textContent = selectedCount;
+    updateBtn.disabled = selectedCount === 0;
+  };
+
+  // Add event listeners to checkboxes
+  bulkUpdatesList.addEventListener('change', (e) => {
+    if (e.target.classList.contains('update-checkbox')) {
+      updateSelectedCount();
+    }
+  });
+
+  // Select all functionality
+  selectAllBtn.addEventListener('click', () => {
+    const checkboxes = bulkUpdatesList.querySelectorAll('.update-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    updateSelectedCount();
+  });
+
+  // Deselect all functionality
+  deselectAllBtn.addEventListener('click', () => {
+    const checkboxes = bulkUpdatesList.querySelectorAll('.update-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateSelectedCount();
+  });
+
+  // Show modal
+  bulkUpdatesModal.classList.remove('hidden');
+
+  // Return promise that resolves with selected containers
+  return new Promise((resolve, reject) => {
+    const updateHandler = () => {
+      const checkboxes = bulkUpdatesList.querySelectorAll('.update-checkbox:checked');
+      const selectedContainers = Array.from(checkboxes).map(cb => 
+        JSON.parse(cb.dataset.container)
+      );
+      
+      bulkUpdatesModal.classList.add('hidden');
+      removeListeners();
+      resolve(selectedContainers);
+    };
+
+    const cancelHandler = () => {
+      bulkUpdatesModal.classList.add('hidden');
+      removeListeners();
+      reject(new Error('User cancelled'));
+    };
+
+    const backdropHandler = (e) => {
+      if (e.target === bulkUpdatesModal) {
+        cancelHandler();
+      }
+    };
+
+    const removeListeners = () => {
+      updateBtn.removeEventListener('click', updateHandler);
+      cancelBtn.removeEventListener('click', cancelHandler);
+      bulkUpdatesModal.removeEventListener('click', backdropHandler);
+    };
+
+    updateBtn.addEventListener('click', updateHandler);
+    cancelBtn.addEventListener('click', cancelHandler);
+    bulkUpdatesModal.addEventListener('click', backdropHandler);
+  });
+}
+
 export function showNoUpdatesModal() {
   const updatesModal = document.getElementById("updates-modal");
   const updatesModalTitle = document.getElementById("updates-modal-title");

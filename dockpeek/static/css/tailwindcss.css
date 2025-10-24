@@ -1950,6 +1950,33 @@ body.dark-mode #updates-list .no-updates-message {
 body.dark-mode #updates-modal.no-update #updates-list {
   background-color: #0d1117;
 }
+
+/* Bulk Updates Modal Styles */
+#bulk-updates-modal .modal-content:not(.hidden) {
+  max-width: 800px;
+  max-height: 80vh;
+}
+
+#bulk-updates-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+#bulk-updates-list .update-checkbox:checked + div {
+  background-color: #f0f9ff;
+}
+
+body.dark-mode #bulk-updates-list .update-checkbox:checked + div {
+  background-color: #1e3a8a;
+}
+
+#bulk-updates-list .update-checkbox:checked + div .font-medium {
+  color: #1d4ed8;
+}
+
+body.dark-mode #bulk-updates-list .update-checkbox:checked + div .font-medium {
+  color: #60a5fa;
+}
 .green-ok-button {
   background-color: oklab(0.63 -0.16 0.1);
   color: #fff;

@@ -3,7 +3,7 @@ import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from './state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
-import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
+import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showBulkUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
 import { updateInactiveBadge } from './inactive-manager.js';
 import { startLastSeenTimer, stopLastSeenTimer } from './last-seen-timer.js';
@@ -136,6 +136,61 @@ export function handleFetchError(error) {
     ? "Network Error: Could not connect to backend service"
     : error.message;
   displayError(message);
+}
+
+async function performBulkUpdate(selectedContainers) {
+  const { showUpdateInProgressModal, hideUpdateInProgressModal, showUpdateSuccessModal, showUpdateErrorModal } = await import('./modals.js');
+  
+  let successCount = 0;
+  let errorCount = 0;
+  const errors = [];
+
+  for (const container of selectedContainers) {
+    try {
+      showUpdateInProgressModal(container.name);
+      
+      const response = await fetch(apiUrl("/update-container"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          container_name: container.name,
+          server_name: container.server,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        successCount++;
+        hideUpdateInProgressModal();
+        showUpdateSuccessModal(container.name, container.server);
+      } else {
+        throw new Error(result.message || "Update failed");
+      }
+    } catch (error) {
+      errorCount++;
+      errors.push(`${container.name}: ${error.message}`);
+      hideUpdateInProgressModal();
+      showUpdateErrorModal(container.name, error.message, container.server);
+    }
+  }
+
+  // Show summary if multiple containers were updated
+  if (selectedContainers.length > 1) {
+    const summaryMessage = `Bulk update completed:\n• ${successCount} successful\n• ${errorCount} failed${errors.length > 0 ? '\n\nErrors:\n' + errors.join('\n') : ''}`;
+    
+    // Use a simple alert for now, or we could create a dedicated summary modal
+    if (errorCount > 0) {
+      alert(`Bulk Update Summary:\n\n${summaryMessage}`);
+    } else {
+      alert(`Bulk Update Summary:\n\nAll ${successCount} containers updated successfully!`);
+    }
+  }
+
+  // Refresh the container data
+  await fetchContainerData();
 }
 
 export async function checkForUpdates() {
@@ -297,7 +352,16 @@ async function checkUpdatesIndividually() {
 
     if (!cancelled) {
       if (updatedContainers.length > 0) {
-        showUpdatesModal(updatedContainers);
+        try {
+          const selectedContainers = await showBulkUpdatesModal(updatedContainers);
+          if (selectedContainers.length > 0) {
+            await performBulkUpdate(selectedContainers);
+          }
+        } catch (error) {
+          if (error.message !== 'User cancelled') {
+            console.error('Error in bulk update modal:', error);
+          }
+        }
       } else {
         showNoUpdatesModal();
       }

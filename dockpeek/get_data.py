@@ -478,6 +478,9 @@ def get_all_data():
                         s["status"] = "inactive"
                         break
 
+    # Filter out error containers before updating inactive containers
+    valid_containers = [container for container in all_container_data if container.get('image') not in ['error-loading', 'timeout-error']]
+    
     # Update inactive containers with current container data
     global_config = {
         'INACTIVE_TRACKING_ENABLE': current_app.config.get('INACTIVE_TRACKING_ENABLE', True),
@@ -494,7 +497,7 @@ def get_all_data():
     if persist_db and inactive_manager.persist_db != persist_db:
         # Reinitialize with new persistence configuration
         inactive_manager.__init__(inactive_manager.storage_file, persist_db)
-    inactive_manager.update_inactive_containers(all_container_data, global_config)
+    inactive_manager.update_inactive_containers(valid_containers, global_config)
     
     # Get inactive containers (not currently running)
     inactive_containers = inactive_manager.get_inactive_containers_only()

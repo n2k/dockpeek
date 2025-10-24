@@ -22,6 +22,15 @@ class Config:
     PORT_RANGE_GROUPING = os.environ.get("PORT_RANGE_GROUPING", "true").lower() == "true"
     PORT_RANGE_THRESHOLD = int(os.environ.get("PORT_RANGE_THRESHOLD", "5"))
     
+    # Inactive container tracking configuration
+    INACTIVE_TRACKING_ENABLE = os.environ.get("INACTIVE_TRACKING", "true").lower() == "true"
+    PERSIST_INACTIVE = os.environ.get("PERSIST_INACTIVE", "")
+    INACTIVE_IGNORE_THRESHOLD = os.environ.get("INACTIVE_IGNORE", "5min")
+    INACTIVE_WARN_THRESHOLD = os.environ.get("INACTIVE_WARN", "30min")
+    INACTIVE_CRITICAL_THRESHOLD = os.environ.get("INACTIVE_CRITICAL", "1h")
+    INACTIVE_WARN_COLOR = os.environ.get("INACTIVE_WARN_COLOR", "#ff9e00")
+    INACTIVE_CRITICAL_COLOR = os.environ.get("INACTIVE_CRITICAL_COLOR", "#ff0000")
+    
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
     
     APP_VERSION = os.environ.get('VERSION', 'dev')

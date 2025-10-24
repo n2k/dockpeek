@@ -489,6 +489,43 @@
     </div>
   </div>
 
+  <div id="bulk-updates-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium flex items-center justify-between">
+        <span>Available Updates</span>
+        <div class="flex items-center space-x-2">
+          <button id="select-all-updates" class="text-sm px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Select All
+          </button>
+          <button id="deselect-all-updates" class="text-sm px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600">
+            Deselect All
+          </button>
+        </div>
+      </h3>
+      <div class="mb-4">
+        <div id="bulk-updates-list" class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+          <!-- Updates will be populated here -->
+        </div>
+      </div>
+      <div class="flex justify-between items-center">
+        <div id="bulk-updates-count" class="text-sm text-gray-600">
+          <span id="selected-count">0</span> of <span id="total-count">0</span> selected
+        </div>
+        <div class="flex space-x-4">
+          <button id="bulk-updates-cancel-button"
+            class="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium">
+            Cancel
+          </button>
+          <button id="bulk-updates-update-button"
+            class="px-6 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled>
+            Update Selected (<span id="bulk-update-count">0</span>)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="progress-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="text-lg font-semibold mb-4 text-gray-900 font-medium flex items-center justify-center">

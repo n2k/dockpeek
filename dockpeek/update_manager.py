@@ -234,7 +234,6 @@ class ContainerUpdater:
     def update(self, container_name: str, force: bool = False) -> Dict[str, Any]:
         logger.info(f"[{self.server_name}] Starting update for: {container_name} (force={force})")
 
-        force = True
         container = self._get_container(container_name)
         self._validate_container(container)
 

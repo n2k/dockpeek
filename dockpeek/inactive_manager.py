@@ -113,6 +113,11 @@ class InactiveContainerManager:
 
         # Add new containers that aren't in inactive list yet
         for container in current_containers:
+            # Skip containers with error status or error-loading image
+            if (container.get('image') in ['error-loading', 'timeout-error'] or 
+                container.get('status') in ['error', 'swarm-error', 'list-error', 'processing-error', 'host-error', 'host-timeout']):
+                continue
+                
             key = f"{container['server']}:{container['name']}"
             existing_inactive = next((i for i in self.inactive_containers if f"{i['server']}:{i['name']}" == key), None)
 

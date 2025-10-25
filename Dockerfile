@@ -1,7 +1,7 @@
 FROM node:latest AS builder
 WORKDIR /app
 COPY . .
-RUN npm install && npm run build:css
+RUN npm install && rm -f /app/dockpeek/static/css/tailwindcss.css && npm run build:css
 
 FROM python:3.11-slim
 ARG BUILD_DATE
@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir -r requirements.txt
 
-COPY --from=builder /app/dockpeek/static /app/dockpeek/static
+COPY --from=builder /app/dockpeek/static/css/tailwindcss.css /app/dockpeek/static/css/tailwindcss.css
 
 COPY gunicorn.conf.py .
 

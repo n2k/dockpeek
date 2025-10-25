@@ -498,3 +498,25 @@ export function showPruneResultModal(data) {
   okBtn.addEventListener('click', okHandler);
   modal.addEventListener('click', backdropHandler);
 }
+
+export function showAlertModal(message) {
+  const modal = document.getElementById('alert-modal');
+  const messageEl = document.getElementById('alert-message');
+  const okBtn = document.getElementById('alert-ok-button');
+
+  messageEl.textContent = message;
+  modal.classList.remove('hidden');
+
+  const okHandler = () => {
+    modal.classList.add('hidden');
+    okBtn.removeEventListener('click', okHandler);
+    modal.removeEventListener('click', backdropHandler);
+  };
+
+  const backdropHandler = (e) => {
+    if (e.target === modal) okHandler();
+  };
+
+  okBtn.addEventListener('click', okHandler);
+  modal.addEventListener('click', backdropHandler);
+}

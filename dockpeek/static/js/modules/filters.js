@@ -3,6 +3,7 @@ import { updateSwarmIndicator, isSwarmMode } from './swarm-indicator.js';
 import { renderTable } from './render-utils.js';
 import { initPruneInfo } from './prune.js';
 import { updateContainerStats } from './container-stats.js';
+import { showAlertModal } from './modals.js';
 
 export function getCachedServerStatus() {
   const cache = state.serverStatusCache;
@@ -540,7 +541,7 @@ function handleCopyPortClick(event) {
 
   copyToClipboard(port).then(success => {
     if (!success) {
-      alert(`Port: ${port}\n\nCould not copy to clipboard. Please copy manually.`);
+      showAlertModal(`Port: ${port}\n\nCould not copy to clipboard. Please copy manually.`);
       return;
     }
 

@@ -1,6 +1,6 @@
 import { apiUrl } from './config.js';
 import { state } from './state.js';
-import { showPruneInfoModal, showPruneResultModal } from './modals.js';
+import { showPruneInfoModal, showPruneResultModal, showAlertModal } from './modals.js';
 
 let isPruneInfoFetching = false;
 
@@ -98,7 +98,7 @@ export async function handlePruneImages() {
   } catch (error) {
     console.error('Error getting prune info:', error);
     updatePruneBadge(0);
-    alert('Failed to get image information. Please try again.');
+    showAlertModal('Failed to get image information. Please try again.');
   } finally {
     isPruneInfoFetching = false;
   }
@@ -120,7 +120,7 @@ async function performPrune() {
     updatePruneBadge(0);
   } catch (error) {
     console.error('Error pruning images:', error);
-    alert('Failed to prune images. Please try again.');
+    showAlertModal('Failed to prune images. Please try again.');
   }
 }
 

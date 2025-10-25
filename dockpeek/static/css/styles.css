@@ -927,6 +927,7 @@ body.dark-mode #updates-modal.no-update #updates-list {
   overflow-y: auto;
 }
 
+/*
 #bulk-updates-list .update-checkbox:checked + div {
   background-color: #f0f9ff;
 }
@@ -941,7 +942,7 @@ body.dark-mode #bulk-updates-list .update-checkbox:checked + div {
 
 body.dark-mode #bulk-updates-list .update-checkbox:checked + div .font-medium {
   color: #60a5fa;
-}
+}*/
 
 
 .green-ok-button {

@@ -3,7 +3,7 @@ import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from './state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
 import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
-import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showBulkUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
+import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showBulkUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal, showAlertModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
 import { updateInactiveBadge } from './inactive-manager.js';
 import { startLastSeenTimer, stopLastSeenTimer } from './last-seen-timer.js';
@@ -173,20 +173,26 @@ async function performBulkUpdate(selectedContainers) {
       errorCount++;
       errors.push(`${container.name}: ${error.message}`);
       hideUpdateInProgressModal();
-      showUpdateErrorModal(container.name, error.message, container.server);
+      // Don't show individual error modals during bulk updates
+      // The summary will show all errors at the end
     }
   }
 
-  // Show summary if multiple containers were updated
+  // Show summary for bulk updates
   if (selectedContainers.length > 1) {
-    const summaryMessage = `Bulk update completed:\n• ${successCount} successful\n• ${errorCount} failed${errors.length > 0 ? '\n\nErrors:\n' + errors.join('\n') : ''}`;
+    let summaryMessage;
     
-    // Use a simple alert for now, or we could create a dedicated summary modal
     if (errorCount > 0) {
-      alert(`Bulk Update Summary:\n\n${summaryMessage}`);
+      summaryMessage = `Bulk update completed:\n• ${successCount} successful\n• ${errorCount} failed\n\nFailed containers:\n${errors.join('\n')}`;
     } else {
-      alert(`Bulk Update Summary:\n\nAll ${successCount} containers updated successfully!`);
+      summaryMessage = `Bulk update completed:\n\nAll ${successCount} containers updated successfully!`;
     }
+    
+    showAlertModal(`Bulk Update Summary:\n\n${summaryMessage}`);
+  } else if (selectedContainers.length === 1 && errorCount > 0) {
+    // Show detailed error for single container update failure
+    const container = selectedContainers[0];
+    showAlertModal(`Update Failed\n\nContainer: ${container.name}\nError: ${errors[0]}`);
   }
 
   // Refresh the container data
@@ -372,7 +378,7 @@ async function checkUpdatesIndividually() {
   } catch (error) {
     console.error("Update check failed:", error);
     hideProgressModal();
-    alert("Failed to check for updates. Please try again.");
+    showAlertModal("Failed to check for updates. Please try again.");
   } finally {
     resetUpdateButton();
   }

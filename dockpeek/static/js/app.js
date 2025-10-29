@@ -5,7 +5,7 @@ import { TableRenderer } from './modules/table-renderer.js';
 import { DragDropHandler } from './modules/drag-drop.js';
 import * as ColumnOrder from './modules/column-order.js';
 import { updateColumnVisibility } from './modules/column-visibility.js';
-import { fetchContainerData, checkForUpdates, updateExportLink } from './modules/data-fetch.js';
+import { fetchContainerData, checkForUpdates, updateExportLink, startStatusRefresh } from './modules/data-fetch.js';
 import { updateDisplay, parseAdvancedSearch, filterByStackAndServer, toggleClearButton, clearSearch, setupServerUI, updateActiveButton } from './modules/filters.js';
 import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './modules/modals.js';
 import { initEventListeners, initLogsButtons } from './modules/events.js';

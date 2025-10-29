@@ -60,6 +60,7 @@ export async function fetchContainerData() {
     toggleClearButton();
     updateDisplay();
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
+    startStatusRefresh();
 
     // disable swarm update 
     const isCurrentServerSwarm = state.currentServerFilter !== 'all' &&
@@ -401,5 +402,86 @@ export async function installUpdate(serverName, containerName) {
     showUpdateErrorModal(containerName, error.message, serverName);
   } finally {
     hideUpdateInProgressModal();
+  }
+}
+let statusRefreshController = null;
+
+export async function refreshContainerStatus() {
+  if (!state.isDataLoaded) return;
+
+  if (statusRefreshController) {
+    statusRefreshController.abort();
+  }
+
+  statusRefreshController = new AbortController();
+
+  try {
+    const response = await fetch(apiUrl("/status"), {
+      signal: statusRefreshController.signal
+    });
+    
+    if (!response.ok) return;
+
+    const { statuses = [] } = await response.json();
+
+    if (statuses.length === 0) {
+      console.warn("Status refresh returned empty - skipping update");
+      return;
+    }
+
+    const existingKeys = new Set(
+      state.allContainersData.map(c => `${c.server}:${c.name}`)
+    );
+    const statusKeys = new Set(statuses.map(s => `${s.server}:${s.name}`));
+
+    const hasNewContainers = statuses.some(
+      s => !existingKeys.has(`${s.server}:${s.name}`)
+    );
+
+    if (hasNewContainers) {
+      console.log("New containers detected - reloading full data");
+      await fetchContainerData();
+      return;
+    }
+
+    for (let i = state.allContainersData.length - 1; i >= 0; i--) {
+      const container = state.allContainersData[i];
+      if (!statusKeys.has(`${container.server}:${container.name}`)) {
+        state.allContainersData.splice(i, 1);
+      }
+    }
+
+    state.allContainersData.forEach(existing => {
+      const updated = statuses.find(
+        s => s.server === existing.server && s.name === existing.name
+      );
+      if (updated) {
+        existing.status = updated.status;
+        existing.exit_code = updated.exit_code;
+        existing.started_at = updated.started_at;
+      }
+    });
+
+    updateDisplay();
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error("Status refresh failed:", error);
+    }
+  } finally {
+    statusRefreshController = null;
+  }
+}
+
+let statusRefreshInterval = null;
+
+export function startStatusRefresh() {
+  if (statusRefreshInterval) return;
+  statusRefreshInterval = setInterval(refreshContainerStatus, 30000);
+}
+
+export function stopStatusRefresh() {
+  if (statusRefreshInterval) {
+    clearInterval(statusRefreshInterval);
+    statusRefreshInterval = null;
   }
 }

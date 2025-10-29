@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 
 from .get_data import get_all_data
 from .update_manager import update_container
-from .docker_utils import discover_docker_clients, create_streaming_client, DockerClientFactory
+from .docker_utils import discover_docker_clients, create_streaming_client, DockerClientFactory, get_container_status_with_exit_code
 from .update import update_checker
 from .logs_manager import get_container_logs, stream_container_logs, get_service_logs, stream_service_logs
 
@@ -667,3 +667,56 @@ def export_json():
     response.headers['Content-Type'] = 'application/json'
     return response
 
+@main_bp.route("/status")
+@conditional_login_required
+def get_status():
+    servers = discover_docker_clients()
+    statuses = []
+    
+    for server in servers:
+        if server['status'] != 'active':
+            continue
+            
+        try:
+            client = server['client']
+            info = client.info()
+            is_swarm = info.get('Swarm', {}).get('LocalNodeState', '').lower() == 'active'
+            
+            if is_swarm:
+                services = client.services.list()
+                tasks = client.api.tasks()
+                tasks_by_service = {}
+                for t in tasks:
+                    sid = t['ServiceID']
+                    tasks_by_service.setdefault(sid, []).append(t)
+                
+                for service in services:
+                    service_tasks = tasks_by_service.get(service.id, [])
+                    running = sum(1 for t in service_tasks if t['Status']['State'] == 'running')
+                    total = len(service_tasks)
+                    status = f"running ({running}/{total})" if total else "no-tasks"
+                    
+                    statuses.append({
+                        'server': server['name'],
+                        'name': service.name,
+                        'status': status,
+                        'exit_code': None,
+                        'started_at': None
+                    })
+            else:
+                containers = client.containers.list(all=True)
+                for container in containers:
+                    container_status, exit_code = get_container_status_with_exit_code(container)
+                    start_time = container.attrs.get('State', {}).get('StartedAt', '')
+                    
+                    statuses.append({
+                        'server': server['name'],
+                        'name': container.name,
+                        'status': container_status,
+                        'exit_code': exit_code,
+                        'started_at': start_time
+                    })
+        except Exception as e:
+            current_app.logger.error(f"Error getting status from {server['name']}: {e}")
+    
+    return jsonify({'statuses': statuses})

@@ -330,11 +330,17 @@ function loadFilterStates() {
 }
 
 export async function installUpdate(serverName, containerName) {
+  const isDockpeek = containerName.toLowerCase().includes('dockpeek');
+  
   try {
     await showConfirmationModal(
       'Confirm Update',
-      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.`,
-      'Update'
+      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.${
+        isDockpeek 
+          ? '<br><br><span style="color: #ef4444; font-weight: 600;">Warning: Dockpeek cannot update itself. This operation will fail. Please update dockpeek manually.</span>' 
+          : ''
+      }`,
+      isDockpeek ? 'Update Anyway' : 'Update'
     );
   } catch (error) {
     console.log('Update cancelled by user.');

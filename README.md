@@ -205,7 +205,8 @@ services:
 ```
 
 > [!TIP]
-> Install a Docker Socket Proxy on each remote host for secure API access.
+> Dockpeek does not need to be installed on remote devices.
+> Each remote host only needs the Docker API exposed over TCP (e.g. via a Docker Socket Proxy).
 
 <br>
 

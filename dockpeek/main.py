@@ -226,6 +226,38 @@ def cancel_updates():
     current_app.logger.info("Cancellation request received.")
     return jsonify({"status": "cancellation_requested"})
 
+@main_bp.route("/check-dependent-containers", methods=["POST"])
+@conditional_login_required
+def check_dependent_containers():
+    data = request.get_json()
+    server_name = data.get('server_name')
+    container_name = data.get('container_name')
+
+    if not server_name or not container_name:
+        return jsonify({"error": "Missing server_name or container_name"}), 400
+
+    servers = discover_docker_clients()
+    server = next((s for s in servers if s['name'] == server_name and s['status'] == 'active'), None)
+    
+    if not server:
+        return jsonify({"error": f"Server '{server_name}' not found or inactive"}), 404
+    
+    try:
+        container = server['client'].containers.get(container_name)
+        dependent = []
+        all_containers = server['client'].containers.list(all=True)
+        for other in all_containers:
+            if other.id == container.id:
+                continue
+            network_mode = other.attrs.get('HostConfig', {}).get('NetworkMode', '')
+            if network_mode in [f'container:{container.name}', f'container:{container.id}']:
+                dependent.append(other.name)
+        
+        return jsonify({'dependent_containers': dependent}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error checking dependent containers: {e}")
+        return jsonify({'dependent_containers': [], 'error': str(e)}), 200
+    
 @main_bp.route("/update-container", methods=["POST"])
 @conditional_login_required
 def update_container_route():

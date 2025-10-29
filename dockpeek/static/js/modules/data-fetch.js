@@ -332,10 +332,32 @@ function loadFilterStates() {
 export async function installUpdate(serverName, containerName) {
   const isDockpeek = containerName.toLowerCase().includes('dockpeek');
   
+  let dependentContainers = [];
+  try {
+    const checkResponse = await fetch(apiUrl('/check-dependent-containers'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        server_name: serverName,
+        container_name: containerName,
+      }),
+    });
+    if (checkResponse.ok) {
+      const data = await checkResponse.json();
+      dependentContainers = data.dependent_containers || [];
+    }
+  } catch (error) {
+    console.warn('Could not check dependent containers:', error);
+  }
+  
+  const dependentInfo = dependentContainers.length > 0 
+    ? `<br><br><span style="color: #f59e0b; font-weight: 600;">This container has ${dependentContainers.length} dependent container(s) that will be recreated:</span><br><span style="color: #c9891d; margin-left: 1rem;">${dependentContainers.join(', ')}</span>` 
+    : '';
+  
   try {
     await showConfirmationModal(
       'Confirm Update',
-      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.${
+      `Are you sure you want to update <strong>${containerName}</strong> on <strong>${serverName}</strong>? The container will be stopped and recreated with the new image.${dependentInfo}${
         isDockpeek 
           ? '<br><br><span style="color: #ef4444; font-weight: 600;">Warning: Dockpeek cannot update itself. This operation will fail. Please update dockpeek manually.</span>' 
           : ''

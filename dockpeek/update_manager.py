@@ -3,25 +3,9 @@ import time
 import re
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
-from enum import Enum
 import docker
 
 logger = logging.getLogger(__name__)
-
-
-class ValidationResult(Enum):
-    ALLOWED = "allowed"
-    BLOCKED_SELF = "blocked_self"
-    BLOCKED_CRITICAL = "blocked_critical"
-    BLOCKED_DATABASE = "blocked_database"
-    BLOCKED_DEPENDENCY = "blocked_dependency"
-
-
-@dataclass
-class ValidationBlockage:
-    result: ValidationResult
-    html_message: str
-    log_message: str
 
 
 class ContainerUpdateError(Exception):
@@ -35,117 +19,6 @@ def strip_html_tags(text: str) -> str:
     clean_text = re.sub(r'<[^>]+>', '', text)
     clean_text = clean_text.replace('\n', ' ')
     return clean_text
-
-
-class ValidationPatterns:
-    CRITICAL_IMAGES = [
-        'dockpeek', 'socket-proxy', 'traefik', 'portainer/portainer',
-        'containrrr/watchtower', 'pihole/pihole', 'jwilder/nginx-proxy',
-        'haproxy', 'envoyproxy/envoy', 'linuxserver/wireguard',
-        'kylemanna/openvpn', 'nginx', 'caddy', 'cloudflare/cloudflared',
-        'bitwarden/server', 'vaultwarden/server', 'grafana/grafana',
-        'prom/prometheus', 'prom/alertmanager', 'louislam/uptime-kuma',
-        'duplicati/duplicati', 'restic/restic', 'rclone/rclone',
-        'nextcloud', 'authelia/authelia', 'oauth2-proxy/oauth2-proxy',
-        'keycloak/keycloak', 'tailscale/tailscale', 'netbirdio/netbird',
-        'adguardhome/adguardhome', 'jc21/nginx-proxy-manager',
-        'linuxserver/swag'
-    ]
-
-    CRITICAL_NAME_PATTERNS = [
-        'traefik', 'portainer', 'watchtower', 'pihole', 'wireguard',
-        'openvpn', 'bitwarden', 'vaultwarden', 'grafana', 'prometheus',
-        'alertmanager', 'authelia', 'keycloak', 'tailscale', 'netbird',
-        'adguard', 'nginx-proxy-manager', 'uptime-kuma'
-    ]
-
-    DATABASE_IMAGES = [
-        'postgres', 'mysql', 'mariadb', 'mongodb', 'mongo', 'redis',
-        'sqlite', 'microsoft/mssql-server', 'couchdb', 'couchbase',
-        'cockroachdb', 'neo4j', 'influxdb', 'elasticsearch',
-        'cassandra', 'memcached'
-    ]
-
-    DATABASE_NAME_PATTERNS = [
-        'database', 'postgres', 'mysql', 'mariadb', 'mongo', 'redis',
-        'mssql', 'couch', 'cockroach', 'neo4j', 'influx', 'elastic',
-        'cassandra', 'memcached'
-    ]
-
-    @classmethod
-    def check_patterns(cls, text: str, patterns: List[str]) -> Optional[str]:
-        text_lower = text.lower()
-        for pattern in patterns:
-            if pattern in text_lower:
-                return pattern
-        return None
-
-
-class ContainerValidator:
-    def __init__(self, container, client: docker.DockerClient):
-        self.container = container
-        self.client = client
-        self.container_name = container.name.lower()
-        self.image_name = container.attrs.get('Config', {}).get('Image', '').lower()
-        self.labels = container.attrs.get('Config', {}).get('Labels', {}) or {}
-    
-    def validate(self) -> Optional[ValidationBlockage]:
-        pattern_check = self._check_patterns()
-        if pattern_check:
-            return pattern_check
-
-        return None
-    
-    def _check_patterns(self) -> Optional[ValidationBlockage]:
-        if 'dockpeek' in self.image_name:
-            html_message = (
-                f"<div class='text-center'><strong>Dockpeek</strong> cannot update itself, as this would "
-                f"<strong>interrupt the update process.</strong></div>"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update the dockpeek container "
-                f"<strong>outside of dockpeek.</strong></div>"
-            )
-            return ValidationBlockage(ValidationResult.BLOCKED_SELF, html_message, "Cannot update dockpeek itself")
-        
-        critical_match = ValidationPatterns.check_patterns(
-            self.image_name, ValidationPatterns.CRITICAL_IMAGES
-        ) or ValidationPatterns.check_patterns(
-            self.container_name, ValidationPatterns.CRITICAL_NAME_PATTERNS
-        )
-        
-        if critical_match:
-            html_message = (
-                f"Container <strong>'{self.container.name}'</strong> appears to be a "
-                f"<strong>critical system service.</strong> Updating it through Dockpeek is not recommended.\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container "
-                f"<strong>outside of dockpeek.</strong></div>"
-            )
-            return ValidationBlockage(
-                ValidationResult.BLOCKED_CRITICAL,
-                html_message,
-                f"Container {self.container.name} matches critical pattern: {critical_match}"
-            )
-        
-        database_match = ValidationPatterns.check_patterns(
-            self.image_name, ValidationPatterns.DATABASE_IMAGES
-        ) or ValidationPatterns.check_patterns(
-            self.container_name, ValidationPatterns.DATABASE_NAME_PATTERNS
-        )
-        
-        if database_match:
-            html_message = (
-                f"Container <strong>'{self.container.name}'</strong> appears to be a "
-                f"<strong>database service.</strong> Updating databases through Dockpeek is not recommended, "
-                f"as it may cause <strong>downtime or data loss.</strong>\n"
-                f"<div class='text-center' style='margin-top: 0.7em;'>Please update this container "
-                f"<strong>outside of dockpeek.</strong></div>"
-            )
-            return ValidationBlockage(
-                ValidationResult.BLOCKED_DATABASE,
-                html_message,
-                f"Container {self.container.name} matches database pattern: {database_match}"
-            )
-        
-        return None
 
 
 class ContainerConfigExtractor:
@@ -235,7 +108,6 @@ class ContainerUpdater:
         logger.info(f"[{self.server_name}] Starting update for: {container_name} (force={force})")
 
         container = self._get_container(container_name)
-        self._validate_container(container)
 
         dependent_containers = self._get_dependent_containers(container)
         if dependent_containers:
@@ -278,18 +150,6 @@ class ContainerUpdater:
             raise ContainerUpdateError(f"Container '{container_name}' not found.")
         except Exception as e:
             raise ContainerUpdateError(f"Error accessing container '{container_name}': {e}")
-    
-    def _validate_container(self, container):
-        validator = ContainerValidator(container, self.client)
-        blockage = validator.validate()
-        
-        if blockage:
-            logger.warning(f"[{self.server_name}] Validation blocked: {blockage.log_message}")
-            raise ContainerUpdateError(blockage.html_message, blockage.log_message)
-        
-        if 'com.docker.compose.project' in validator.labels:
-            project = validator.labels['com.docker.compose.project']
-            logger.debug(f"Container '{container.name}' is part of Compose project '{project}'")        
    
     def _get_image_info(self, container) -> Tuple[str, str]:
         image_name = container.attrs.get('Config', {}).get('Image')

@@ -1,3 +1,4 @@
+from .update import update_checker
 import logging
 import time
 import re
@@ -74,6 +75,7 @@ class ContainerUpdater:
             'stop': 60,
         }
         self.original_timeout = None
+        self.update_checker = update_checker
         
     def __enter__(self):
         self.original_timeout = getattr(self.client.api, 'timeout', None)
@@ -154,13 +156,22 @@ class ContainerUpdater:
     def _get_image_info(self, container) -> Tuple[str, str]:
         image_name = container.attrs.get('Config', {}).get('Image')
         container_image_id = container.attrs.get('Image', '')
-        
+
         if not image_name:
             raise ContainerUpdateError("Could not determine image name for the container.")
-        
+
+        base_name, current_tag = self.update_checker._parse_image_name(image_name)
+        resolved_tag = self.update_checker._resolve_floating_tag(current_tag)
+
+        if resolved_tag != current_tag:
+            resolved_image_name = f"{base_name}:{resolved_tag}"
+            logger.info(f"[{self.server_name}] Resolved floating tag: {current_tag} → {resolved_tag}")
+            logger.info(f"[{self.server_name}] Will use image: {resolved_image_name}")
+            return resolved_image_name, container_image_id
+
         logger.info(f"[{self.server_name}] Container image: {image_name}")
         logger.debug(f"[{self.server_name}] Current image ID: {container_image_id[:12]}...")
-        
+
         return image_name, container_image_id
     
     def _pull_image(self, image_name: str):

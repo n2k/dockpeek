@@ -37,20 +37,8 @@ Add labels to your containers to tag them, customize their appearance, or contro
 * `dockpeek.https` — Force HTTPS protocol for specific ports
 * `dockpeek.link` — Turn container names into clickable links
 * `dockpeek.ports` — Add custom ports to display alongside detected ones
-* `dockpeek.port-range-grouping` — Control port range grouping (true/false)
+* `dockpeek.port-range-grouping` — Control [port range grouping](#port-range-grouping) (true/false)
 * `dockpeek.tags` — Organize and categorize containers with custom tags
-
-### Port Range Grouping
-
-Dockpeek automatically groups consecutive ports into ranges for cleaner display. For example, ports 601, 602, 603, 604, 605, 606 will be displayed as a single range "601-606" instead of individual port badges.
-
-
-**Per-Container Configuration:**
-```yaml
-labels:
-  - "dockpeek.port-range-grouping=false"  # Disable for this container
-  - "dockpeek.port-range-grouping=true"   # Enable for this container (overrides global)
-```
 
 <br>
 
@@ -257,6 +245,20 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 
 <br>
 
+### Port Range Grouping
+
+Dockpeek automatically groups consecutive ports into ranges for cleaner display. For example, ports 601, 602, 603, 604, 605, 606 will be displayed as a single range "601-606" instead of individual port badges.
+
+
+**Per-Container Configuration:**
+```yaml
+labels:
+  - "dockpeek.port-range-grouping=false"  # Disable for this container
+  - "dockpeek.port-range-grouping=true"   # Enable for this container (overrides global)
+```
+
+<br>
+
 ## 🏷️ Container Labels
 
 Customize how containers appear and behave in dockpeek:
@@ -285,6 +287,7 @@ services:
 | `dockpeek.tags`  | tags                  | `dockpeek.tags=web,prod`        |
 
 <br>
+
 
 ## 🐳 Docker Swarm Support
 

@@ -153,9 +153,10 @@ class UpdateChecker:
                 return False
                 
             base_name, current_tag = self._parse_image_name(image_name)
+            resolved_tag = self._resolve_floating_tag(current_tag)
                 
             try:
-                local_image = client.images.get(f"{base_name}:{current_tag}")
+                local_image = client.images.get(f"{base_name}:{resolved_tag}")
                 return container_image_id != local_image.id
             except Exception: 
                 return False

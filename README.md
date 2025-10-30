@@ -229,7 +229,7 @@ services:
 | `DOCKER_HOST`                 | Local socket  | Primary Docker connection URL                          |
 | `DOCKER_HOST_NAME`            | Auto-detected | Display name for the primary server (auto-detected from Docker API if not set) |
 | `DOCKER_HOST_PUBLIC_HOSTNAME` | Auto-detected | Optional hostname or IP for generating clickable links |
-| `DOCKER_CONNECTION_TIMEOUT`   | `0.5`         | Connection timeout in seconds for Docker host discovery |
+| `DOCKER_CONNECTION_TIMEOUT`   | `2`           | Connection timeout in seconds (eg. `0.5`, `5`) for Docker host discovery |
 | `UPDATE_FLOATING_TAGS`        | `disabled`    | Update check mode: `latest`, `major` (e.g., `8.3.3` → `8`), or `minor` (e.g., `8.3.3` → `8.3`) (default: exact tags) |
 | `TRUST_PROXY_HEADERS`         | `false`       | Set to `true` to enable proxy header support (X-Forwarded-*) |
 | `TRUSTED_PROXY_COUNT`         | `1`           | Number of trusted proxies when `TRUST_PROXY_HEADERS=true` |

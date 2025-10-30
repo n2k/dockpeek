@@ -479,7 +479,7 @@ let statusRefreshInterval = null;
 
 export function startStatusRefresh() {
   if (statusRefreshInterval) return;
-  statusRefreshInterval = setInterval(refreshContainerStatus, 30000);
+  statusRefreshInterval = setInterval(refreshContainerStatus, 60000);
 }
 
 export function stopStatusRefresh() {

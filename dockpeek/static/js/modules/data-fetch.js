@@ -2,7 +2,7 @@ import { apiUrl } from './config.js';
 import { updateSwarmIndicator } from './swarm-indicator.js';
 import { state } from './state.js';
 import { showLoadingIndicator, hideLoadingIndicator, displayError } from './ui-utils.js';
-import { updateDisplay, setupServerUI, toggleClearButton, clearSearch } from './filters.js';
+import { updateDisplay, setupServerUI, toggleClearButton, clearSearch, updateUpdatesLabel } from './filters.js';
 import { showConfirmationModal, showUpdatesModal, showNoUpdatesModal, showProgressModal, updateProgressModal, hideProgressModal, showUpdateInProgressModal, hideUpdateInProgressModal } from './modals.js';
 import { setCachedServerStatus } from './filters.js';
 
@@ -284,6 +284,7 @@ async function checkUpdatesIndividually() {
     });
 
     updateDisplay();
+    updateUpdatesLabel();
     hideProgressModal();
 
     if (!cancelled) {
@@ -394,6 +395,7 @@ export async function installUpdate(serverName, containerName) {
       }
     });
     updateDisplay();
+    updateUpdatesLabel();
     await fetchContainerData();
 
   } catch (error) {
@@ -463,6 +465,7 @@ export async function refreshContainerStatus() {
     });
 
     updateDisplay();
+    updateUpdatesLabel();
   } catch (error) {
     if (error.name !== 'AbortError') {
       console.error("Status refresh failed:", error);

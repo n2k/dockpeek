@@ -403,6 +403,7 @@ export function updateDisplay() {
   updateSwarmIndicator(state.swarmServers, state.currentServerFilter);
   updateContainerStats(statsData);
   updateActiveTagsDisplay();
+  updateUpdatesLabel();
 }
 
 export function filterByStackAndServer(stack, server) {
@@ -612,4 +613,22 @@ export function updateActiveTagsDisplay() {
       searchInput.focus();
     });
   });
+}
+
+export function updateUpdatesLabel() {
+  const updatesLabel = document.querySelector('label[for="filter-updates-checkbox"]');
+  if (!updatesLabel) return;
+
+  let workingData = [...state.allContainersData];
+  if (state.currentServerFilter !== "all") {
+    workingData = workingData.filter(c => c.server === state.currentServerFilter);
+  }
+
+  const updatesCount = workingData.filter(c => c.update_available).length;
+  
+  if (updatesCount > 0) {
+    updatesLabel.innerHTML = `Updates <span style="color: #f59e0b; font-weight: 600;">( ${updatesCount} )</span>`;
+  } else {
+    updatesLabel.textContent = '';
+  }
 }

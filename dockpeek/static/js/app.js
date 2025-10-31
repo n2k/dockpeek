@@ -11,6 +11,7 @@ import { showUpdatesModal, showNoUpdatesModal, showConfirmationModal } from './m
 import { initEventListeners, initLogsButtons } from './modules/events.js';
 import { updateSwarmIndicator, initSwarmIndicator, isSwarmMode } from './modules/swarm-indicator.js';
 import { updateContainerStats } from './modules/container-stats.js';
+import { loadRegistryTemplates } from './modules/registry-urls.js';
 
 const tableRenderer = new TableRenderer('container-row-template', 'container-rows');
 let dragDropHandler = null;
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   dragDropHandler = new DragDropHandler('column-list');
   
   initSwarmIndicator();
+  loadRegistryTemplates();
   fetchContainerData();
   initEventListeners();
   initLogsButtons();

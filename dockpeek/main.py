@@ -43,6 +43,12 @@ def health():
         "version": current_app.config['APP_VERSION']
     }), 200
 
+@main_bp.route("/config/registry-templates")
+def get_registry_templates():
+    """Expose CUSTOM_REGISTRY_TEMPLATES from config for frontend use."""
+    from flask import current_app, jsonify
+    return jsonify(current_app.config.get("CUSTOM_REGISTRY_TEMPLATES", {}))
+
 @main_bp.route("/data")
 @conditional_login_required
 def data():

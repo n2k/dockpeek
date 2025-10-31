@@ -224,7 +224,8 @@ services:
 | `TRAEFIK_LABELS`              | `true`        | Set to `false` to hide Traefik column      |
 | `TAGS`                        | `true`        | Set to `false` to hide tags column           |
 | `PORT_RANGE_GROUPING`         | `true`        | Set to `false` to disable port range grouping globally |
-| `PORT_RANGE_THRESHOLD`        | `5`           | Minimum number of consecutive ports to group as a range |
+| `PORT_RANGE_THRESHOLD`        | `5`           | Minimum number of consecutive ports to group as a range (see [Port Range Grouping](#port-range-grouping)) |
+| `CUSTOM_REGISTRY_TEMPLATES`   | `{}`          | URL templates for custom/private registries using `{0}`, `{1}`, `{2}` placeholders (see [Custom Registry Templates](#custom-registry-templates)) |
 
 ### Multi-Host Variables
 
@@ -242,6 +243,32 @@ For additional Docker hosts, use the pattern `DOCKER_HOST_N_*`:
 > - `SECRET_KEY` must always be set - dockpeek will not function without it
 > - `USERNAME` and `PASSWORD` are required unless `DISABLE_AUTH=true`
 > - Multi-host variables require matching `N` identifiers (URL, name, hostname)
+
+<br>
+
+### Custom Registry Templates
+
+Dockpeek supports custom URL templates for private or self-hosted Docker registries like Gitea, Harbor, or GitLab. This makes registry icons clickable and links directly to your registry's web interface.
+
+**Configuration:**
+```yaml
+environment:
+  - |
+    CUSTOM_REGISTRY_TEMPLATES={
+      "git.example.com": {"urlTemplate": "https://git.example.com/{1}/-/packages/container/{2}"},
+      "harbor.company.com": {"urlTemplate": "https://harbor.company.com/harbor/projects/{1}/repositories/{2}"}
+    }
+```
+
+**How it works:**
+
+The placeholders `{0}`, `{1}`, `{2}`, etc. are replaced with parts of your image name:
+
+For an image like `git.example.com/myuser/myapp:latest`:
+* `{0}` = `git.example.com` (registry host)
+* `{1}` = `myuser` (first path component)
+* `{2}` = `myapp` (second path component)
+* `{3}`, `{4}`, etc. for deeper paths if needed
 
 <br>
 

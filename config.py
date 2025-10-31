@@ -1,6 +1,14 @@
-import os
+import os, json
 from datetime import timedelta
 
+
+def load_custom_registry_templates():
+    try:
+        raw = os.getenv("CUSTOM_REGISTRY_TEMPLATES", "{}")
+        return json.loads(raw)
+    except Exception:
+        return {}
+        
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
     if not SECRET_KEY:
@@ -31,3 +39,5 @@ class Config:
     DOCKER_CONNECTION_TIMEOUT = float(os.environ.get("DOCKER_CONNECTION_TIMEOUT", "2"))
     
     PORT = int(os.environ.get("PORT", "8000"))
+    
+    CUSTOM_REGISTRY_TEMPLATES = load_custom_registry_templates()

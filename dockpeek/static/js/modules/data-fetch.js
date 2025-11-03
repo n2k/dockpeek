@@ -56,7 +56,6 @@ export async function fetchContainerData() {
 
     handleServerFilterReset();
     setupServerUI();
-    clearSearch();
     toggleClearButton();
     updateDisplay();
     updateSwarmIndicator(state.swarmServers, state.currentServerFilter);

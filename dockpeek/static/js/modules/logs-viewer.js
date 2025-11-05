@@ -357,6 +357,14 @@ export class LogsViewer {
     }
 
     this.modal.classList.remove('hidden');
+
+    const wrapCheckbox = document.getElementById('logs-wrap-checkbox');
+    const pre = this.logsContent.querySelector('.logs-pre');
+    if (pre) {
+      pre.style.whiteSpace = wrapCheckbox.checked ? 'pre-wrap' : 'pre';
+    }
+
+    this.showLoading();
     this.showLoading();
 
     if (autoStream) {
@@ -449,7 +457,11 @@ export class LogsViewer {
   displayLogs(logsText) {
     const lines = logsText.split('\n');
     const logsHTML = lines.map(line => this.formatLogLine(line)).join('');
-    this.logsContent.innerHTML = `<pre class="logs-pre">${logsHTML}</pre>`;
+
+    const wrapCheckbox = document.getElementById('logs-wrap-checkbox');
+    const whiteSpace = wrapCheckbox.checked ? 'pre-wrap' : 'pre';
+
+    this.logsContent.innerHTML = `<pre class="logs-pre" style="white-space: ${whiteSpace};">${logsHTML}</pre>`;
 
     if (this.autoScroll) {
       this.scrollToBottom();
@@ -733,7 +745,9 @@ export class LogsViewer {
 
 
     if (!pre) {
-      this.logsContent.innerHTML = '<pre class="logs-pre"></pre>';
+      const wrapCheckbox = document.getElementById('logs-wrap-checkbox');
+      const whiteSpace = wrapCheckbox.checked ? 'pre-wrap' : 'pre';
+      this.logsContent.innerHTML = `<pre class="logs-pre" style="white-space: ${whiteSpace};"></pre>`;
       pre = this.logsContent.querySelector('.logs-pre');
     }
 
